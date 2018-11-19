@@ -60,9 +60,40 @@ if(NOT DEFINED WITH_SIMD)
 	set(WITH_SIMD 1)
 endif()
 
+# libyuv
+
 if(NOT DEFINED WITH_LIBYUV)
 	set(WITH_LIYUV 1)
 endif()
+
+find_path(LIBYUV_INCLUDE_DIR
+	NAMES libyuv/libyuv.h
+	PATH_SUFFIXES include)
+
+if(WIN32)
+	find_library(LIBYUV_LIBRARY
+		NAMES libyuv.lib
+		PATH_SUFFIXES lib)
+else()
+	find_library(LIBYUV_LIBRARY
+		NAMES yuv
+		PATH_SUFFIXES lib)
+endif()
+
+if(LIBYUV_INCLUDE_DIR AND LIBYUV_LIBRARY)
+	set(LIBYUV_FOUND TRUE)
+	add_definitions("-DWITH_LIBYUV")
+	add_library(libyuv STATIC IMPORTED)
+	set_property(TARGET libyuv PROPERTY IMPORTED_LOCATION ${LIBYUV_LIBRARY})
+endif()
+
+if(LIBYUV_FOUND)
+	message(STATUS "Found libyuv: ${LIBYUV_LIBRARY}")
+else()
+	message(STATUS "libyuv was not found")
+endif()
+
+# halide
 
 if(NOT DEFINED WITH_HALIDE AND HALIDE_LLVM_FOUND)
 	set(WITH_HALIDE 1)
