@@ -70,5 +70,12 @@ if(XPP_INSTALL)
 		EXPORT xpp-targets
 		ARCHIVE DESTINATION lib
 		LIBRARY DESTINATION lib)
+
+	export(TARGETS ${MODULE_NAME}
+		APPEND FILE ${PROJECT_BINARY_DIR}/xpp-targets.cmake)
+
+	install(EXPORT xpp-targets
+	        FILE xpp-targets.cmake
+	        DESTINATION "${CMAKE_EXPORT_DIR}")
 endif()
 
