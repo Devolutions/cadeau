@@ -17,6 +17,8 @@ bool XppPrimitives_Init(XppPrimitives* primitives, uint32_t flags)
 		return false;
 	}
 
+	Xpp_SimdInit();
+
 	memset(primitives, 0, sizeof(XppPrimitives));
 
 	if (flags & XPP_PRIMITIVES_GENERIC)
@@ -76,4 +78,24 @@ XppPrimitives* XppPrimitives_Get()
 #endif
 
 	return &g_Primitives;
+}
+
+uint32_t Xpp_SimdInit(void)
+{
+	return init_simd();
+}
+
+uint32_t Xpp_SimdGet(void)
+{
+	return get_simd();
+}
+
+uint32_t Xpp_SimdAuto(void)
+{
+	return auto_simd();
+}
+
+uint32_t Xpp_SimdSet(uint32_t simd)
+{
+	return override_simd(simd);
 }

@@ -7,7 +7,7 @@
 
 #include <stdlib.h>
 
-static unsigned int simd_type = ~0;
+static uint32_t simd_type = ~0;
 
 #ifdef _WIN32
 

@@ -3,6 +3,7 @@
 
 #include <xpp/xpp.h>
 
+#include <xpp/simd.h>
 #include <xpp/copy.h>
 #include <xpp/compare.h>
 
@@ -41,8 +42,8 @@ typedef struct now_primitives
 	fnXpp_CopyFromRetina CopyFromRetina;
 } XppPrimitives;
 
-bool XppPrimitives_Init(XppPrimitives* primitives, uint32_t flags);
-XppPrimitives* XppPrimitives_Get();
+XPP_EXPORT bool XppPrimitives_Init(XppPrimitives* primitives, uint32_t flags);
+XPP_EXPORT XppPrimitives* XppPrimitives_Get();
 
 #ifdef __cplusplus
 }

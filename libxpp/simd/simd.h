@@ -1,5 +1,5 @@
-#ifndef XPP_SIMD_H
-#define XPP_SIMD_H
+#ifndef XPP_SIMD_INTERNAL_H
+#define XPP_SIMD_INTERNAL_H
 
 #include <xpp/xpp.h>
 #include <xpp/math.h>
@@ -15,10 +15,10 @@
 #define BITS	32
 #endif
 
-unsigned int init_simd(void);
-unsigned int get_simd(void);
-unsigned int auto_simd(void);
-unsigned int override_simd(unsigned int simd);
+uint32_t init_simd(void);
+uint32_t get_simd(void);
+uint32_t auto_simd(void);
+uint32_t override_simd(uint32_t simd);
 
 #ifndef XPP_SIMD_INTERNAL
 
@@ -76,5 +76,4 @@ void Xpp_RGBToYCoCgR420_8u_P3AC4R_simd(const uint8_t* pSrc, int32_t srcStep,
 
 #endif
 
-#endif /* XPP_SIMD_H */
-
+#endif /* XPP_SIMD_INTERNAL_H */

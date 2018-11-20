@@ -2,7 +2,7 @@
 #include <stdlib.h>
 #include <ctype.h>
 
-static unsigned int simd_type = ~0;
+static uint32_t simd_type = ~0;
 
 #if !defined(__aarch64__) && !defined(__APPLE__) && !defined(__ARM_NEON__) && (defined(__linux__) || defined(ANDROID) || defined(__ANDROID__))
 #define NEED_CPU_FEATURE_DETECTION

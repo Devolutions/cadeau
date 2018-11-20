@@ -11,6 +11,7 @@ set(${MODULE_PREFIX}_SOURCES
 	XppCopy.c
 	XppCompare.c
 	XppScale.c
+	XppSimd.c
 	XppPrimitive.c)
 
 if(WITH_HALIDE)
@@ -31,9 +32,11 @@ if(WITH_SIMD)
 		simd/simd.c)
 	list(APPEND ${MODULE_PREFIX}_SIMD_HEADERS
 		simd/simd.h)
-
+		
 	if(${CMAKE_SYSTEM_PROCESSOR} MATCHES "arm")
 		set_source_files_properties(${${MODULE_PREFIX}_SIMD_SOURCES} PROPERTIES COMPILE_FLAGS "-mfpu=neon")
+	elseif(${CMAKE_SYSTEM_PROCESSOR} MATCHES "aarch64")
+
 	else()
 		if(MSVC)
 			set_source_files_properties(${${MODULE_PREFIX}_SIMD_SOURCES} PROPERTIES COMPILE_FLAGS "/arch:SSE2")
