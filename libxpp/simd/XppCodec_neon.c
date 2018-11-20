@@ -1,5 +1,6 @@
 
-#include <xpp/codec.h>
+#include <xpp/copy.h>
+#include <xpp/compare.h>
 
 #define XPP_SIMD_INTERNAL
 #include "simd.h"

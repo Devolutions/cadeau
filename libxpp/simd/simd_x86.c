@@ -27,28 +27,28 @@ static unsigned int simd_type = ~0;
 
 #endif
 
-unsigned int get_simd(void)
+uint32_t get_simd(void)
 {
 	return simd_type;
 }
 
-unsigned int override_simd(unsigned int simd)
+uint32_t override_simd(uint32_t simd)
 {
 	return simd_type = simd;
 }
 
-unsigned int auto_simd(void)
+uint32_t auto_simd(void)
 {
 	simd_type = ~0U;
 	return init_simd();
 }
 
-unsigned int init_simd(void)
+uint32_t init_simd(void)
 {
 #ifndef __x86_64__
-	unsigned int eax = 0, ebx = 0, ecx = 0, edx = 0;
+	uint32_t eax = 0, ebx = 0, ecx = 0, edx = 0;
 #endif
-	char *env = NULL;
+	char* env = NULL;
 
 	if (simd_type != ~0U)
 		return simd_type;

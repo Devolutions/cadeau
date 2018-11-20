@@ -4,8 +4,9 @@
 
 #include <xpp/math.h>
 #include <xpp/color.h>
-#include <xpp/codec.h>
-#include <xpp/prim.h>
+#include <xpp/primitive.h>
+
+#include <xpp/copy.h>
 
 #ifdef WITH_SIMD
 #include "simd/simd.h"

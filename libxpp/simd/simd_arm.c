@@ -90,25 +90,25 @@ static int parse_proc_cpuinfo(int bufsize)
 
 #endif
 
-unsigned int get_simd(void)
+uint32_t get_simd(void)
 {
 	return simd_type;
 }
 
-unsigned int override_simd(unsigned int simd)
+uint32_t override_simd(unsigned int simd)
 {
 	return simd_type = simd;
 }
 
-unsigned int auto_simd(void)
+uint32_t auto_simd(void)
 {
 	simd_type = ~0U;
 	return init_simd();
 }
 
-unsigned int init_simd(void)
+uint32_t init_simd(void)
 {
-	char *env = NULL;
+	char* env = NULL;
 #ifdef NEED_CPU_FEATURE_DETECTION
 	int bufsize = 1024;  /* an initial guess for the line buffer size limit */
 #endif

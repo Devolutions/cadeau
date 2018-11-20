@@ -3,7 +3,7 @@
 #endif
 
 #include <xpp/color.h>
-#include <xpp/prim.h>
+#include <xpp/primitive.h>
 
 #ifdef WITH_HALIDE
 #include <halide/YCoCgR420ToRgb.h>

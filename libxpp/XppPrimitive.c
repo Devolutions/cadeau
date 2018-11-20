@@ -1,7 +1,5 @@
 
-#include <xpp/prim.h>
-#include <xpp/codec.h>
-#include <xpp/color.h>
+#include <xpp/primitive.h>
 
 #ifdef WITH_SIMD
 #include "simd/simd.h"

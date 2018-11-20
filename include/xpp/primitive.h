@@ -3,7 +3,8 @@
 
 #include <xpp/xpp.h>
 
-#include <xpp/codec.h>
+#include <xpp/copy.h>
+#include <xpp/compare.h>
 
 #ifdef __cplusplus
 extern "C" {

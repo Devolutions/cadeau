@@ -9,9 +9,9 @@ set(${MODULE_PREFIX}_HEADERS "")
 set(${MODULE_PREFIX}_SOURCES
 	XppColor.c
 	XppCopy.c
-	XppDiff.c
+	XppCompare.c
 	XppScale.c
-	XppPrim.c)
+	XppPrimitive.c)
 
 if(WITH_HALIDE)
 	add_subdirectory(halide)
