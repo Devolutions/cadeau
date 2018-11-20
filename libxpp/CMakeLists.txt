@@ -34,15 +34,20 @@ if(WITH_SIMD)
 		simd/simd.h)
 		
 	if(${CMAKE_SYSTEM_PROCESSOR} MATCHES "arm")
-		set_source_files_properties(${${MODULE_PREFIX}_SIMD_SOURCES} PROPERTIES COMPILE_FLAGS "-mfpu=neon")
+		set(SIMD_COMPILE_FLAGS "-mfpu=neon")
 	elseif(${CMAKE_SYSTEM_PROCESSOR} MATCHES "aarch64")
-
-	else()
-		if(MSVC)
-			set_source_files_properties(${${MODULE_PREFIX}_SIMD_SOURCES} PROPERTIES COMPILE_FLAGS "/arch:SSE2")
-		else()
-			set_source_files_properties(${${MODULE_PREFIX}_SIMD_SOURCES} PROPERTIES COMPILE_FLAGS "-msse2" )
+		# no flags required
+	elseif(MSVC)
+		if(CMAKE_SIZEOF_VOID_P EQUAL 4)
+			set(SIMD_COMPILE_FLAGS "/arch:SSE2") # 32-bit MSVC
 		endif()
+	else()
+		set(SIMD_COMPILE_FLAGS "-msse2")
+	endif()
+
+	if(SIMD_COMPILE_FLAGS)
+		set_source_files_properties(${${MODULE_PREFIX}_SIMD_SOURCES}
+			PROPERTIES COMPILE_FLAGS "${SIMD_COMPILE_FLAGS}")
 	endif()
 
 	list(APPEND ${MODULE_PREFIX}_SOURCES ${${MODULE_PREFIX}_SIMD_SOURCES})

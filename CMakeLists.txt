@@ -44,7 +44,7 @@ endif()
 set(CMAKE_EXPORT_DIR "lib/cmake/xpp")
 
 if(NOT DEFINED WAYK_HOME)
-	if(WAYK_HOST STREQUAL Windows)
+	if(WIN32)
 		set(WAYK_HOME "C:\\wayk")
 	else()
 		set(WAYK_HOME "/opt/wayk")
@@ -98,6 +98,8 @@ endif()
 if(NOT DEFINED WITH_HALIDE AND HALIDE_LLVM_FOUND)
 	set(WITH_HALIDE 1)
 endif()
+
+add_definitions(-DXPP_EXPORTS)
 
 include_directories(include)
 
