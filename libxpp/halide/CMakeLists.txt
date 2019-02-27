@@ -29,7 +29,7 @@ set(HALIDE_LLVM_COMPILER "${HALIDE_LLVM_BIN_DIR}/clang++")
 
 if(CMAKE_HOST_SYSTEM_NAME STREQUAL Windows)
 	set(HALIDE_GENERATOR_LDFLAGS "-lHalide")
-	set(HALIDE_GENERATOR_TARGET "i686-pc-windows-msvc")
+	set(HALIDE_GENERATOR_TARGET "x86_64-pc-windows-msvc")
 	set(HALIDE_SHARED_LIBRARY "Halide.dll")
 	set(HALIDE_OBJECT_SUFFIX ".obj")
 	set(HALIDE_HOST "windows")
