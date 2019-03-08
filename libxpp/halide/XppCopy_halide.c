@@ -9,13 +9,13 @@
 #include <halide/Compare8Stage1.h>
 #include <HalideRuntime.h>
 
-#include "XppHalide.c"
+#include "XppHalide.h"
 
 int Xpp_Copy_halide(uint8_t* pDstData, int nDstStep, int nXDst, int nYDst,
 	int nWidth, int nHeight, uint8_t* pSrcData, int nSrcStep, int nXSrc, int nYSrc)
 {
-	halide_buffer_t input;
-	halide_buffer_t output;
+	HALIDE_BUFFER_DEFINE(input);
+	HALIDE_BUFFER_DEFINE(output);
 
 	halide_setup_u32_buffer_t(&input, (uint32_t*) &pSrcData[nXSrc * sizeof(uint32_t) + nYSrc * nSrcStep], nWidth,
 				  nHeight, nSrcStep / sizeof(uint32_t));
