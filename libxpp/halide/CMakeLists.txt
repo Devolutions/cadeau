@@ -2,18 +2,6 @@
 set(HALIDE_LLVM_BIN_DIR "${HALIDE_LLVM_PREFIX}/bin")
 set(HALIDE_LLVM_COMPILER "${HALIDE_LLVM_BIN_DIR}/clang++")
 
-# if(CMAKE_HOST_SYSTEM_NAME STREQUAL Windows)
-# 	set(HALIDE_GENERATOR_CXXFLAGS "-Xclang;-flto-visibility-public-std;-Wno-inconsistent-dllimport")
-# else()
-# 	set(HALIDE_GENERATOR_CXXFLAGS "-std=c++11;-fno-rtti")
-# 	if(CMAKE_HOST_SYSTEM_NAME STREQUAL Darwin)
-# 		list(APPEND HALIDE_GENERATOR_CXXFLAGS "-stdlib=libc++")
-# 	else()
-# 		# https://gcc.gnu.org/onlinedocs/libstdc++/manual/using_dual_abi.html
-# 		list(APPEND HALIDE_GENERATOR_CXXFLAGS "-D_GLIBCXX_USE_CXX11_ABI=0")
-# 	endif()
-# endif()
-
 # clang targets:
 #
 # i686-pc-windows-msvc
@@ -29,15 +17,18 @@ set(HALIDE_LLVM_COMPILER "${HALIDE_LLVM_BIN_DIR}/clang++")
 
 if(CMAKE_HOST_SYSTEM_NAME STREQUAL Windows)
 	set(HALIDE_GENERATOR_LDFLAGS "-lHalide")
+	set(HALIDE_GENERATOR_CXXFLAGS "-Xclang;-flto-visibility-public-std;-Wno-inconsistent-dllimport")
 	set(HALIDE_GENERATOR_TARGET "x86_64-pc-windows-msvc")
 	set(HALIDE_SHARED_LIBRARY "Halide.dll")
 	set(HALIDE_OBJECT_SUFFIX ".obj")
 	set(HALIDE_HOST "windows")
 else()
 	set(HALIDE_GENERATOR_LDFLAGS "-lHalide")
+	set(HALIDE_GENERATOR_CXXFLAGS "-std=c++11;-fno-rtti")
 	list(APPEND HALIDE_GENERATOR_LDFLAGS "-lpthread;-ldl")
 	list(APPEND HALIDE_GENERATOR_LDFLAGS "-rpath;${HALIDE_LIBRARY_DIR}")
 	if(CMAKE_HOST_SYSTEM_NAME STREQUAL Darwin)
+		list(APPEND HALIDE_GENERATOR_CXXFLAGS "-stdlib=libc++")
 		set(HALIDE_GENERATOR_TARGET "x86_64-apple-darwin")
 		set(HALIDE_SHARED_LIBRARY "libHalide.dylib")
 		set(HALIDE_HOST "osx")
