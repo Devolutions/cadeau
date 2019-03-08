@@ -86,4 +86,3 @@ if(XPP_INSTALL)
 	        FILE xpp-targets.cmake
 	        DESTINATION "${CMAKE_EXPORT_DIR}")
 endif()
-
