@@ -2,6 +2,8 @@
 #include "config.h"
 #endif
 
+#include <xpp/math.h>
+
 #include <xpp/compare.h>
 
 #include <halide/Copy.h>
@@ -35,14 +37,20 @@ int Xpp_Compare32_halide(uint8_t* pData1, int step1, uint8_t* pData2, int step2,
 
 	for (i = 0; i < width; i++)
 	{
-		if (diffX[0] == 0) rect->left = min(rect->left, i);
-		if (diffX[0] != 0) rect->right = max(rect->right, i);
+		if (diffX[0] == 0)
+			rect->left = min(rect->left, i);
+
+		if (diffX[0] != 0)
+			rect->right = max(rect->right, i);
 	}
 
 	for (i = 0; i < width; i++)
 	{
-		if (diffY[0] == 0) rect->top = min(rect->top, i);
-		if (diffY[0] != 0) rect->bottom = max(rect->bottom, i);
+		if (diffY[0] == 0)
+			rect->top = min(rect->top, i);
+
+		if (diffY[0] != 0)
+			rect->bottom = max(rect->bottom, i);
 	}
 
 	free(diffX);
@@ -75,14 +83,20 @@ int Xpp_Compare8_halide(uint8_t* pData1, int step1, uint8_t* pData2, int step2, 
 
 	for (i = 0; i < width; i++)
 	{
-		if (diffX[0] == 0) rect->left = min(rect->left, i);
-		if (diffX[0] != 0) rect->right = max(rect->right, i);
+		if (diffX[0] == 0)
+			rect->left = min(rect->left, i);
+
+		if (diffX[0] != 0)
+			rect->right = max(rect->right, i);
 	}
 
 	for (i = 0; i < width; i++)
 	{
-		if (diffY[0] == 0) rect->top = min(rect->top, i);
-		if (diffY[0] != 0) rect->bottom = max(rect->bottom, i);
+		if (diffY[0] == 0)
+			rect->top = min(rect->top, i);
+
+		if (diffY[0] != 0)
+			rect->bottom = max(rect->bottom, i);
 	}
 
 	free(diffX);

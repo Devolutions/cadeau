@@ -12,10 +12,6 @@
 #include "simd/simd.h"
 #endif
 
-#ifdef WITH_HALIDE
-#include "halide/XppCompare_halide.c"
-#endif
-
 int Xpp_Compare32_c(uint8_t* pData1, int step1, uint8_t* pData2,
 	int step2, int width, int height, XppRect* rect)
 {
