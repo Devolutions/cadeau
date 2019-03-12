@@ -91,10 +91,11 @@ if(CONAN_OUTPUT_DIRS)
 	conan_output_dirs_setup()
 endif()
 
-
 if(NOT DEFINED XPP_INSTALL)
 	set(XPP_INSTALL ON)
 endif()
+
+set(CMAKE_POSITION_INDEPENDENT_CODE ON)
 
 include(CMakePackageConfigHelpers)
 
@@ -128,19 +129,6 @@ if(WIN32)
 endif()
 
 set(CMAKE_EXPORT_DIR "lib/cmake/xpp")
-
-if(NOT DEFINED WAYK_HOME)
-	if(WIN32)
-		set(WAYK_HOME "C:\\wayk")
-	else()
-		set(WAYK_HOME "/opt/wayk")
-	endif()
-endif()
-
-if(EXISTS "${WAYK_HOME}" AND NOT DEFINED WITH_WAYK)
-	set(WITH_WAYK 1)
-	include(WaykSDK)
-endif()
 
 if(NOT DEFINED WITH_SIMD)
 	set(WITH_SIMD 1)
@@ -179,7 +167,21 @@ else()
 	message(STATUS "libyuv was not found")
 endif()
 
+# clang+llvm
+
+set(HALIDE_LLVM_PREFIX "${CONAN_CLANG-LLVM_ROOT}")
+
+if(EXISTS "${HALIDE_LLVM_PREFIX}")
+	set(HALIDE_LLVM_FOUND 1)
+	message(STATUS "Using LLVM: ${HALIDE_LLVM_PREFIX}")
+else()
+	message(WARNING "LLVM could not be found at ${HALIDE_LLVM_PREFIX}")
+endif()
+
 # halide
+
+set(HALIDE_INCLUDE_DIR "${CONAN_HALIDE_ROOT}/include")
+set(HALIDE_LIBRARY_DIR "${CONAN_HALIDE_ROOT}/lib")
 
 if(NOT DEFINED WITH_HALIDE AND HALIDE_LLVM_FOUND)
 	set(WITH_HALIDE 1)
