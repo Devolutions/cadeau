@@ -1,5 +1,5 @@
 
-set(HALIDE_LLVM_BIN_DIR "${HALIDE_LLVM_PREFIX}/bin")
+set(HALIDE_LLVM_BIN_DIR "${HALIDE_LLVM_ROOT}/bin")
 set(HALIDE_LLVM_COMPILER "${HALIDE_LLVM_BIN_DIR}/clang++")
 
 # clang targets:

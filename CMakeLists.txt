@@ -4,8 +4,12 @@ project(xpp C)
 
 include(CTest)
 
+set(CMAKE_POSITION_INDEPENDENT_CODE ON)
+
 set(CMAKE_MODULE_PATH "${CMAKE_SOURCE_DIR}/cmake")
-include(conan)
+
+option(USE_CONAN "Use conan package manager" ON)
+option(XPP_INSTALL "Generate cmake installation script" ON)
 
 # generate conan profile name
 if(ANDROID)
@@ -65,37 +69,35 @@ if(NOT CMAKE_BUILD_TYPE)
 	set(CMAKE_BUILD_TYPE "Release")
 endif()
 
-conan_check()
+if(USE_CONAN)
+	include(conan)
 
-conan_cmake_install(
-	CONANFILE conanfile.txt
-	PROFILE ${CONAN_PROFILE}
-	GENERATORS cmake
-	UPDATE
-	SETTINGS "os_build=${CONAN_BUILD_HOST};arch_build=${CONAN_BUILD_ARCH};build_type=${CMAKE_BUILD_TYPE}"
-)
+	conan_check()
 
-set(CONAN_DISABLE_CHECK_COMPILER ON)
-conan_load_buildinfo()
-conan_basic_setup(TARGETS NO_OUTPUT_DIRS)
+	conan_cmake_install(
+		CONANFILE conanfile.txt
+		PROFILE ${CONAN_PROFILE}
+		GENERATORS cmake
+		UPDATE
+		SETTINGS "os_build=${CONAN_BUILD_HOST};arch_build=${CONAN_BUILD_ARCH};build_type=${CMAKE_BUILD_TYPE}"
+	)
 
-if(NOT DEFINED CONAN_OUTPUT_DIRS)
-	if(CMAKE_GENERATOR STREQUAL "Ninja")
-		set(CONAN_OUTPUT_DIRS ON)
-	else()
-		set(CONAN_OUTPUT_DIRS OFF)
+	set(CONAN_DISABLE_CHECK_COMPILER ON)
+	conan_load_buildinfo()
+	conan_basic_setup(TARGETS NO_OUTPUT_DIRS)
+
+	if(NOT DEFINED CONAN_OUTPUT_DIRS)
+		if(CMAKE_GENERATOR STREQUAL "Ninja")
+			set(CONAN_OUTPUT_DIRS ON)
+		else()
+			set(CONAN_OUTPUT_DIRS OFF)
+		endif()
+	endif()
+
+	if(CONAN_OUTPUT_DIRS)
+		conan_output_dirs_setup()
 	endif()
 endif()
-
-if(CONAN_OUTPUT_DIRS)
-	conan_output_dirs_setup()
-endif()
-
-if(NOT DEFINED XPP_INSTALL)
-	set(XPP_INSTALL ON)
-endif()
-
-set(CMAKE_POSITION_INDEPENDENT_CODE ON)
 
 include(CMakePackageConfigHelpers)
 
@@ -169,19 +171,28 @@ endif()
 
 # clang+llvm
 
-set(HALIDE_LLVM_PREFIX "${CONAN_CLANG-LLVM_ROOT}")
+set(HALIDE_LLVM_ROOT "" CACHE PATH "Halide LLVM root directory")
 
-if(EXISTS "${HALIDE_LLVM_PREFIX}")
+if(USE_CONAN)
+	set(HALIDE_LLVM_ROOT "${CONAN_CLANG-LLVM_ROOT}")
+endif()
+
+if(EXISTS "${HALIDE_LLVM_ROOT}")
 	set(HALIDE_LLVM_FOUND 1)
-	message(STATUS "Using LLVM: ${HALIDE_LLVM_PREFIX}")
+	message(STATUS "Using LLVM: ${HALIDE_LLVM_ROOT}")
 else()
-	message(WARNING "LLVM could not be found at ${HALIDE_LLVM_PREFIX}")
+	message(WARNING "LLVM could not be found at ${HALIDE_LLVM_ROOT}")
 endif()
 
 # halide
 
-set(HALIDE_INCLUDE_DIR "${CONAN_HALIDE_ROOT}/include")
-set(HALIDE_LIBRARY_DIR "${CONAN_HALIDE_ROOT}/lib")
+set(HALIDE_INCLUDE_DIR "" CACHE PATH "Halide include directory")
+set(HALIDE_LIBRARY_DIR "" CACHE PATH "Halide library directory")
+
+if(USE_CONAN)
+	set(HALIDE_INCLUDE_DIR "${CONAN_HALIDE_ROOT}/include")
+	set(HALIDE_LIBRARY_DIR "${CONAN_HALIDE_ROOT}/lib")
+endif()
 
 if(NOT DEFINED WITH_HALIDE AND HALIDE_LLVM_FOUND)
 	set(WITH_HALIDE 1)
