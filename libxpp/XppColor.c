@@ -5,10 +5,6 @@
 #include <xpp/color.h>
 #include <xpp/primitive.h>
 
-#ifdef WITH_HALIDE
-#include "halide/XppColor_halide.c"
-#endif
-
 #ifdef WITH_SIMD
 #include "simd/simd.h"
 #endif

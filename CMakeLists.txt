@@ -4,10 +4,99 @@ project(xpp C)
 
 include(CTest)
 
+set(CMAKE_POSITION_INDEPENDENT_CODE ON)
+
 set(CMAKE_MODULE_PATH "${CMAKE_SOURCE_DIR}/cmake")
 
-if(NOT DEFINED XPP_INSTALL)
-	set(XPP_INSTALL ON)
+option(USE_CONAN "Use conan package manager" ON)
+option(XPP_INSTALL "Generate cmake installation script" ON)
+
+# generate conan profile name
+if(ANDROID)
+	set(CONAN_PROFILE_OS "android")
+	set(CONAN_PROFILE_ARCH "${ANDROID_SYSROOT_ABI}")
+elseif(IOS)
+	set(CONAN_PROFILE_OS "ios")
+	set(CONAN_PROFILE_ARCH "universal")
+	set(CONAN_PROFILE_ARCHS "${CMAKE_OSX_ARCHITECTURES}")
+elseif(APPLE)
+	set(CONAN_PROFILE_OS "macos")
+	set(CONAN_PROFILE_ARCH "x86_64")
+elseif(WIN32)
+	set(CONAN_PROFILE_OS "windows")
+	if(CMAKE_SIZEOF_VOID_P EQUAL 8)
+		set(CONAN_PROFILE_ARCH "x86_64")
+	else()
+		set(CONAN_PROFILE_ARCH "x86")
+	endif()
+elseif(UNIX)
+	set(CONAN_PROFILE_OS "linux")
+	if(CMAKE_SIZEOF_VOID_P EQUAL 8)
+		set(CONAN_PROFILE_ARCH "x86_64")
+	else()
+		set(CONAN_PROFILE_ARCH "x86")
+	endif()
+endif()
+
+set(CONAN_PROFILE "${CONAN_PROFILE_OS}-${CONAN_PROFILE_ARCH}")
+
+# detect build host os/cpu architecture
+if(CMAKE_HOST_APPLE)
+    set(CONAN_BUILD_HOST "Macos")
+    set(CONAN_BUILD_ARCH "x86_64")
+elseif(CMAKE_HOST_WIN32)
+    set(CONAN_BUILD_HOST "Windows")
+    if(${CMAKE_HOST_SYSTEM_PROCESSOR} STREQUAL "AMD64")
+        set(CONAN_BUILD_ARCH "x86_64")
+    else()
+        set(CONAN_BUILD_ARCH "x86")
+    endif()
+elseif(CMAKE_HOST_UNIX)
+    set(CONAN_BUILD_HOST "Linux")
+    execute_process(
+    COMMAND dpkg-architecture -qDEB_HOST_ARCH
+        OUTPUT_VARIABLE CMD_OUTPUT
+        OUTPUT_STRIP_TRAILING_WHITESPACE
+    )
+    if(CMD_OUTPUT STREQUAL "i386")
+        set(CONAN_BUILD_ARCH "x86")
+    else()
+        set(CONAN_BUILD_ARCH "x86_64")
+    endif()
+endif()
+
+if(NOT CMAKE_BUILD_TYPE)
+	set(CMAKE_BUILD_TYPE "Release")
+endif()
+
+if(USE_CONAN)
+	include(conan)
+
+	conan_check()
+
+	conan_cmake_install(
+		CONANFILE conanfile.txt
+		PROFILE ${CONAN_PROFILE}
+		GENERATORS cmake
+		UPDATE
+		SETTINGS "os_build=${CONAN_BUILD_HOST};arch_build=${CONAN_BUILD_ARCH};build_type=${CMAKE_BUILD_TYPE}"
+	)
+
+	set(CONAN_DISABLE_CHECK_COMPILER ON)
+	conan_load_buildinfo()
+	conan_basic_setup(TARGETS NO_OUTPUT_DIRS)
+
+	if(NOT DEFINED CONAN_OUTPUT_DIRS)
+		if(CMAKE_GENERATOR STREQUAL "Ninja")
+			set(CONAN_OUTPUT_DIRS ON)
+		else()
+			set(CONAN_OUTPUT_DIRS OFF)
+		endif()
+	endif()
+
+	if(CONAN_OUTPUT_DIRS)
+		conan_output_dirs_setup()
+	endif()
 endif()
 
 include(CMakePackageConfigHelpers)
@@ -42,19 +131,6 @@ if(WIN32)
 endif()
 
 set(CMAKE_EXPORT_DIR "lib/cmake/xpp")
-
-if(NOT DEFINED WAYK_HOME)
-	if(WIN32)
-		set(WAYK_HOME "C:\\wayk")
-	else()
-		set(WAYK_HOME "/opt/wayk")
-	endif()
-endif()
-
-if(EXISTS "${WAYK_HOME}" AND NOT DEFINED WITH_WAYK)
-	set(WITH_WAYK 1)
-	include(WaykSDK)
-endif()
 
 if(NOT DEFINED WITH_SIMD)
 	set(WITH_SIMD 1)
@@ -93,7 +169,30 @@ else()
 	message(STATUS "libyuv was not found")
 endif()
 
+# clang+llvm
+
+set(HALIDE_LLVM_ROOT "" CACHE PATH "Halide LLVM root directory")
+
+if(USE_CONAN)
+	set(HALIDE_LLVM_ROOT "${CONAN_CLANG-LLVM_ROOT}")
+endif()
+
+if(EXISTS "${HALIDE_LLVM_ROOT}")
+	set(HALIDE_LLVM_FOUND 1)
+	message(STATUS "Using LLVM: ${HALIDE_LLVM_ROOT}")
+else()
+	message(WARNING "LLVM could not be found at ${HALIDE_LLVM_ROOT}")
+endif()
+
 # halide
+
+set(HALIDE_INCLUDE_DIR "" CACHE PATH "Halide include directory")
+set(HALIDE_LIBRARY_DIR "" CACHE PATH "Halide library directory")
+
+if(USE_CONAN)
+	set(HALIDE_INCLUDE_DIR "${CONAN_HALIDE_ROOT}/include")
+	set(HALIDE_LIBRARY_DIR "${CONAN_HALIDE_ROOT}/lib")
+endif()
 
 if(NOT DEFINED WITH_HALIDE AND HALIDE_LLVM_FOUND)
 	set(WITH_HALIDE 1)
@@ -129,4 +228,3 @@ if(XPP_INSTALL)
 		${PROJECT_BINARY_DIR}/xpp-config-version.cmake
 		DESTINATION "${CMAKE_EXPORT_DIR}")
 endif()
-

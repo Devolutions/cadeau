@@ -25,8 +25,6 @@
 #define func(x) Func x { #x }
 #define var(x) Var x { #x }
 
-#define RegisterGenerator(x) HALIDE_REGISTER_GENERATOR(x, #x)
-
 using namespace Halide;
 
 class YCoCgR420ToRgb : public Generator<YCoCgR420ToRgb>
@@ -35,7 +33,7 @@ public:
 	var(u);
 	var(v);
 	var(c);
-	
+
 	func(rgb);
 	func(t);
 	func(r);
@@ -274,12 +272,12 @@ public:
 	}
 };
 
-RegisterGenerator(RgbToYCoCgR420);
-RegisterGenerator(YCoCgR420ToRgb);
-RegisterGenerator(Compare8Stage1);
-RegisterGenerator(Compare32Stage1);
-RegisterGenerator(Downscale2x);
-RegisterGenerator(Copy);
+HALIDE_REGISTER_GENERATOR(YCoCgR420ToRgb, YCoCgR420ToRgb);
+HALIDE_REGISTER_GENERATOR(RgbToYCoCgR420, RgbToYCoCgR420);
+HALIDE_REGISTER_GENERATOR(Compare8Stage1, Compare8Stage1);
+HALIDE_REGISTER_GENERATOR(Compare32Stage1, Compare32Stage1);
+HALIDE_REGISTER_GENERATOR(Downscale2x, Downscale2x);
+HALIDE_REGISTER_GENERATOR(Copy, Copy);
 
 int main(int argc, char **argv)
 {

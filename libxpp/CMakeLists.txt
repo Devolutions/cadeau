@@ -23,6 +23,18 @@ if(WITH_HALIDE)
 	list(APPEND ${MODULE_PREFIX}_SOURCES ${HALIDE_GENERATED_OBJECTS})
 	set_source_files_properties(${HALIDE_GENERATED_HEADERS} PROPERTIES GENERATED TRUE)
 	set_source_files_properties(${HALIDE_GENERATED_OBJECTS} PROPERTIES GENERATED TRUE)
+
+	set(${MODULE_PREFIX}_HALIDE_SOURCES
+		halide/XppColor_halide.c
+		halide/XppCompare_halide.c
+		halide/XppCopy_halide.c
+		halide/XppHalide.c)
+
+	set(${MODULE_PREFIX}_HALIDE_HEADERS
+		halide/XppHalide.h)
+
+	list(APPEND ${MODULE_PREFIX}_SOURCES ${${MODULE_PREFIX}_HALIDE_SOURCES})
+	list(APPEND ${MODULE_PREFIX}_HEADERS ${${MODULE_PREFIX}_HALIDE_HEADERS})
 endif()
 
 if(WITH_SIMD)
@@ -86,4 +98,3 @@ if(XPP_INSTALL)
 	        FILE xpp-targets.cmake
 	        DESTINATION "${CMAKE_EXPORT_DIR}")
 endif()
-
