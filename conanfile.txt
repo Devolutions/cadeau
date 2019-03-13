@@ -1,5 +1,5 @@
 [build_requires]
-clang-llvm/7.0.1@devolutions/stable
+clang-llvm/6.0.1-1@devolutions/stable
 
 [requires]
 halide/1335f0219@devolutions/stable
