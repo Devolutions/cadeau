@@ -2,8 +2,8 @@
 clang-llvm/6.0.1-1@devolutions/stable
 
 [requires]
-halide/1335f0219@devolutions/stable
-libyuv/1661@devolutions/stable
+halide/1335f0219-1@devolutions/stable
+libyuv/1661-2@devolutions/stable
 
 [generators]
 cmake
