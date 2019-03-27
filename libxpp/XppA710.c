@@ -1,6 +1,19 @@
+#ifdef HAVE_CONFIG_H
+#include "config.h"
+#endif
+
+#include <xpp/math.h>
+#include <xpp/primitive.h>
+
+#include <xpp/color.h>
+
+#define CLAMP(_val, _min, _max) \
+	if (_val < _min) _val = _min; \
+	else if (_val > _max) _val = _max;
+
 /* 16-bit signed A710 */
 
-void Xpp_RGBToA710_16s_P3AC4R(const uint8_t* pSrc, uint32_t srcStep,
+XppStatus Xpp_RGBToA710_16s_P3AC4R(const uint8_t* pSrc, uint32_t srcStep,
 			       int16_t* pDst[3], uint32_t dstStep[3], uint32_t width, uint32_t height)
 {
 	int x, y;
@@ -65,9 +78,11 @@ void Xpp_RGBToA710_16s_P3AC4R(const uint8_t* pSrc, uint32_t srcStep,
 		pU = (int16_t*) (((uint8_t*) pU) + dstPad[1]);
 		pV = (int16_t*) (((uint8_t*) pV) + dstPad[2]);
 	}
+
+	return XppSuccess;
 }
 
-void Xpp_A710ToRGB_16s_P3AC4R(const int16_t* pSrc[3], uint32_t srcStep[3],
+XppStatus Xpp_A710ToRGB_16s_P3AC4R(const int16_t* pSrc[3], uint32_t srcStep[3],
 			       uint8_t* pDst, uint32_t dstStep, uint32_t width, uint32_t height)
 {
 	int x, y;
@@ -131,4 +146,6 @@ void Xpp_A710ToRGB_16s_P3AC4R(const int16_t* pSrc[3], uint32_t srcStep[3],
 		pU = (int16_t*) (((uint8_t*) pU) + srcPad[1]);
 		pV = (int16_t*) (((uint8_t*) pV) + srcPad[2]);
 	}
+
+	return XppSuccess;
 }

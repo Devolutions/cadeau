@@ -7,9 +7,13 @@ include_directories(include)
 set(${MODULE_PREFIX}_HEADERS "")
 
 set(${MODULE_PREFIX}_SOURCES
-	XppColor.c
+	XppAlpha.c
+	XppA710.c
+	XppYCbCr.c
+	XppYCoCgR.c
 	XppCopy.c
 	XppCompare.c
+	XppMath.c
 	XppScale.c
 	XppSimd.c
 	XppPrimitive.c)

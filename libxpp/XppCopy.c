@@ -8,10 +8,6 @@
 
 #include <xpp/copy.h>
 
-#ifdef WITH_SIMD
-#include "simd/simd.h"
-#endif
-
 int Xpp_Copy_c(uint8_t* pDstData, int nDstStep, int nXDst, int nYDst, int nWidth, int nHeight, uint8_t* pSrcData,
 		    int nSrcStep, int nXSrc, int nYSrc)
 {

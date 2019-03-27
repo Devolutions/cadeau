@@ -1,5 +1,14 @@
+#ifdef HAVE_CONFIG_H
+#include "config.h"
+#endif
 
-void Xpp_MultiplyAlpha(const uint8_t* pSrc, int32_t srcStep, uint8_t* pDst, int32_t dstStep, int width, int height)
+#include <xpp/math.h>
+#include <xpp/primitive.h>
+
+#include <xpp/color.h>
+
+XppStatus Xpp_MultiplyAlpha(const uint8_t* pSrc, uint32_t srcStep,
+	uint8_t* pDst, uint32_t dstStep, uint32_t width, uint32_t height)
 {
 	int x, y;
 	int srcPad;
@@ -24,10 +33,12 @@ void Xpp_MultiplyAlpha(const uint8_t* pSrc, int32_t srcStep, uint8_t* pDst, int3
 		pSrc += srcPad;
 		pDst += dstPad;
 	}
+
+	return XppSuccess;
 }
 
-void Xpp_UnmultiplyAlpha(const uint8_t* pSrc, int32_t srcStep, uint8_t* pDst, int32_t dstStep, int width,
-			 int height)
+XppStatus Xpp_UnmultiplyAlpha(const uint8_t* pSrc, uint32_t srcStep,
+	uint8_t* pDst, uint32_t dstStep, uint32_t width, uint32_t height)
 {
 	int x, y;
 	int srcPad;
@@ -52,4 +63,6 @@ void Xpp_UnmultiplyAlpha(const uint8_t* pSrc, int32_t srcStep, uint8_t* pDst, in
 		pSrc += srcPad;
 		pDst += dstPad;
 	}
+
+	return XppSuccess;
 }

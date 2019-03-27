@@ -1,6 +1,19 @@
+#ifdef HAVE_CONFIG_H
+#include "config.h"
+#endif
+
+#include <xpp/math.h>
+#include <xpp/primitive.h>
+
+#include <xpp/color.h>
+
+#define CLAMP(_val, _min, _max) \
+	if (_val < _min) _val = _min; \
+	else if (_val > _max) _val = _max;
+
 /* 16-bit signed YCoCg-R */
 
-void Xpp_RGBToYCoCgR_16s_P3AC4R(const uint8_t* pSrc, int32_t srcStep,
+XppStatus Xpp_RGBToYCoCgR_16s_P3AC4R(const uint8_t* pSrc, int32_t srcStep,
 	int16_t* pDst[3], int32_t dstStep[3], uint32_t width, uint32_t height)
 {
 	int x, y;
@@ -58,9 +71,11 @@ void Xpp_RGBToYCoCgR_16s_P3AC4R(const uint8_t* pSrc, int32_t srcStep,
 		pCo = (int16_t*) (((uint8_t*) pCo) + dstPad[1]);
 		pCg = (int16_t*) (((uint8_t*) pCg) + dstPad[2]);
 	}
+
+	return XppSuccess;
 }
 
-void Xpp_YCoCgRToRGB_16s_P3AC4R(const int16_t* pSrc[3], uint32_t srcStep[3],
+XppStatus Xpp_YCoCgRToRGB_16s_P3AC4R(const int16_t* pSrc[3], uint32_t srcStep[3],
 				uint8_t* pDst, uint32_t dstStep, uint32_t width, uint32_t height)
 {
 	int x, y;
@@ -117,5 +132,264 @@ void Xpp_YCoCgRToRGB_16s_P3AC4R(const int16_t* pSrc[3], uint32_t srcStep[3],
 		pCo = (int16_t*) (((uint8_t*) pCo) + srcPad[1]);
 		pCg = (int16_t*) (((uint8_t*) pCg) + srcPad[2]);
 	}
+
+	return XppSuccess;
 }
 
+/**
+ * YCoCgR420
+ */
+
+void Xpp_YCoCgR420ToRGB_8u_P3AC4R_c(const uint8_t* pSrc[3], int srcStep[3], uint8_t* pDst, int dstStep, int width,
+				    int height)
+{
+	uint32_t x, y;
+	uint32_t dstPad;
+	uint32_t srcPad[3];
+	uint32_t fullWidth;
+	uint32_t fullHeight;
+	uint32_t halfWidth;
+	uint32_t halfHeight;
+	const uint8_t* pY;
+	const uint8_t* pCo;
+	const uint8_t* pCg;
+	int R[4];
+	int G[4];
+	int B[4];
+	int Y[4];
+	int Co, Cg, t[4];
+	uint8_t* pRGB = pDst;
+
+	pY = pSrc[0];
+	pCo = pSrc[1];
+	pCg = pSrc[2];
+
+	fullWidth = width & ~0x1;
+	fullHeight = height & ~0x1;
+	halfWidth = fullWidth >> 1;
+	halfHeight = fullHeight >> 1;
+
+	srcPad[0] = (srcStep[0] - fullWidth);
+	srcPad[1] = (srcStep[1] - halfWidth);
+	srcPad[2] = (srcStep[2] - halfWidth);
+
+	dstPad = (dstStep - (fullWidth * 4));
+
+	for (y = 0; y < halfHeight; y++)
+	{
+		for (x = 0; x < halfWidth; x++)
+		{
+			/* 1st pixel */
+			Y[0] = pY[0];
+			Co = (int) ((*pCo++ << 1) - 0xFF);
+			Cg = (int) ((*pCg++ << 1) - 0xFF);
+
+			/* 2nd pixel */
+			Y[1] = pY[1];
+
+			pY = (uint8_t*) (((uint8_t*) pY) + srcStep[0]);
+
+			/* 3rd pixel */
+			Y[2] = pY[0];
+
+			/* 4th pixel */
+			Y[3] = pY[1];
+
+			pY = (uint8_t*) (((uint8_t*) pY) - srcStep[0] + 2);
+
+			t[0] = Y[0] - (Cg >> 1);
+			G[0] = Cg + t[0];
+			B[0] = t[0] - (Co >> 1);
+			R[0] = B[0] + Co;
+			CLAMP(R[0], 0, 255);
+			CLAMP(G[0], 0, 255);
+			CLAMP(B[0], 0, 255);
+
+			t[1] = Y[1] - (Cg >> 1);
+			G[1] = Cg + t[1];
+			B[1] = t[1] - (Co >> 1);
+			R[1] = B[1] + Co;
+			CLAMP(R[1], 0, 255);
+			CLAMP(G[1], 0, 255);
+			CLAMP(B[1], 0, 255);
+
+			t[2] = Y[2] - (Cg >> 1);
+			G[2] = Cg + t[2];
+			B[2] = t[2] - (Co >> 1);
+			R[2] = B[2] + Co;
+			CLAMP(R[2], 0, 255);
+			CLAMP(G[2], 0, 255);
+			CLAMP(B[2], 0, 255);
+
+			t[3] = Y[3] - (Cg >> 1);
+			G[3] = Cg + t[3];
+			B[3] = t[3] - (Co >> 1);
+			R[3] = B[3] + Co;
+			CLAMP(R[3], 0, 255);
+			CLAMP(G[3], 0, 255);
+			CLAMP(B[3], 0, 255);
+
+			/* 1st pixel */
+			pRGB[0] = (uint8_t) B[0];
+			pRGB[1] = (uint8_t) G[0];
+			pRGB[2] = (uint8_t) R[0];
+			pRGB[3] = 0xFF;
+
+			/* 2nd pixel */
+			pRGB[4] = (uint8_t) B[1];
+			pRGB[5] = (uint8_t) G[1];
+			pRGB[6] = (uint8_t) R[1];
+			pRGB[7] = 0xFF;
+
+			pRGB += dstStep;
+
+			/* 3rd pixel */
+			pRGB[0] = (uint8_t) B[2];
+			pRGB[1] = (uint8_t) G[2];
+			pRGB[2] = (uint8_t) R[2];
+			pRGB[3] = 0xFF;
+
+			/* 4th pixel */
+			pRGB[4] = (uint8_t) B[3];
+			pRGB[5] = (uint8_t) G[3];
+			pRGB[6] = (uint8_t) R[3];
+			pRGB[7] = 0xFF;
+
+			pRGB = pRGB - dstStep + 8;
+		}
+
+		pY = (uint8_t*) (((uint8_t*) pY) + srcPad[0] + srcStep[0]);
+		pCo = (uint8_t*) (((uint8_t*) pCo) + srcPad[1]);
+		pCg = (uint8_t*) (((uint8_t*) pCg) + srcPad[2]);
+		pRGB = pRGB + dstPad + dstStep;
+	}
+}
+
+void Xpp_RGBToYCoCgR420_8u_P3AC4R_c(const uint8_t* pSrc, int32_t srcStep, uint8_t* pDst[3], int32_t dstStep[3],
+				    int width, int height)
+{
+	uint32_t x, y;
+	uint32_t srcPad;
+	uint32_t dstPad[3];
+	uint32_t fullWidth;
+	uint32_t fullHeight;
+	uint32_t halfWidth;
+	uint32_t halfHeight;
+	uint8_t* pY;
+	uint8_t* pCo;
+	uint8_t* pCg;
+	int R[4];
+	int G[4];
+	int B[4];
+	int Y[4];
+	int Co[4];
+	int Cg[4];
+	int t[4];
+	int sCo, sCg;
+	const uint8_t* pRGB = pSrc;
+
+	pY = pDst[0];
+	pCo = pDst[1];
+	pCg = pDst[2];
+
+	fullWidth = width & ~0x1;
+	fullHeight = height & ~0x1;
+	halfWidth = fullWidth >> 1;
+	halfHeight = fullHeight >> 1;
+
+	srcPad = (srcStep - (fullWidth * 4));
+
+	dstPad[0] = (dstStep[0] - fullWidth);
+	dstPad[1] = (dstStep[1] - halfWidth);
+	dstPad[2] = (dstStep[2] - halfWidth);
+
+	for (y = 0; y < halfHeight; y++)
+	{
+		for (x = 0; x < halfWidth; x++)
+		{
+			/* 1st pixel */
+			B[0] = pRGB[0];
+			G[0] = pRGB[1];
+			R[0] = pRGB[2];
+
+			/* 2nd pixel */
+			B[1] = pRGB[4];
+			G[1] = pRGB[5];
+			R[1] = pRGB[6];
+
+			pRGB += srcStep;
+
+			/* 3rd pixel */
+			B[2] = pRGB[0];
+			G[2] = pRGB[1];
+			R[2] = pRGB[2];
+
+			/* 4th pixel */
+			B[3] = pRGB[4];
+			G[3] = pRGB[5];
+			R[3] = pRGB[6];
+
+			pRGB = pRGB - srcStep + 8;
+
+			Co[0] = R[0] - B[0];
+			t[0] = B[0] + (Co[0] >> 1);
+			Cg[0] = G[0] - t[0];
+			Y[0] = t[0] + (Cg[0] >> 1);
+
+			Co[1] = R[1] - B[1];
+			t[1] = B[1] + (Co[1] >> 1);
+			Cg[1] = G[1] - t[1];
+			Y[1] = t[1] + (Cg[1] >> 1);
+
+			Co[2] = R[2] - B[2];
+			t[2] = B[2] + (Co[2] >> 1);
+			Cg[2] = G[2] - t[2];
+			Y[2] = t[2] + (Cg[2] >> 1);
+
+			Co[3] = R[3] - B[3];
+			t[3] = B[3] + (Co[3] >> 1);
+			Cg[3] = G[3] - t[3];
+			Y[3] = t[3] + (Cg[3] >> 1);
+
+			sCo = (Co[0] + Co[1] + Co[2] + Co[3] + 1024) >> 3;
+			sCg = (Cg[0] + Cg[1] + Cg[2] + Cg[3] + 1024) >> 3;
+
+			/* 1st pixel */
+			pY[0] = (uint8_t) Y[0];
+			*pCo++ = (uint8_t) sCo;
+			*pCg++ = (uint8_t) sCg;
+
+			/* 2nd pixel */
+			pY[1] = (uint8_t) Y[1];
+
+			pY = pY + dstStep[0];
+
+			/* 3rd pixel */
+			pY[0] = (uint8_t) Y[2];
+
+			/* 4th pixel */
+			pY[1] = (uint8_t) Y[3];
+
+			pY = pY - dstStep[0] + 2;
+		}
+
+		pRGB = pRGB + srcPad + srcStep;
+		pY = pY + dstPad[0] + dstStep[0];
+		pCo = pCo + dstPad[1];
+		pCg = pCg + dstPad[2];
+	}
+}
+
+void Xpp_YCoCgR420ToRGB_8u_P3AC4R(const uint8_t* pSrc[3], int srcStep[3], uint8_t* pDst, int dstStep, int width,
+				  int height)
+{
+	XppPrimitives* primitives = XppPrimitives_Get();
+	primitives->YCoCgR420ToRGB_8u_P3AC4R(pSrc, srcStep, pDst, dstStep, width, height);
+}
+
+void Xpp_RGBToYCoCgR420_8u_P3AC4R(const uint8_t* pSrc, int32_t srcStep, uint8_t* pDst[3], int32_t dstStep[3],
+				  int width, int height)
+{
+	XppPrimitives* primitives = XppPrimitives_Get();
+	primitives->RGBToYCoCgR420_8u_P3AC4R(pSrc, srcStep, pDst, dstStep, width, height);
+}

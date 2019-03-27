@@ -76,4 +76,11 @@ typedef enum xpp_interpolation_mode {
 	XppInterpolationBox = 3
 } XppInterpolationMode;
 
+typedef int32_t XppStatus;
+
+enum xpp_status {
+	XppSuccess =  0,
+	XppFailure = -1,
+};
+
 #endif /* XPP_H */
