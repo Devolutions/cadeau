@@ -13,8 +13,8 @@
 
 /* 16-bit signed YCoCg-R */
 
-XppStatus Xpp_RGBToYCoCgR_16s_P3AC4R(const uint8_t* pSrc, int32_t srcStep,
-	int16_t* pDst[3], int32_t dstStep[3], uint32_t width, uint32_t height)
+XppStatus Xpp_RGBToYCoCgR_16s_P3AC4R(const uint8_t* pSrc, uint32_t srcStep,
+	int16_t* pDst[3], uint32_t dstStep[3], uint32_t width, uint32_t height)
 {
 	int x, y;
 	int srcPad;
@@ -140,8 +140,8 @@ XppStatus Xpp_YCoCgRToRGB_16s_P3AC4R(const int16_t* pSrc[3], uint32_t srcStep[3]
  * YCoCgR420
  */
 
-void Xpp_YCoCgR420ToRGB_8u_P3AC4R_c(const uint8_t* pSrc[3], int srcStep[3], uint8_t* pDst, int dstStep, int width,
-				    int height)
+void Xpp_YCoCgR420ToRGB_8u_P3AC4R_c(const uint8_t* pSrc[3], uint32_t srcStep[3],
+	uint8_t* pDst, uint32_t dstStep, uint32_t width, uint32_t height)
 {
 	uint32_t x, y;
 	uint32_t dstPad;
@@ -265,8 +265,8 @@ void Xpp_YCoCgR420ToRGB_8u_P3AC4R_c(const uint8_t* pSrc[3], int srcStep[3], uint
 	}
 }
 
-void Xpp_RGBToYCoCgR420_8u_P3AC4R_c(const uint8_t* pSrc, int32_t srcStep, uint8_t* pDst[3], int32_t dstStep[3],
-				    int width, int height)
+void Xpp_RGBToYCoCgR420_8u_P3AC4R_c(const uint8_t* pSrc, uint32_t srcStep, uint8_t* pDst[3], uint32_t dstStep[3],
+				    uint32_t width, uint32_t height)
 {
 	uint32_t x, y;
 	uint32_t srcPad;
@@ -380,15 +380,15 @@ void Xpp_RGBToYCoCgR420_8u_P3AC4R_c(const uint8_t* pSrc, int32_t srcStep, uint8_
 	}
 }
 
-void Xpp_YCoCgR420ToRGB_8u_P3AC4R(const uint8_t* pSrc[3], int srcStep[3], uint8_t* pDst, int dstStep, int width,
-				  int height)
+void Xpp_YCoCgR420ToRGB_8u_P3AC4R(const uint8_t* pSrc[3], uint32_t srcStep[3], uint8_t* pDst, uint32_t dstStep,
+	uint32_t width, uint32_t height)
 {
 	XppPrimitives* primitives = XppPrimitives_Get();
 	primitives->YCoCgR420ToRGB_8u_P3AC4R(pSrc, srcStep, pDst, dstStep, width, height);
 }
 
-void Xpp_RGBToYCoCgR420_8u_P3AC4R(const uint8_t* pSrc, int32_t srcStep, uint8_t* pDst[3], int32_t dstStep[3],
-				  int width, int height)
+void Xpp_RGBToYCoCgR420_8u_P3AC4R(const uint8_t* pSrc, uint32_t srcStep, uint8_t* pDst[3], uint32_t dstStep[3],
+	uint32_t width, uint32_t height)
 {
 	XppPrimitives* primitives = XppPrimitives_Get();
 	primitives->RGBToYCoCgR420_8u_P3AC4R(pSrc, srcStep, pDst, dstStep, width, height);

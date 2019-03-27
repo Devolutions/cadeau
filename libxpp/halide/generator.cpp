@@ -30,9 +30,9 @@ using namespace Halide;
 class YCoCgR420ToRgb : public Generator<YCoCgR420ToRgb>
 {
 public:
-	var(u);
-	var(v);
-	var(c);
+	Var u { "u" };
+	Var v { "v" };
+	Var c { "c" };
 
 	func(rgb);
 	func(t);
@@ -69,9 +69,9 @@ public:
 class RgbToYCoCgR420 : public Generator<RgbToYCoCgR420>
 {
 public:
-	var(u);
-	var(v);
-	var(c);
+	Var u { "u" };
+	Var v { "v" };
+	Var c { "c" };
 	
 	func(y);
 	func(co);

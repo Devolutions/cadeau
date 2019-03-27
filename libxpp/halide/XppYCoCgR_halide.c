@@ -10,8 +10,8 @@
 
 #include "XppHalide.h"
 
-void Xpp_RGBToYCoCgR420_8u_P3AC4R_halide(const uint8_t* pSrc, int32_t srcStep, uint8_t* pDst[3],
-					      int32_t dstStep[3], int width, int height)
+void Xpp_RGBToYCoCgR420_8u_P3AC4R_halide(const uint8_t* pSrc, uint32_t srcStep, uint8_t* pDst[3],
+					      uint32_t dstStep[3], uint32_t width, uint32_t height)
 {
 	HALIDE_BUFFER_DEFINE(inRgb);
 	HALIDE_BUFFER_DEFINE(outY);
@@ -26,8 +26,8 @@ void Xpp_RGBToYCoCgR420_8u_P3AC4R_halide(const uint8_t* pSrc, int32_t srcStep, u
 	RgbToYCoCgR420(&inRgb, &outY, &outCo, &outCg);
 }
 
-void Xpp_YCoCgR420ToRGB_8u_P3AC4R_halide(const uint8_t* pSrc[3], int srcStep[3], uint8_t* pDst, int dstStep,
-					      int width, int height)
+void Xpp_YCoCgR420ToRGB_8u_P3AC4R_halide(const uint8_t* pSrc[3], uint32_t srcStep[3], uint8_t* pDst, uint32_t dstStep,
+					 uint32_t width, uint32_t height)
 {
 	HALIDE_BUFFER_DEFINE(outRgb);
 	HALIDE_BUFFER_DEFINE(inY);
