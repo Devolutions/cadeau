@@ -25,6 +25,10 @@ extern "C" {
 #define clamp(_x, _lo, _hi)	(((_x) > (_hi)) ? (_hi) : (((_x) < (_lo)) ? (_lo) : (_x)))
 #endif
 
+XPP_EXPORT void Xpp_MulC_16s_I(int16_t val, int16_t* pSrcDst, int len);
+
+XPP_EXPORT void Xpp_DivC_16s_I(int16_t val, int16_t* pSrcDst, int len);
+
 #ifdef __cplusplus
 }
 #endif
