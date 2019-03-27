@@ -3,35 +3,9 @@
 
 #include <xpp/xpp.h>
 
-#define XPP_COLOR_FORMAT_XRGB		0
-#define XPP_COLOR_FORMAT_YUV420		1
-#define XPP_COLOR_FORMAT_YCOCGR		2
-#define XPP_COLOR_FORMAT_YCOCGR420	3
-
 #ifdef __cplusplus
 extern "C" {
 #endif
-
-XPP_EXPORT void Xpp_YCoCgR420ToRGB_8u_P3AC4R(const uint8_t* pSrc[3], int srcStep[3], uint8_t* pDst, int dstStep,
-						   int width, int height);
-
-XPP_EXPORT void Xpp_RGBToYCoCgR420_8u_P3AC4R(const uint8_t* pSrc, int32_t srcStep, uint8_t* pDst[3],
-						   int32_t dstStep[3], int width, int height);
-
-XPP_EXPORT void Xpp_RGBToYCoCgR420_8u_P3AC4R_ds2x(const uint8_t* pSrc, int32_t srcStep, uint8_t* pDst[3],
-							int32_t dstStep[3], int width, int height);
-
-XPP_EXPORT void Xpp_YCoCgR420ToRGB_8u_P3AC4R_c(const uint8_t* pSrc[3], int srcStep[3], uint8_t* pDst, int dstStep,
-						     int width, int height);
-
-XPP_EXPORT void Xpp_RGBToYCoCgR420_8u_P3AC4R_c(const uint8_t* pSrc, int32_t srcStep, uint8_t* pDst[3],
-						     int32_t dstStep[3], int width, int height);
-
-XPP_EXPORT void Xpp_Halide_RGBToYCoCgR420_8u_P3AC4R(const uint8_t* pSrc, int32_t srcStep, uint8_t* pDst[3],
-							  int32_t dstStep[3], int width, int height);
-
-XPP_EXPORT void Xpp_Halide_YCoCgR420ToRGB_8u_P3AC4R(const uint8_t* pSrc[3], int srcStep[3], uint8_t* pDst,
-							  int dstStep, int width, int height);
 
 /**
  * Alpha
@@ -72,6 +46,24 @@ XPP_EXPORT XppStatus Xpp_YCoCgRToRGB_16s_P3AC4R(const int16_t* pSrc[3], uint32_t
 
 XPP_EXPORT XppStatus Xpp_RGBToYCoCgR_16s_P3AC4R(const uint8_t* pSrc, int32_t srcStep,
 					   int16_t* pDst[3], int32_t dstStep[3], uint32_t width, uint32_t height);
+
+XPP_EXPORT void Xpp_YCoCgR420ToRGB_8u_P3AC4R(const uint8_t* pSrc[3], int srcStep[3], uint8_t* pDst, int dstStep,
+					     int width, int height);
+
+XPP_EXPORT void Xpp_RGBToYCoCgR420_8u_P3AC4R(const uint8_t* pSrc, int32_t srcStep, uint8_t* pDst[3],
+					     int32_t dstStep[3], int width, int height);
+
+XPP_EXPORT void Xpp_YCoCgR420ToRGB_8u_P3AC4R_c(const uint8_t* pSrc[3], int srcStep[3], uint8_t* pDst, int dstStep,
+					       int width, int height);
+
+XPP_EXPORT void Xpp_RGBToYCoCgR420_8u_P3AC4R_c(const uint8_t* pSrc, int32_t srcStep, uint8_t* pDst[3],
+					       int32_t dstStep[3], int width, int height);
+
+XPP_EXPORT void Xpp_RGBToYCoCgR420_8u_P3AC4R_halide(const uint8_t* pSrc, int32_t srcStep, uint8_t* pDst[3],
+						    int32_t dstStep[3], int width, int height);
+
+XPP_EXPORT void Xpp_YCoCgR420ToRGB_8u_P3AC4R_halide(const uint8_t* pSrc[3], int srcStep[3], uint8_t* pDst, int dstStep,
+						    int width, int height);
 
 #ifdef __cplusplus
 }

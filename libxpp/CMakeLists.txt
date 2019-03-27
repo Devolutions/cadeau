@@ -29,7 +29,7 @@ if(WITH_HALIDE)
 	set_source_files_properties(${HALIDE_GENERATED_OBJECTS} PROPERTIES GENERATED TRUE)
 
 	set(${MODULE_PREFIX}_HALIDE_SOURCES
-		halide/XppColor_halide.c
+		halide/XppYCoCgR_halide.c
 		halide/XppCompare_halide.c
 		halide/XppCopy_halide.c
 		halide/XppHalide.c)
