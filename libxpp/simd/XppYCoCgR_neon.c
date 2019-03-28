@@ -44,7 +44,7 @@
 	if (_val < _min) _val = _min; \
 	else if (_val > _max) _val = _max;
 
-void Xpp_YCoCgR420ToRGB_8u_P3AC4R_simd(const uint8_t* pSrc[3],
+XppStatus Xpp_YCoCgR420ToRGB_8u_P3AC4R_simd(const uint8_t* pSrc[3],
 	uint32_t srcStep[3], uint8_t* pDst, uint32_t dstStep, uint32_t width, uint32_t height)
 {
 	uint32_t x;
@@ -206,6 +206,8 @@ void Xpp_YCoCgR420ToRGB_8u_P3AC4R_simd(const uint8_t* pSrc[3],
 		pCg = (uint8_t*) (((uint8_t*) pCg) + srcPad[2]);
 		pRGB = pRGB + dstPad + dstStep;
 	}
+
+	return XppSuccess;
 }
 
 #if BITS == 32
@@ -252,7 +254,7 @@ static __inline int16x8_t __attribute__((__always_inline__))
 	vst1q_u8(pY, vcombine_u8(vqmovun_s16(yl), vqmovun_s16(yh)));  \
 }
 
-void Xpp_RGBToYCoCgR420_8u_P3AC4R_simd(const uint8_t* pSrc, uint32_t srcStep,
+XppStatus Xpp_RGBToYCoCgR420_8u_P3AC4R_simd(const uint8_t* pSrc, uint32_t srcStep,
 	uint8_t* pDst[3], uint32_t dstStep[3], uint32_t width, uint32_t height)
 {
 	uint32_t x;
@@ -398,4 +400,6 @@ void Xpp_RGBToYCoCgR420_8u_P3AC4R_simd(const uint8_t* pSrc, uint32_t srcStep,
 		pCo = pCo + dstPad[1];
 		pCg = pCg + dstPad[2];
 	}
+
+	return XppSuccess;
 }

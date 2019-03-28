@@ -117,7 +117,7 @@
 	}  \
 }
 
-int Xpp_Copy_simd(uint8_t* pDstData, int nDstStep, int nXDst, int nYDst,
+XppStatus Xpp_Copy_simd(uint8_t* pDstData, int nDstStep, int nXDst, int nYDst,
 	int nWidth, int nHeight, uint8_t* pSrcData, int nSrcStep, int nXSrc, int nYSrc)
 {
 	int x;
@@ -182,7 +182,7 @@ int Xpp_Copy_simd(uint8_t* pDstData, int nDstStep, int nXDst, int nYDst,
 		_mm_mfence();
 	}
 
-	return 1;
+	return XppSuccess;
 }
 
 #define MOVE_LOAD(reg, ptr, load_fct)  \
@@ -292,7 +292,7 @@ int Xpp_Copy_simd(uint8_t* pDstData, int nDstStep, int nXDst, int nYDst,
 	}  \
 }
 
-int Xpp_Move_simd(uint8_t* pData, int nStep, int nXDst, int nYDst,
+XppStatus Xpp_Move_simd(uint8_t* pData, int nStep, int nXDst, int nYDst,
 	int nWidth, int nHeight, int nXSrc, int nYSrc)
 {
 	int x;
@@ -343,7 +343,7 @@ int Xpp_Move_simd(uint8_t* pData, int nStep, int nXDst, int nYDst,
 		}
 	}
 
-	return 1;
+	return XppSuccess;
 }
 
 #define DOSCALE(pSrcPixel)  \
@@ -376,7 +376,7 @@ int Xpp_Move_simd(uint8_t* pData, int nStep, int nXDst, int nYDst,
 	sumh = _mm_add_epi16(sumh, xmm1);  \
 }
 
-int Xpp_CopyFromRetina_simd(uint8_t* pDstData, int nDstStep, int nXDst,
+XppStatus Xpp_CopyFromRetina_simd(uint8_t* pDstData, int nDstStep, int nXDst,
 	int nYDst, int nWidth, int nHeight, uint8_t* pSrcData, int nSrcStep, int nXSrc,
 	int nYSrc)
 {
@@ -439,5 +439,5 @@ int Xpp_CopyFromRetina_simd(uint8_t* pDstData, int nDstStep, int nXDst,
 		pDstPixel = &pDstPixel[nDstPad];
 	}
 
-	return 1;
+	return XppSuccess;
 }

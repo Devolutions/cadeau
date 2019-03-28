@@ -16,19 +16,19 @@ extern "C" {
 #define XPP_PRIMITIVES_HALIDE	0x4
 #define XPP_PRIMITIVES_ALL		0x7
 
-typedef int(*fnXpp_Compare32)(uint8_t* pData1, int step1, uint8_t* pData2, int step2, int width, int height,
+typedef XppStatus (*fnXpp_Compare32)(uint8_t* pData1, int step1, uint8_t* pData2, int step2, int width, int height,
 				       XppRect* rect);
-typedef int(*fnXpp_Compare8)(uint8_t* pData1, int step1, uint8_t* pData2, int step2, int width, int height,
+typedef XppStatus (*fnXpp_Compare8)(uint8_t* pData1, int step1, uint8_t* pData2, int step2, int width, int height,
 				      XppRect* rect);
-typedef int(*fnXpp_Copy)(uint8_t* pDstData, int nDstStep, int nXDst, int nYDst, int nWidth, int nHeight,
+typedef XppStatus (*fnXpp_Copy)(uint8_t* pDstData, int nDstStep, int nXDst, int nYDst, int nWidth, int nHeight,
 				  uint8_t* pSrcData, int nSrcStep, int nXSrc, int nYSrc);
-typedef int(*fnXpp_Move)(uint8_t* pData, int nStep, int nXDst, int nYDst, int nWidth, int nHeight, int nXSrc,
+typedef XppStatus (*fnXpp_Move)(uint8_t* pData, int nStep, int nXDst, int nYDst, int nWidth, int nHeight, int nXSrc,
 				  int nYSrc);
-typedef int(*fnXpp_CopyFromRetina)(uint8_t* pDstData, int nDstStep, int nXDst, int nYDst, int nWidth,
+typedef XppStatus (*fnXpp_CopyFromRetina)(uint8_t* pDstData, int nDstStep, int nXDst, int nYDst, int nWidth,
 					    int nHeight, uint8_t* pSrcData, int nSrcStep, int nXSrc, int nYSrc);
-typedef void(*fnXpp_YCoCgR420ToRGB_8u_P3AC4R)(const uint8_t* pSrc[3], uint32_t srcStep[3], uint8_t* pDst,
+typedef XppStatus (*fnXpp_YCoCgR420ToRGB_8u_P3AC4R)(const uint8_t* pSrc[3], uint32_t srcStep[3], uint8_t* pDst,
 						       uint32_t dstStep, uint32_t width, uint32_t height);
-typedef void(*fnXpp_RGBToYCoCgR420_8u_P3AC4R)(const uint8_t* pSrc, uint32_t srcStep, uint8_t* pDst[3],
+typedef XppStatus (*fnXpp_RGBToYCoCgR420_8u_P3AC4R)(const uint8_t* pSrc, uint32_t srcStep, uint8_t* pDst[3],
 						       uint32_t dstStep[3], uint32_t width, uint32_t height);
 
 typedef struct now_primitives

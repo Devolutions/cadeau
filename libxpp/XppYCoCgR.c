@@ -140,7 +140,7 @@ XppStatus Xpp_YCoCgRToRGB_16s_P3AC4R(const int16_t* pSrc[3], uint32_t srcStep[3]
  * YCoCgR420
  */
 
-void Xpp_YCoCgR420ToRGB_8u_P3AC4R_c(const uint8_t* pSrc[3], uint32_t srcStep[3],
+XppStatus Xpp_YCoCgR420ToRGB_8u_P3AC4R_c(const uint8_t* pSrc[3], uint32_t srcStep[3],
 	uint8_t* pDst, uint32_t dstStep, uint32_t width, uint32_t height)
 {
 	uint32_t x, y;
@@ -263,9 +263,11 @@ void Xpp_YCoCgR420ToRGB_8u_P3AC4R_c(const uint8_t* pSrc[3], uint32_t srcStep[3],
 		pCg = (uint8_t*) (((uint8_t*) pCg) + srcPad[2]);
 		pRGB = pRGB + dstPad + dstStep;
 	}
+
+	return XppSuccess;
 }
 
-void Xpp_RGBToYCoCgR420_8u_P3AC4R_c(const uint8_t* pSrc, uint32_t srcStep, uint8_t* pDst[3], uint32_t dstStep[3],
+XppStatus Xpp_RGBToYCoCgR420_8u_P3AC4R_c(const uint8_t* pSrc, uint32_t srcStep, uint8_t* pDst[3], uint32_t dstStep[3],
 				    uint32_t width, uint32_t height)
 {
 	uint32_t x, y;
@@ -378,18 +380,20 @@ void Xpp_RGBToYCoCgR420_8u_P3AC4R_c(const uint8_t* pSrc, uint32_t srcStep, uint8
 		pCo = pCo + dstPad[1];
 		pCg = pCg + dstPad[2];
 	}
+
+	return XppSuccess;
 }
 
-void Xpp_YCoCgR420ToRGB_8u_P3AC4R(const uint8_t* pSrc[3], uint32_t srcStep[3], uint8_t* pDst, uint32_t dstStep,
+XppStatus Xpp_YCoCgR420ToRGB_8u_P3AC4R(const uint8_t* pSrc[3], uint32_t srcStep[3], uint8_t* pDst, uint32_t dstStep,
 	uint32_t width, uint32_t height)
 {
 	XppPrimitives* primitives = XppPrimitives_Get();
-	primitives->YCoCgR420ToRGB_8u_P3AC4R(pSrc, srcStep, pDst, dstStep, width, height);
+	return primitives->YCoCgR420ToRGB_8u_P3AC4R(pSrc, srcStep, pDst, dstStep, width, height);
 }
 
-void Xpp_RGBToYCoCgR420_8u_P3AC4R(const uint8_t* pSrc, uint32_t srcStep, uint8_t* pDst[3], uint32_t dstStep[3],
+XppStatus Xpp_RGBToYCoCgR420_8u_P3AC4R(const uint8_t* pSrc, uint32_t srcStep, uint8_t* pDst[3], uint32_t dstStep[3],
 	uint32_t width, uint32_t height)
 {
 	XppPrimitives* primitives = XppPrimitives_Get();
-	primitives->RGBToYCoCgR420_8u_P3AC4R(pSrc, srcStep, pDst, dstStep, width, height);
+	return primitives->RGBToYCoCgR420_8u_P3AC4R(pSrc, srcStep, pDst, dstStep, width, height);
 }

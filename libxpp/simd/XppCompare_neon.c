@@ -249,7 +249,7 @@ int Xpp_Compare32_simd(uint8_t* pData1, int step1, uint8_t* pData2, int step2,
 }
 
 
-int Xpp_Compare32_simd(uint8_t* pData1, int step1, uint8_t* pData2, int step2,
+XppStatus Xpp_Compare32_simd(uint8_t* pData1, int step1, uint8_t* pData2, int step2,
 	int width, int height, XppRect* rect)
 {
 	bool equal;
@@ -379,7 +379,7 @@ int Xpp_Compare32_simd(uint8_t* pData1, int step1, uint8_t* pData2, int step2,
 	rect->right = r;
 	rect->bottom = b;
 
-	return 1;
+	return XppSuccess;
 }
 
 #endif
@@ -404,7 +404,7 @@ int Xpp_Compare32_simd(uint8_t* pData1, int step1, uint8_t* pData2, int step2,
 
 #if !defined(__APPLE__) || !defined(__aarch64__)
 
-int Xpp_Compare8_simd(uint8_t* pData1, int step1, uint8_t* pData2, int step2,
+XppStatus Xpp_Compare8_simd(uint8_t* pData1, int step1, uint8_t* pData2, int step2,
 	int width, int height, XppRect* rect)
 {
 	int x, y;
@@ -500,7 +500,7 @@ int Xpp_Compare8_simd(uint8_t* pData1, int step1, uint8_t* pData2, int step2,
 	rect->right = r;
 	rect->bottom = b;
 
-	return 1;
+	return XppSuccess;
 }
 
 #endif

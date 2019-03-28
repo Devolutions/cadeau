@@ -68,10 +68,10 @@ int Xpp_Compare8_simd(uint8_t* pData1, int step1, uint8_t* pData2, int step2,
 
 #endif
 
-void Xpp_YCoCgR420ToRGB_8u_P3AC4R_simd(const uint8_t* pSrc[3],
+XppStatus Xpp_YCoCgR420ToRGB_8u_P3AC4R_simd(const uint8_t* pSrc[3],
 	uint32_t srcStep[3], uint8_t* pDst, uint32_t dstStep, uint32_t width, uint32_t height);
 
-void Xpp_RGBToYCoCgR420_8u_P3AC4R_simd(const uint8_t* pSrc, uint32_t srcStep,
+XppStatus Xpp_RGBToYCoCgR420_8u_P3AC4R_simd(const uint8_t* pSrc, uint32_t srcStep,
 	uint8_t* pDst[3], uint32_t dstStep[3], uint32_t width, uint32_t height);
 
 #endif
