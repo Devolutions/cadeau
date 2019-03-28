@@ -8,7 +8,7 @@
 
 #include <xpp/compare.h>
 
-int Xpp_Compare32_c(uint8_t* pData1, int step1, uint8_t* pData2,
+XppStatus Xpp_Compare32_c(uint8_t* pData1, int step1, uint8_t* pData2,
 	int step2, int width, int height, XppRect* rect)
 {
 	bool equal;
@@ -115,14 +115,14 @@ int Xpp_Compare32_c(uint8_t* pData1, int step1, uint8_t* pData2,
 	return 1;
 }
 
-int Xpp_Compare32(uint8_t* pData1, int step1, uint8_t* pData2, int step2, int width, int height,
+XppStatus Xpp_Compare32(uint8_t* pData1, int step1, uint8_t* pData2, int step2, int width, int height,
 		       XppRect* rect)
 {
 	XppPrimitives* primitives = XppPrimitives_Get();
 	return primitives->Compare32(pData1, step1, pData2, step2, width, height, rect);
 }
 
-int Xpp_Compare8_c(uint8_t* pData1, int step1, uint8_t* pData2, int step2, int width, int height,
+XppStatus Xpp_Compare8_c(uint8_t* pData1, int step1, uint8_t* pData2, int step2, int width, int height,
 			XppRect* rect)
 {
 	int x, y;
@@ -231,14 +231,14 @@ int Xpp_Compare8_c(uint8_t* pData1, int step1, uint8_t* pData2, int step2, int w
 	return 1;
 }
 
-int Xpp_Compare8(uint8_t* pData1, int step1, uint8_t* pData2, int step2, int width, int height,
+XppStatus Xpp_Compare8(uint8_t* pData1, int step1, uint8_t* pData2, int step2, int width, int height,
 		      XppRect* rect)
 {
 	XppPrimitives* primitives = XppPrimitives_Get();
 	return primitives->Compare8(pData1, step1, pData2, step2, width, height, rect);
 }
 
-int Xpp_Compare(uint8_t* pData1, int nStep1, int nWidth, int nHeight, uint8_t* pData2, int nStep2,
+XppStatus Xpp_Compare(uint8_t* pData1, int nStep1, int nWidth, int nHeight, uint8_t* pData2, int nStep2,
 		     XppRect* rect)
 {
 	return Xpp_Compare32(pData1, nStep1, pData2, nStep2, nWidth, nHeight, rect);

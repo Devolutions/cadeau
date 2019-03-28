@@ -11,7 +11,7 @@
 
 #include "XppHalide.h"
 
-int Xpp_Copy_halide(uint8_t* pDstData, int nDstStep, int nXDst, int nYDst,
+XppStatus Xpp_Copy_halide(uint8_t* pDstData, int nDstStep, int nXDst, int nYDst,
 	int nWidth, int nHeight, uint8_t* pSrcData, int nSrcStep, int nXSrc, int nYSrc)
 {
 	HALIDE_BUFFER_DEFINE(input);
@@ -24,5 +24,5 @@ int Xpp_Copy_halide(uint8_t* pDstData, int nDstStep, int nXDst, int nYDst,
 
 	Copy(&input, &output);
 
-	return 0;
+	return XppSuccess;
 }

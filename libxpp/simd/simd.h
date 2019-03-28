@@ -31,15 +31,15 @@ uint32_t override_simd(uint32_t simd);
 
 #else
 
-int Xpp_Copy_simd(uint8_t* pDstData, int nDstStep, int nXDst, int nYDst,
+XppStatus Xpp_Copy_simd(uint8_t* pDstData, int nDstStep, int nXDst, int nYDst,
 	int nWidth, int nHeight, uint8_t* pSrcData, int nSrcStep, int nXSrc, int nYSrc);
 
 #endif
 
-int Xpp_Move_simd(uint8_t* pData, int nStep, int nXDst, int nYDst,
+XppStatus Xpp_Move_simd(uint8_t* pData, int nStep, int nXDst, int nYDst,
 	int nWidth, int nHeight, int nXSrc, int nYSrc);
 
-int Xpp_CopyFromRetina_simd(uint8_t* pDstData, int nDstStep, int nXDst,
+XppStatus Xpp_CopyFromRetina_simd(uint8_t* pDstData, int nDstStep, int nXDst,
 	int nYDst, int nWidth, int nHeight, uint8_t* pSrcData, int nSrcStep, int nXSrc,
 	int nYSrc);
 
@@ -49,7 +49,7 @@ int Xpp_CopyFromRetina_simd(uint8_t* pDstData, int nDstStep, int nXDst,
 
 #else
 
-int Xpp_Compare32_simd(uint8_t* pData1, int step1, uint8_t* pData2, int step2,
+XppStatus Xpp_Compare32_simd(uint8_t* pData1, int step1, uint8_t* pData2, int step2,
 	int width, int height, XppRect* rect);
 
 #endif
@@ -63,7 +63,7 @@ int Xpp_Compare32_simd(uint8_t* pData1, int step1, uint8_t* pData2, int step2,
 
 #else
 
-int Xpp_Compare8_simd(uint8_t* pData1, int step1, uint8_t* pData2, int step2,
+XppStatus Xpp_Compare8_simd(uint8_t* pData1, int step1, uint8_t* pData2, int step2,
 	int width, int height, XppRect* rect);
 
 #endif

@@ -38,7 +38,7 @@
 	}  \
 }
 
-int Xpp_Compare32_simd(uint8_t* pData1, int step1, uint8_t* pData2, int step2,
+XppStatus Xpp_Compare32_simd(uint8_t* pData1, int step1, uint8_t* pData2, int step2,
 	int width, int height, XppRect* rect)
 {
 	bool allEqual;
@@ -379,7 +379,7 @@ XppStatus Xpp_Compare32_simd(uint8_t* pData1, int step1, uint8_t* pData2, int st
 	rect->right = r;
 	rect->bottom = b;
 
-	return XppSuccess;
+	return 1;
 }
 
 #endif
@@ -500,7 +500,7 @@ XppStatus Xpp_Compare8_simd(uint8_t* pData1, int step1, uint8_t* pData2, int ste
 	rect->right = r;
 	rect->bottom = b;
 
-	return XppSuccess;
+	return 1;
 }
 
 #endif

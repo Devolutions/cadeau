@@ -13,7 +13,7 @@
 
 #include "XppHalide.h"
 
-int Xpp_Compare32_halide(uint8_t* pData1, int step1, uint8_t* pData2, int step2, int width, int height,
+XppStatus Xpp_Compare32_halide(uint8_t* pData1, int step1, uint8_t* pData2, int step2, int width, int height,
 			      XppRect* rect)
 {
 	HALIDE_BUFFER_DEFINE(frame1Buffer);
@@ -56,10 +56,10 @@ int Xpp_Compare32_halide(uint8_t* pData1, int step1, uint8_t* pData2, int step2,
 	free(diffX);
 	free(diffY);
 
-	return 0;
+	return 1;
 }
 
-int Xpp_Compare8_halide(uint8_t* pData1, int step1, uint8_t* pData2, int step2, int width, int height,
+XppStatus Xpp_Compare8_halide(uint8_t* pData1, int step1, uint8_t* pData2, int step2, int width, int height,
 			     XppRect* rect)
 {
 	HALIDE_BUFFER_DEFINE(frame1Buffer);
@@ -102,5 +102,5 @@ int Xpp_Compare8_halide(uint8_t* pData1, int step1, uint8_t* pData2, int step2, 
 	free(diffX);
 	free(diffY);
 
-	return 0;
+	return 1;
 }

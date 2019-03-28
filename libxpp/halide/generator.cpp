@@ -22,9 +22,6 @@
 #define output_buffer_u(x, b, d) Output<Func> x { #x, UInt(b), d }
 #define output_buffer_i(x, b, d) Output<Func> x { #x, Int(b), d }
 
-#define func(x) Func x { #x }
-#define var(x) Var x { #x }
-
 using namespace Halide;
 
 class YCoCgR420ToRgb : public Generator<YCoCgR420ToRgb>
@@ -34,11 +31,11 @@ public:
 	Var v { "v" };
 	Var c { "c" };
 
-	func(rgb);
-	func(t);
-	func(r);
-	func(g);
-	func(b);
+	Func rgb { "rgb" };
+	Func t { "t" };
+	Func r { "r" };
+	Func g { "g" };
+	Func b { "b" };
 	
 	input_buffer_u(inputY, 8, 2);
 	input_buffer_u(inputCo, 8, 2);
@@ -72,13 +69,13 @@ public:
 	Var u { "u" };
 	Var v { "v" };
 	Var c { "c" };
-	
-	func(y);
-	func(co);
-	func(cg);
-	func(_co);
-	func(_cg);
-	func(t);
+
+	Func y { "y" };
+	Func co { "co" };
+	Func cg { "cg" };
+	Func _co { "_co" };
+	Func _cg { "_cg" };
+	Func t { "t" };
 	
 	input_buffer_u(inputRgb, 8, 3);
 	
@@ -108,11 +105,11 @@ public:
 class Compare32Stage1 : public Generator<Compare32Stage1>
 {
 public:
-	var(u);
-	var(v);
-	
-	func(vert);
-	func(horiz);
+	Var u { "u" };
+	Var v { "v" };
+
+	Func vert { "vert" };
+	Func horiz { "horiz" };
 	
 	input_value(width, int32_t);
 	input_value(height, int32_t);
@@ -141,11 +138,11 @@ public:
 class Compare8Stage1 : public Generator<Compare8Stage1>
 {
 public:
-	var(u);
-	var(v);
-	
-	func(vert);
-	func(horiz);
+	Var u { "u" };
+	Var v { "v" };
+
+	Func vert { "vert" };
+	Func horiz { "horiz" };
 	
 	input_value(width, int8_t);
 	input_value(height, int8_t);
@@ -174,8 +171,8 @@ public:
 class Copy : public Generator<Copy>
 {
 public:
-	var(u);
-	var(v);
+	Var u { "u" };
+	Var v { "v" };
 
 	input_buffer_u(input, 32, 2);
 	output_buffer_u(output, 32, 2);
@@ -194,11 +191,11 @@ public:
 class Downscale2x : public Generator<Downscale2x>
 {
 public:
-	var(u);
-	var(v);
-	var(c);
-	
-	func(input16);
+	Var u { "u" };
+	Var v { "v" };
+	Var c { "c" };
+
+	Func input16 { "input16" };
 	
 	input_buffer_u(input, 8, 3);
 	output_buffer_u(output, 8, 3);
@@ -225,17 +222,17 @@ Expr kernel_linear(Expr x)
 class Scale : public Generator<Scale>
 {
 public:
-	var(u);
-	var(v);
-	var(c);
-	var(k);
-	
-	func(kernelX);
-	func(kernelY);
-	func(kX);
-	func(kY);
-	func(resizedX);
-	func(resizedY);
+	Var u { "u" };
+	Var v { "v" };
+	Var c { "c" };
+	Var k { "k" };
+
+	Func kernelX { "kernelX" };
+	Func kernelY { "kernelY" };
+	Func kX { "kX" };
+	Func kY { "kY" };
+	Func resizedX { "resizedX" };
+	Func resizedY { "resizedY" };
 	
 	input_buffer_u(input, 8, 3);
 	input_value(scaleFactor, float);

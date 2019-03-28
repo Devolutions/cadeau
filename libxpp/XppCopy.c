@@ -118,7 +118,7 @@ XppStatus Xpp_CopyFromRetina_c(uint8_t* pDstData, int nDstStep, int nXDst, int n
 	return XppSuccess;
 }
 
-int Xpp_CopyFromRetina(uint8_t* pDstData, int nDstStep, int nXDst, int nYDst, int nWidth, int nHeight,
+XppStatus Xpp_CopyFromRetina(uint8_t* pDstData, int nDstStep, int nXDst, int nYDst, int nWidth, int nHeight,
 			    uint8_t* pSrcData, int nSrcStep, int nXSrc, int nYSrc)
 {
 	XppPrimitives* primitives = XppPrimitives_Get();
