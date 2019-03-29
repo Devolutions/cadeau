@@ -1,14 +1,7 @@
 #include <iostream>
 #include <Halide.h>
 
-#define i16(x) (cast<int16_t>(x))
-#define u8(x) (cast<uint8_t>(x))
-
 using namespace Halide;
-
-#define ycocgy(u, v) (i16(inputY(u, v)))
-#define ycocgco(u, v) ((i16(inputCo(u / 2, v / 2)) << 1) - 0xFF)
-#define ycocgcg(u, v) ((i16(inputCg(u / 2, v / 2)) << 1) - 0xFF)
 
 class YCoCgR420ToRgb : public Generator<YCoCgR420ToRgb>
 {
@@ -28,6 +21,10 @@ public:
 	Input<Func> inputCg { "inputCg", UInt(8), 2};
 
 	Output<Func> outputRgb { "outputRgb", UInt(8), 3 };
+
+#define ycocgy(u, v) (cast<int16_t>(inputY(u, v)))
+#define ycocgco(u, v) ((cast<int16_t>(inputCo(u / 2, v / 2)) << 1) - 255)
+#define ycocgcg(u, v) ((cast<int16_t>(inputCg(u / 2, v / 2)) << 1) - 255)
 	
 	void generate()
 	{
@@ -40,7 +37,10 @@ public:
 		Expr rg = clamp(g(u, v), 0, 255);
 		Expr rr = clamp(r(u, v), 0, 255);
 		
-		outputRgb(c, u, v) = select(c == 0, u8(rb), select(c == 1, u8(rg), select(c == 2, u8(rr), 255)));
+		outputRgb(c, u, v) =
+			select(c == 0, cast<uint8_t>(rb),
+			select(c == 1, cast<uint8_t>(rg),
+			select(c == 2, cast<uint8_t>(rr), 255)));
 	}
 		
 	void schedule()
@@ -48,12 +48,6 @@ public:
 		outputRgb.vectorize(u, 16, TailStrategy::GuardWithIf).parallel(v);
 	}
 };
-
-#define rgbb(u, v) (i16(inputRgb(0, u, v)))
-#define rgbg(u, v) (i16(inputRgb(1, u, v)))
-#define rgbr(u, v) (i16(inputRgb(2, u, v)))
-
-#define subsample(x) ((x(u * 2, v * 2) + x(u * 2 + 1, v * 2) + x(u * 2, v * 2 + 1) + x(u * 2 + 1, v * 2 + 1) + 1024) >> 3)
 
 class RgbToYCoCgR420 : public Generator<RgbToYCoCgR420>
 {
@@ -74,6 +68,12 @@ public:
 	Output<Func> outputY { "outputY", UInt(8), 2 };
 	Output<Func> outputCo { "outputCo", UInt(8), 2 };
 	Output<Func> outputCg { "outputCg", UInt(8), 2 };
+
+#define rgbb(u, v) (cast<int16_t>(inputRgb(0, u, v)))
+#define rgbg(u, v) (cast<int16_t>(inputRgb(1, u, v)))
+#define rgbr(u, v) (cast<int16_t>(inputRgb(2, u, v)))
+
+#define subsample(x) ((x(u * 2, v * 2) + x(u * 2 + 1, v * 2) + x(u * 2, v * 2 + 1) + x(u * 2 + 1, v * 2 + 1) + 1024) >> 3)
 	
 	void generate()
 	{
@@ -81,9 +81,9 @@ public:
 		t(u, v) = rgbb(u, v) + (_co(u, v) >> 1);
 		_cg(u, v) = rgbg(u, v) - t(u, v);
 		
-		outputY(u, v) = u8(t(u, v) + (_cg(u, v) >> 1));
-		outputCo(u, v) = u8(subsample(_co));
-		outputCg(u, v) = u8(subsample(_cg));
+		outputY(u, v) = cast<uint8_t>(t(u, v) + (_cg(u, v) >> 1));
+		outputCo(u, v) = cast<uint8_t>(subsample(_co));
+		outputCg(u, v) = cast<uint8_t>(subsample(_cg));
 	}
 	
 	void schedule()
@@ -182,8 +182,6 @@ public:
 	}
 };
 
-#define subsample3(x) ((x(u * 2, v * 2, c) + x(u * 2 + 1, v * 2, c) + x(u * 2, v * 2 + 1, c) + x(u * 2 + 1, v * 2 + 1, c) + 1024) >> 3)
-
 class Downscale2x : public Generator<Downscale2x>
 {
 public:
@@ -195,12 +193,14 @@ public:
 
 	Input<Func> input { "input", UInt(8), 3 };
 	Output<Func> output { "output", UInt(8), 3 };
+
+#define subsample3(x) ((x(u * 2, v * 2, c) + x(u * 2 + 1, v * 2, c) + x(u * 2, v * 2 + 1, c) + x(u * 2 + 1, v * 2 + 1, c) + 1024) >> 3)
 	
 	void generate()
 	{
-		input16(u, v, c) = i16(input(u, v, c));
+		input16(u, v, c) = cast<int16_t>(input(u, v, c));
 		
-		output(u, v, c) = u8(subsample3(input16));
+		output(u, v, c) = cast<uint8_t>(subsample3(input16));
 	}
 	
 	void schedule()
