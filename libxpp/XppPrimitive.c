@@ -19,7 +19,7 @@ bool XppPrimitives_Init(XppPrimitives* primitives, uint32_t flags)
 
 	Xpp_SimdInit();
 
-	memset(primitives, 0, sizeof(XppPrimitives));
+	xpp_memset(primitives, 0, sizeof(XppPrimitives));
 
 	if (flags & XPP_PRIMITIVES_GENERIC)
 	{

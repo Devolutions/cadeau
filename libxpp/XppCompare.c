@@ -23,7 +23,7 @@ XppStatus Xpp_Compare32_c(uint8_t* pData1, int step1, uint8_t* pData2,
 	bool rows[1024];
 
 	allEqual = true;
-	memset(rows, 0xFF, sizeof(rows));
+	xpp_memset(rows, 0xFF, sizeof(rows));
 
 	nrow = (height + 15) / 16;
 	ncol = (width + 15) / 16;

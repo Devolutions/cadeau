@@ -22,8 +22,8 @@ XppStatus Xpp_Compare32_halide(uint8_t* pData1, int step1, uint8_t* pData2, int 
 	HALIDE_BUFFER_DEFINE(diffYBuffer);
 
 	int i;
-	uint32_t* diffX = calloc(width, sizeof(uint32_t));
-	uint32_t* diffY = calloc(height, sizeof(uint32_t));
+	uint32_t* diffX = xpp_calloc(width, sizeof(uint32_t));
+	uint32_t* diffY = xpp_calloc(height, sizeof(uint32_t));
 
 	halide_setup_u32_buffer_t(&frame1Buffer, (uint32_t*) pData1, width, height, step1 / sizeof(uint32_t));
 	halide_setup_u32_buffer_t(&frame2Buffer, (uint32_t*) pData2, width, height, step2 / sizeof(uint32_t));
@@ -53,8 +53,8 @@ XppStatus Xpp_Compare32_halide(uint8_t* pData1, int step1, uint8_t* pData2, int 
 			rect->bottom = max(rect->bottom, i);
 	}
 
-	free(diffX);
-	free(diffY);
+	xpp_free(diffX);
+	xpp_free(diffY);
 
 	return 1;
 }
@@ -68,8 +68,8 @@ XppStatus Xpp_Compare8_halide(uint8_t* pData1, int step1, uint8_t* pData2, int s
 	HALIDE_BUFFER_DEFINE(diffYBuffer);
 
 	int i;
-	uint8_t* diffX = calloc(width, 1);
-	uint8_t* diffY = calloc(height, 1);
+	uint8_t* diffX = xpp_calloc(width, 1);
+	uint8_t* diffY = xpp_calloc(height, 1);
 
 	halide_setup_u8_buffer_t(&frame1Buffer, pData1, width, height, step1);
 	halide_setup_u8_buffer_t(&frame2Buffer, pData2, width, height, step2);
@@ -99,8 +99,8 @@ XppStatus Xpp_Compare8_halide(uint8_t* pData1, int step1, uint8_t* pData2, int s
 			rect->bottom = max(rect->bottom, i);
 	}
 
-	free(diffX);
-	free(diffY);
+	xpp_free(diffX);
+	xpp_free(diffY);
 
 	return 1;
 }

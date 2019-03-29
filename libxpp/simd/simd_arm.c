@@ -64,8 +64,8 @@ static int check_feature(char *buffer, char *feature)
 
 static int parse_proc_cpuinfo(int bufsize)
 {
-	char *buffer = (char *)malloc(bufsize);
-	FILE *fd;
+	char* buffer = (char*) xpp_malloc(bufsize);
+	FILE* fd;
 
 	if (!buffer)
 		return 0;
@@ -76,7 +76,7 @@ static int parse_proc_cpuinfo(int bufsize)
 			if (!strchr(buffer, '\n') && !feof(fd)) {
 				/* "impossible" happened - insufficient size of the buffer! */
 				fclose(fd);
-				free(buffer);
+				xpp_free(buffer);
 				return 0;
 			}
 			if (check_feature(buffer, "neon"))
@@ -84,7 +84,7 @@ static int parse_proc_cpuinfo(int bufsize)
 		}
 		fclose(fd);
 	}
-	free(buffer);
+	xpp_free(buffer);
 	return 1;
 }
 

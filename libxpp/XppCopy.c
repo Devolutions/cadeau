@@ -26,7 +26,7 @@ XppStatus Xpp_Copy_c(uint8_t* pDstData, int nDstStep, int nXDst, int nYDst, int 
 
 	for (y = 0; y < nHeight; y++)
 	{
-		memcpy(pDstPixel, pSrcPixel, nWidth * 4);
+		xpp_memcpy(pDstPixel, pSrcPixel, nWidth * 4);
 		pSrcPixel = &pSrcPixel[nSrcStep];
 		pDstPixel = &pDstPixel[nDstStep];
 	}

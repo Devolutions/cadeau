@@ -57,7 +57,7 @@ XppStatus Xpp_Compare32_simd(uint8_t* pData1, int step1, uint8_t* pData2, int st
 
 			th = min(height - y, 16);
 
-			memset(cols, 0xFF, sizeof(cols));
+			xpp_memset(cols, 0xFF, sizeof(cols));
 
 			for (k = 0; k < th; k++)
 			{
@@ -110,7 +110,7 @@ XppStatus Xpp_Compare32_simd(uint8_t* pData1, int step1, uint8_t* pData2, int st
 
 			th = min(height - y, 16);
 
-			memset(cols, 0xFF, sizeof(cols));
+			xpp_memset(cols, 0xFF, sizeof(cols));
 
 			for (k = 0; k < th; k++)
 			{

@@ -147,7 +147,7 @@ XppStatus Xpp_Copy_simd(uint8_t* pDstData, int nDstStep, int nXDst, int nYDst,
 	{
 		while (nHeight--)
 		{
-			memcpy(pDstPixel, pSrcPixel, nWidth * 4);
+			xpp_memcpy(pDstPixel, pSrcPixel, nWidth * 4);
 			pSrcPixel += nSrcStep;
 			pDstPixel += nDstStep;
 		}

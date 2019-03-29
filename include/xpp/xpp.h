@@ -83,4 +83,12 @@ enum xpp_status {
 	XppFailure = -1,
 };
 
+#define xpp_malloc(_size)		malloc(_size)
+#define xpp_calloc(_num, _size)		calloc(_num, _size)
+#define xpp_realloc(_ptr, _size)	realloc(_ptr, _size)
+#define xpp_free(_ptr)			free(_ptr)
+
+#define xpp_memcpy(_dst, _src, _size)	memcpy(_dst, _src, _size)
+#define xpp_memset(_ptr, _val, _size)	memset(_ptr, _val, _size)
+
 #endif /* XPP_H */

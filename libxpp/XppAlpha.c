@@ -15,7 +15,7 @@ XppStatus Xpp_MultiplyAlpha(const uint8_t* pSrc, uint32_t srcStep,
 	int dstPad;
 
 	srcPad = (srcStep - (width * 4));
-	dstPad = (srcStep - (width * 4));
+	dstPad = (dstStep - (width * 4));
 
 	for (y = 0; y < height; y++)
 	{
@@ -45,7 +45,7 @@ XppStatus Xpp_UnmultiplyAlpha(const uint8_t* pSrc, uint32_t srcStep,
 	int dstPad;
 
 	srcPad = (srcStep - (width * 4));
-	dstPad = (srcStep - (width * 4));
+	dstPad = (dstStep - (width * 4));
 
 	for (y = 0; y < height; y++)
 	{
