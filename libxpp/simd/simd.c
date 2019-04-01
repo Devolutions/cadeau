@@ -19,3 +19,25 @@
 #include "XppCompare_neon.c"
 #include "simd_arm.c"
 #endif
+
+#include <xpp/simd.h>
+
+uint32_t Xpp_SimdInit(void)
+{
+	return init_simd();
+}
+
+uint32_t Xpp_SimdGet(void)
+{
+	return get_simd();
+}
+
+uint32_t Xpp_SimdAuto(void)
+{
+	return auto_simd();
+}
+
+uint32_t Xpp_SimdSet(uint32_t simd)
+{
+	return override_simd(simd);
+}

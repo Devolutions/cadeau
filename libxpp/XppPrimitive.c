@@ -5,6 +5,10 @@
 #include "simd/simd.h"
 #endif
 
+#ifdef WITH_HALIDE
+#include "halide/XppHalide.h"
+#endif
+
 static XppPrimitives g_Primitives = { 0 };
 static bool primitivesInitialized = false;
 

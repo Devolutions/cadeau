@@ -25,12 +25,6 @@ XPP_EXPORT XppStatus Xpp_Compare32_c(uint8_t* pData1, int step1, uint8_t* pData2
 XPP_EXPORT XppStatus Xpp_Compare8_c(uint8_t* pData1, int step1, uint8_t* pData2, int step2, int width, int height,
 				    XppRect* rect);
 
-XPP_EXPORT XppStatus Xpp_Compare8_halide(uint8_t* pData1, int step1, uint8_t* pData2, int step2, int width, int height,
-					 XppRect* rect);
-
-XPP_EXPORT XppStatus Xpp_Compare32_halide(uint8_t* pData1, int step1, uint8_t* pData2, int step2, int width, int height,
-					  XppRect* rect);
-
 #ifdef __cplusplus
 }
 #endif

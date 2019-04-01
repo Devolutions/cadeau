@@ -15,7 +15,6 @@ set(${MODULE_PREFIX}_SOURCES
 	XppCompare.c
 	XppMath.c
 	XppScale.c
-	XppSimd.c
 	XppPrimitive.c)
 
 if(WITH_HALIDE)
