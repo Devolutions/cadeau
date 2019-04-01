@@ -9,6 +9,8 @@
 #include "halide/XppHalide.h"
 #endif
 
+#include "XppGeneric.h"
+
 static XppPrimitives g_Primitives = { 0 };
 static bool primitivesInitialized = false;
 
@@ -27,13 +29,13 @@ bool XppPrimitives_Init(XppPrimitives* primitives, uint32_t flags)
 
 	if (flags & XPP_PRIMITIVES_GENERIC)
 	{
-		primitives->Compare32 = Xpp_Compare32_c;
-		primitives->Compare8 = Xpp_Compare8_c;
-		primitives->Copy = Xpp_Copy_c;
-		primitives->CopyFromRetina = Xpp_CopyFromRetina_c;
-		primitives->Move = Xpp_Move_c;
-		primitives->RGBToYCoCgR420_8u_P3AC4R = Xpp_RGBToYCoCgR420_8u_P3AC4R_c;
-		primitives->YCoCgR420ToRGB_8u_P3AC4R = Xpp_YCoCgR420ToRGB_8u_P3AC4R_c;
+		primitives->Compare32 = Xpp_Compare32_generic;
+		primitives->Compare8 = Xpp_Compare8_generic;
+		primitives->Copy = Xpp_Copy_generic;
+		primitives->CopyFromRetina = Xpp_CopyFromRetina_generic;
+		primitives->Move = Xpp_Move_generic;
+		primitives->RGBToYCoCgR420_8u_P3AC4R = Xpp_RGBToYCoCgR420_8u_P3AC4R_generic;
+		primitives->YCoCgR420ToRGB_8u_P3AC4R = Xpp_YCoCgR420ToRGB_8u_P3AC4R_generic;
 
 		result = true;
 	}
@@ -76,8 +78,8 @@ XppPrimitives* XppPrimitives_Get()
 	g_Primitives.Compare32 = Xpp_Compare32_simd;
 	g_Primitives.Compare8 = Xpp_Compare8_simd;
 #else
-	g_Primitives.Compare32 = Xpp_Compare32_c;
-	g_Primitives.Compare8 = Xpp_Compare8_c;
+	g_Primitives.Compare32 = Xpp_Compare32_generic;
+	g_Primitives.Compare8 = Xpp_Compare8_generic;
 #endif
 #endif
 

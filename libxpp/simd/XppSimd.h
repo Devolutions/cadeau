@@ -27,7 +27,7 @@ uint32_t override_simd(uint32_t simd);
 /* Using memcpy() to implement the Copy algorithm always seems to be faster on
    Android, but our algorithm is faster on iOS. */
 
-#define Xpp_Copy_simd Xpp_Copy_c
+#define Xpp_Copy_simd Xpp_Copy_generic
 
 #else
 
@@ -45,7 +45,7 @@ XppStatus Xpp_CopyFromRetina_simd(uint8_t* pDstData, int nDstStep, int nXDst,
 
 #if !defined(LINEAR_COMPARE32) && (defined(__arm__) || defined(__aarch64__)) && defined(__ANDROID__)
 
-#define Xpp_Compare32_simd Xpp_Compare32_c
+#define Xpp_Compare32_simd Xpp_Compare32_generic
 
 #else
 
@@ -59,7 +59,7 @@ XppStatus Xpp_Compare32_simd(uint8_t* pData1, int step1, uint8_t* pData2, int st
 /* Our optimized uint32_t C Compare8 algorithm is faster than NEON when using
    64-bit code on iOS devices. */
 
-#define Xpp_Compare8_simd Xpp_Compare8_c
+#define Xpp_Compare8_simd Xpp_Compare8_generic
 
 #else
 

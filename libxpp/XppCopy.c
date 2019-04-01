@@ -8,7 +8,7 @@
 
 #include <xpp/copy.h>
 
-XppStatus Xpp_Copy_c(uint8_t* pDstData, int nDstStep, int nXDst, int nYDst, int nWidth, int nHeight, uint8_t* pSrcData,
+XppStatus Xpp_Copy_generic(uint8_t* pDstData, int nDstStep, int nXDst, int nYDst, int nWidth, int nHeight, uint8_t* pSrcData,
 		    int nSrcStep, int nXSrc, int nYSrc)
 {
 	int y;
@@ -41,7 +41,7 @@ XppStatus Xpp_Copy(uint8_t* pDstData, int nDstStep, int nXDst, int nYDst, int nW
 	return primitives->Copy(pDstData, nDstStep, nXDst, nYDst, nWidth, nHeight, pSrcData, nSrcStep, nXSrc, nYSrc);
 }
 
-XppStatus Xpp_Move_c(uint8_t* pData, int nStep, int nXDst, int nYDst, int nWidth, int nHeight, int nXSrc, int nYSrc)
+XppStatus Xpp_Move_generic(uint8_t* pData, int nStep, int nXDst, int nYDst, int nWidth, int nHeight, int nXSrc, int nYSrc)
 {
 	uint8_t* pSrcPixel;
 	uint8_t* pDstPixel;
@@ -53,7 +53,7 @@ XppStatus Xpp_Move_c(uint8_t* pData, int nStep, int nXDst, int nYDst, int nWidth
 	pDstPixel = &pData[((nYDst + nHeight - 1) * nStep) + (nXDst * 4)];
 
 	if (pSrcPixel > pDstPixel)
-		return Xpp_Copy_c(pData, nStep, nXDst, nYDst, nWidth, nHeight, pData,
+		return Xpp_Copy_generic(pData, nStep, nXDst, nYDst, nWidth, nHeight, pData,
 			nStep, nXSrc, nYSrc);
 
 	while (nHeight--)
@@ -72,7 +72,7 @@ XppStatus Xpp_Move(uint8_t* pData, int nStep, int nXDst, int nYDst, int nWidth, 
 	return primitives->Move(pData, nStep, nXDst, nYDst, nWidth, nHeight, nXSrc, nYSrc);
 }
 
-XppStatus Xpp_CopyFromRetina_c(uint8_t* pDstData, int nDstStep, int nXDst, int nYDst, int nWidth, int nHeight,
+XppStatus Xpp_CopyFromRetina_generic(uint8_t* pDstData, int nDstStep, int nXDst, int nYDst, int nWidth, int nHeight,
 			      uint8_t* pSrcData, int nSrcStep, int nXSrc, int nYSrc)
 {
 	int x, y;

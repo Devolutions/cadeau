@@ -53,12 +53,6 @@ XPP_EXPORT XppStatus Xpp_YCoCgR420ToRGB_8u_P3AC4R(const uint8_t* pSrc[3], uint32
 XPP_EXPORT XppStatus Xpp_RGBToYCoCgR420_8u_P3AC4R(const uint8_t* pSrc, uint32_t srcStep, uint8_t* pDst[3],
 					     uint32_t dstStep[3], uint32_t width, uint32_t height);
 
-XPP_EXPORT XppStatus Xpp_YCoCgR420ToRGB_8u_P3AC4R_c(const uint8_t* pSrc[3], uint32_t srcStep[3], uint8_t* pDst, uint32_t dstStep,
-					       uint32_t width, uint32_t height);
-
-XPP_EXPORT XppStatus Xpp_RGBToYCoCgR420_8u_P3AC4R_c(const uint8_t* pSrc, uint32_t srcStep, uint8_t* pDst[3],
-					       uint32_t dstStep[3], uint32_t width, uint32_t height);
-
 #ifdef __cplusplus
 }
 #endif
