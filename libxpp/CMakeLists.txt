@@ -7,11 +7,14 @@ include_directories(include)
 set(${MODULE_PREFIX}_HEADERS "")
 
 set(${MODULE_PREFIX}_SOURCES
-	XppColor.c
+	XppAlpha.c
+	XppA710.c
+	XppYCbCr.c
+	XppYCoCgR.c
 	XppCopy.c
 	XppCompare.c
+	XppMath.c
 	XppScale.c
-	XppSimd.c
 	XppPrimitive.c)
 
 if(WITH_HALIDE)
@@ -25,7 +28,7 @@ if(WITH_HALIDE)
 	set_source_files_properties(${HALIDE_GENERATED_OBJECTS} PROPERTIES GENERATED TRUE)
 
 	set(${MODULE_PREFIX}_HALIDE_SOURCES
-		halide/XppColor_halide.c
+		halide/XppYCoCgR_halide.c
 		halide/XppCompare_halide.c
 		halide/XppCopy_halide.c
 		halide/XppHalide.c)
@@ -41,9 +44,9 @@ if(WITH_SIMD)
 	add_definitions(-DWITH_SIMD)
 
 	list(APPEND ${MODULE_PREFIX}_SIMD_SOURCES
-		simd/simd.c)
+		simd/XppSimd.c)
 	list(APPEND ${MODULE_PREFIX}_SIMD_HEADERS
-		simd/simd.h)
+		simd/XppSimd.h)
 		
 	if(${CMAKE_SYSTEM_PROCESSOR} MATCHES "arm")
 		set(SIMD_COMPILE_FLAGS "-mfpu=neon")

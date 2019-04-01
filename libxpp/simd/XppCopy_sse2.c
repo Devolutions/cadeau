@@ -3,7 +3,7 @@
 #include <xpp/compare.h>
 
 #define XPP_SIMD_INTERNAL
-#include "simd.h"
+#include "XppSimd.h"
 #include "emmintrin.h"
 
 #if !defined(_MSC_VER)
@@ -117,7 +117,7 @@
 	}  \
 }
 
-int Xpp_Copy_simd(uint8_t* pDstData, int nDstStep, int nXDst, int nYDst,
+XppStatus Xpp_Copy_simd(uint8_t* pDstData, int nDstStep, int nXDst, int nYDst,
 	int nWidth, int nHeight, uint8_t* pSrcData, int nSrcStep, int nXSrc, int nYSrc)
 {
 	int x;
@@ -147,7 +147,7 @@ int Xpp_Copy_simd(uint8_t* pDstData, int nDstStep, int nXDst, int nYDst,
 	{
 		while (nHeight--)
 		{
-			memcpy(pDstPixel, pSrcPixel, nWidth * 4);
+			xpp_memcpy(pDstPixel, pSrcPixel, nWidth * 4);
 			pSrcPixel += nSrcStep;
 			pDstPixel += nDstStep;
 		}
@@ -182,7 +182,7 @@ int Xpp_Copy_simd(uint8_t* pDstData, int nDstStep, int nXDst, int nYDst,
 		_mm_mfence();
 	}
 
-	return 1;
+	return XppSuccess;
 }
 
 #define MOVE_LOAD(reg, ptr, load_fct)  \
@@ -292,7 +292,7 @@ int Xpp_Copy_simd(uint8_t* pDstData, int nDstStep, int nXDst, int nYDst,
 	}  \
 }
 
-int Xpp_Move_simd(uint8_t* pData, int nStep, int nXDst, int nYDst,
+XppStatus Xpp_Move_simd(uint8_t* pData, int nStep, int nXDst, int nYDst,
 	int nWidth, int nHeight, int nXSrc, int nYSrc)
 {
 	int x;
@@ -343,101 +343,5 @@ int Xpp_Move_simd(uint8_t* pData, int nStep, int nXDst, int nYDst,
 		}
 	}
 
-	return 1;
-}
-
-#define DOSCALE(pSrcPixel)  \
-{  \
-	/* xmm0 = (B0 G0 R0 X0 B1 G1 R1 X1 B2 G2 R2 X2 B3 G3 R3 X3) */  \
-	xmm0 = _mm_loadu_si128((__m128i *)(pSrcPixel));  \
-	/* xmm1 = (B4 G4 R4 X4 B5 G5 R5 X5 B6 G6 R6 X6 B7 G7 R7 X7) */  \
-	xmm1 = _mm_loadu_si128((__m128i *)((pSrcPixel) + 16));  \
-  \
-	/* xmm2 = (B0 G0 R0 X0 B2 G2 R2 X2 B4 G4 R4 X4 B6 G6 R6 X6) = SrcE */  \
-	xmm2 = _mm_castps_si128(_mm_shuffle_ps(_mm_castsi128_ps(xmm0),  \
-	                                       _mm_castsi128_ps(xmm1), 0x88));  \
-	/* xmm3 = (B1 G1 R1 X1 B3 G3 R3 X3 B5 G5 R5 X5 B7 G7 R7 X7) = SrcO */  \
-	xmm3 = _mm_castps_si128(_mm_shuffle_ps(_mm_castsi128_ps(xmm0),  \
-	                                       _mm_castsi128_ps(xmm1), 0xDD));  \
-  \
-	xmm4 = _mm_setzero_si128();  \
-	/* xmm0 = (B0 G0 R0 X0 B2 G2 R2 X2) */  \
-	xmm0 = _mm_unpacklo_epi8(xmm2, xmm4);  \
-	/* xmm1 = (B1 G1 R1 X1 B3 G3 R3 X3) */  \
-	xmm1 = _mm_unpacklo_epi8(xmm3, xmm4);  \
-	suml = _mm_add_epi16(suml, xmm0);  \
-	suml = _mm_add_epi16(suml, xmm1);  \
-  \
-	/* xmm0 = (B4 G4 R4 X4 B6 G6 R6 X6) */  \
-	xmm0 = _mm_unpackhi_epi8(xmm2, xmm4);  \
-	/* xmm1 = (B5 G5 R5 X5 B7 G7 R7 X7) */  \
-	xmm1 = _mm_unpackhi_epi8(xmm3, xmm4);  \
-	sumh = _mm_add_epi16(sumh, xmm0);  \
-	sumh = _mm_add_epi16(sumh, xmm1);  \
-}
-
-int Xpp_CopyFromRetina_simd(uint8_t* pDstData, int nDstStep, int nXDst,
-	int nYDst, int nWidth, int nHeight, uint8_t* pSrcData, int nSrcStep, int nXSrc,
-	int nYSrc)
-{
-	int x;
-	int nSrcPad;
-	int nDstPad;
-	uint32_t R, G, B;
-	uint8_t* pSrcPixel;
-	uint8_t* pDstPixel;
-	__m128i xmm0, xmm1, xmm2, xmm3, xmm4, suml, sumh;
-
-	if (nSrcStep < 0)
-		nSrcStep = 8 * nWidth;
-
-	if (nDstStep < 0)
-		nDstStep = 4 * nWidth;
-
-	nSrcPad = (nSrcStep - (nWidth * 8));
-	nDstPad = (nDstStep - (nWidth * 4));
-
-	pSrcPixel = &pSrcData[(nYSrc * nSrcStep) + (nXSrc * 8)];
-	pDstPixel = &pDstData[(nYDst * nDstStep) + (nXDst * 4)];
-
-	while (nHeight--)
-	{
-		x = nWidth;
-
-		while (x & ~3)
-		{
-			suml = sumh = _mm_setzero_si128();
-
-			DOSCALE(pSrcPixel);
-			DOSCALE(pSrcPixel + nSrcStep);
-
-			suml = _mm_srai_epi16(suml, 2);
-			sumh = _mm_srai_epi16(sumh, 2);
-			xmm0 = _mm_packus_epi16(suml, sumh);
-			_mm_storeu_si128((__m128i *)pDstPixel, xmm0);
-
-			pSrcPixel += 32;  pDstPixel += 16;
-			x -= 4;
-		}
-
-		while (x--)
-		{
-			/* simple box filter scaling, could be improved with better algorithm */
-
-			B = pSrcPixel[0] + pSrcPixel[4] + pSrcPixel[nSrcStep + 0] + pSrcPixel[nSrcStep + 4];
-			G = pSrcPixel[1] + pSrcPixel[5] + pSrcPixel[nSrcStep + 1] + pSrcPixel[nSrcStep + 5];
-			R = pSrcPixel[2] + pSrcPixel[6] + pSrcPixel[nSrcStep + 2] + pSrcPixel[nSrcStep + 6];
-			pSrcPixel += 8;
-
-			*pDstPixel++ = (uint8_t) (B >> 2);
-			*pDstPixel++ = (uint8_t) (G >> 2);
-			*pDstPixel++ = (uint8_t) (R >> 2);
-			*pDstPixel++ = 0xFF;
-		}
-
-		pSrcPixel = &pSrcPixel[nSrcPad + nSrcStep];
-		pDstPixel = &pDstPixel[nDstPad];
-	}
-
-	return 1;
+	return XppSuccess;
 }

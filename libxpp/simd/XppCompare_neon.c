@@ -3,7 +3,7 @@
 #include <xpp/compare.h>
 
 #define XPP_SIMD_INTERNAL
-#include "simd.h"
+#include "XppSimd.h"
 #include <arm_neon.h>
 
 #ifdef LINEAR_COMPARE32
@@ -38,7 +38,7 @@
 	}  \
 }
 
-int Xpp_Compare32_simd(uint8_t* pData1, int step1, uint8_t* pData2, int step2,
+XppStatus Xpp_Compare32_simd(uint8_t* pData1, int step1, uint8_t* pData2, int step2,
 	int width, int height, XppRect* rect)
 {
 	bool allEqual;
@@ -72,7 +72,7 @@ int Xpp_Compare32_simd(uint8_t* pData1, int step1, uint8_t* pData2, int step2,
 
 			th = min(height - y, 16);
 
-			memset(cols, 0xFF, sizeof(cols));
+			xpp_memset(cols, 0xFF, sizeof(cols));
 
 			for (k = 0; k < th; k++)
 			{
@@ -122,7 +122,7 @@ int Xpp_Compare32_simd(uint8_t* pData1, int step1, uint8_t* pData2, int step2,
 
 			th = min(height - y, 16);
 
-			memset(cols, 0xFF, sizeof(cols));
+			xpp_memset(cols, 0xFF, sizeof(cols));
 
 			for (k = 0; k < th; k++)
 			{
@@ -249,7 +249,7 @@ int Xpp_Compare32_simd(uint8_t* pData1, int step1, uint8_t* pData2, int step2,
 }
 
 
-int Xpp_Compare32_simd(uint8_t* pData1, int step1, uint8_t* pData2, int step2,
+XppStatus Xpp_Compare32_simd(uint8_t* pData1, int step1, uint8_t* pData2, int step2,
 	int width, int height, XppRect* rect)
 {
 	bool equal;
@@ -404,7 +404,7 @@ int Xpp_Compare32_simd(uint8_t* pData1, int step1, uint8_t* pData2, int step2,
 
 #if !defined(__APPLE__) || !defined(__aarch64__)
 
-int Xpp_Compare8_simd(uint8_t* pData1, int step1, uint8_t* pData2, int step2,
+XppStatus Xpp_Compare8_simd(uint8_t* pData1, int step1, uint8_t* pData2, int step2,
 	int width, int height, XppRect* rect)
 {
 	int x, y;

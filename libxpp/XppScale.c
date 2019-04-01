@@ -27,7 +27,7 @@ static FilterModeEnum Xpp_GetLibYuvFilterMode(int mode)
 
 #endif
 
-int Xpp_Scale_8u_C4R(const uint8_t* pSrc, int srcStep, int srcWidth, int srcHeight, uint8_t* pDst, int dstStep,
+XppStatus Xpp_Scale_8u_C4R(const uint8_t* pSrc, int srcStep, int srcWidth, int srcHeight, uint8_t* pDst, int dstStep,
 			int dstWidth, int dstHeight, int mode)
 {
 	int status = -1;
@@ -37,5 +37,8 @@ int Xpp_Scale_8u_C4R(const uint8_t* pSrc, int srcStep, int srcWidth, int srcHeig
 			   Xpp_GetLibYuvFilterMode(mode));
 #endif
 
-	return status;
+	if (status < 0)
+		return XppFailure;
+
+	return XppSuccess;
 }

@@ -123,7 +123,14 @@ else()
 	endif()
 endif()
 
-set(HALIDE_GENERATORS "YCoCgR420ToRgb;RgbToYCoCgR420;Compare8Stage1;Compare32Stage1;Copy")
+set(HALIDE_GENERATORS
+	RgbToYCoCgR
+	YCoCgRToRgb
+	RgbToYCoCgR420
+	YCoCgR420ToRgb
+	Compare8Stage1
+	Compare32Stage1
+	Copy)
 
 # possibly wrong: generate headers for a given target, and use them for all targets.
 # this works as long as there is no real difference between the headers, which seems to be the case.

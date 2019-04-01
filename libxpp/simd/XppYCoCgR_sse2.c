@@ -2,7 +2,7 @@
 #include <xpp/color.h>
 
 #define XPP_SIMD_INTERNAL
-#include "simd.h"
+#include "XppSimd.h"
 #include "emmintrin.h"
 
 /* The following functions contain a straightforward port of the libjpeg-turbo
@@ -101,8 +101,8 @@
 	if (_val < _min) _val = _min; \
 	else if (_val > _max) _val = _max;
 
-void Xpp_YCoCgR420ToRGB_8u_P3AC4R_simd(const uint8_t* pSrc[3],
-	int srcStep[3], uint8_t* pDst, int dstStep, int width, int height)
+XppStatus Xpp_YCoCgR420ToRGB_8u_P3AC4R_simd(const uint8_t* pSrc[3],
+	uint32_t srcStep[3], uint8_t* pDst, uint32_t dstStep, uint32_t width, uint32_t height)
 {
 	uint32_t x;
 	uint32_t dstPad;
@@ -259,6 +259,8 @@ void Xpp_YCoCgR420ToRGB_8u_P3AC4R_simd(const uint8_t* pSrc[3],
 		pCg = (uint8_t*) (((uint8_t*) pCg) + srcPad[2]);
 		pRGB = pRGB + dstPad + dstStep;
 	}
+
+	return XppSuccess;
 }
 
 #define DOENCODE(pRGB, pY, cosum, cgsum)  \
@@ -340,8 +342,8 @@ void Xpp_YCoCgR420ToRGB_8u_P3AC4R_simd(const uint8_t* pSrc[3],
 	_mm_storeu_si128((__m128i *)(pY), xmm4);  \
 }
 
-void Xpp_RGBToYCoCgR420_8u_P3AC4R_simd(const uint8_t* pSrc, int32_t srcStep,
-	uint8_t* pDst[3], int32_t dstStep[3], int width, int height)
+XppStatus Xpp_RGBToYCoCgR420_8u_P3AC4R_simd(const uint8_t* pSrc, uint32_t srcStep,
+	uint8_t* pDst[3], uint32_t dstStep[3], uint32_t width, uint32_t height)
 {
 	uint32_t x;
 	uint32_t srcPad;
@@ -487,4 +489,6 @@ void Xpp_RGBToYCoCgR420_8u_P3AC4R_simd(const uint8_t* pSrc, int32_t srcStep,
 		pCo = pCo + dstPad[1];
 		pCg = pCg + dstPad[2];
 	}
+
+	return XppSuccess;
 }

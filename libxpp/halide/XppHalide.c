@@ -39,6 +39,11 @@
  * uint32_t flags;
  */
 
+const struct halide_type_t halide_type_int8_t  = { halide_type_int,  8, 1 }; // halide_type_of<int8_t>
+const struct halide_type_t halide_type_int16_t = { halide_type_int, 16, 1 }; // halide_type_of<int16_t>
+const struct halide_type_t halide_type_int32_t = { halide_type_int, 32, 1 }; // halide_type_of<int32_t>
+const struct halide_type_t halide_type_int64_t = { halide_type_int, 64, 1 }; // halide_type_of<int64_t>
+
 const struct halide_type_t halide_type_uint8_t  = { halide_type_uint,  8, 1 }; // halide_type_of<uint8_t>
 const struct halide_type_t halide_type_uint16_t = { halide_type_uint, 16, 1 }; // halide_type_of<uint16_t>
 const struct halide_type_t halide_type_uint32_t = { halide_type_uint, 32, 1 }; // halide_type_of<uint32_t>
@@ -64,6 +69,25 @@ void halide_setup_rgb_buffer_t(halide_buffer_t* buffer, uint8_t* data, int width
 	buffer->dim[2].stride = stride;
 	buffer->dim[2].flags = 0;
 	buffer->dimensions = 3;
+	buffer->padding = NULL;
+}
+
+void halide_setup_16s_buffer_t(halide_buffer_t* buffer, uint8_t* data, int width, int height, int stride)
+{
+	buffer->device = 0;
+	buffer->device_interface = NULL;
+	buffer->type = halide_type_int16_t;
+	buffer->host = data;
+	buffer->flags = halide_buffer_flag_host_dirty;
+	buffer->dim[0].min = 0;
+	buffer->dim[0].extent = width;
+	buffer->dim[0].stride = 1;
+	buffer->dim[0].flags = 0;
+	buffer->dim[1].min = 0;
+	buffer->dim[1].extent = height;
+	buffer->dim[1].stride = stride;
+	buffer->dim[1].flags = 0;
+	buffer->dimensions = 2;
 	buffer->padding = NULL;
 }
 
