@@ -13,7 +13,7 @@
 
 /* 16-bit signed YCoCg-R */
 
-XppStatus Xpp_RGBToYCoCgR_16s_P3AC4R(const uint8_t* pSrc, uint32_t srcStep,
+XppStatus Xpp_RGBToYCoCgR_16s_P3AC4R_generic(const uint8_t* pSrc, uint32_t srcStep,
 	int16_t* pDst[3], uint32_t dstStep[3], uint32_t width, uint32_t height)
 {
 	int x, y;
@@ -75,7 +75,7 @@ XppStatus Xpp_RGBToYCoCgR_16s_P3AC4R(const uint8_t* pSrc, uint32_t srcStep,
 	return XppSuccess;
 }
 
-XppStatus Xpp_YCoCgRToRGB_16s_P3AC4R(const int16_t* pSrc[3], uint32_t srcStep[3],
+XppStatus Xpp_YCoCgRToRGB_16s_P3AC4R_generic(const int16_t* pSrc[3], uint32_t srcStep[3],
 				uint8_t* pDst, uint32_t dstStep, uint32_t width, uint32_t height)
 {
 	int x, y;
@@ -382,6 +382,20 @@ XppStatus Xpp_RGBToYCoCgR420_8u_P3AC4R_generic(const uint8_t* pSrc, uint32_t src
 	}
 
 	return XppSuccess;
+}
+
+XppStatus Xpp_RGBToYCoCgR_16s_P3AC4R(const uint8_t* pSrc, uint32_t srcStep,
+				     int16_t* pDst[3], uint32_t dstStep[3], uint32_t width, uint32_t height)
+{
+	XppPrimitives* primitives = XppPrimitives_Get();
+	return primitives->RGBToYCoCgR_16s_P3AC4R(pSrc, srcStep, pDst, dstStep, width, height);
+}
+
+XppStatus Xpp_YCoCgRToRGB_16s_P3AC4R(const int16_t* pSrc[3], uint32_t srcStep[3],
+				     uint8_t* pDst, uint32_t dstStep, uint32_t width, uint32_t height)
+{
+	XppPrimitives* primitives = XppPrimitives_Get();
+	return primitives->YCoCgRToRGB_16s_P3AC4R(pSrc, srcStep, pDst, dstStep, width, height);
 }
 
 XppStatus Xpp_YCoCgR420ToRGB_8u_P3AC4R(const uint8_t* pSrc[3], uint32_t srcStep[3], uint8_t* pDst, uint32_t dstStep,

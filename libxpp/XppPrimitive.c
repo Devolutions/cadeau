@@ -33,9 +33,10 @@ bool XppPrimitives_Init(XppPrimitives* primitives, uint32_t flags)
 		primitives->Compare8 = Xpp_Compare8_generic;
 		primitives->Copy = Xpp_Copy_generic;
 		primitives->Move = Xpp_Move_generic;
+		primitives->YCoCgRToRGB_16s_P3AC4R = Xpp_YCoCgRToRGB_16s_P3AC4R_generic;
+		primitives->RGBToYCoCgR_16s_P3AC4R = Xpp_RGBToYCoCgR_16s_P3AC4R_generic;
 		primitives->RGBToYCoCgR420_8u_P3AC4R = Xpp_RGBToYCoCgR420_8u_P3AC4R_generic;
 		primitives->YCoCgR420ToRGB_8u_P3AC4R = Xpp_YCoCgR420ToRGB_8u_P3AC4R_generic;
-
 		result = true;
 	}
 
