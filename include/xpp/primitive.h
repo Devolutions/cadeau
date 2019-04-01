@@ -11,10 +11,10 @@
 extern "C" {
 #endif
 
-#define XPP_PRIMITIVES_GENERIC		0x1
-#define XPP_PRIMITIVES_SIMD		0x2
-#define XPP_PRIMITIVES_HALIDE		0x4
-#define XPP_PRIMITIVES_ALL		0x7
+#define XPP_PRIMITIVES_GENERIC		0x00000001
+#define XPP_PRIMITIVES_SIMD		0x00000002
+#define XPP_PRIMITIVES_HALIDE		0x00000004
+#define XPP_PRIMITIVES_ALL		0x00000007
 
 typedef XppStatus (*fnXpp_Compare32)(uint8_t* pData1, int step1, uint8_t* pData2, int step2, int width, int height,
 				       XppRect* rect);
