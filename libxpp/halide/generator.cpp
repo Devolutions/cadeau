@@ -3,6 +3,52 @@
 
 using namespace Halide;
 
+class RgbToYCoCgR : public Generator<RgbToYCoCgR>
+{
+public:
+	Var u { "u" };
+	Var v { "v" };
+	Var c { "c" };
+
+	Func y { "y" };
+	Func co { "co" };
+	Func cg { "cg" };
+	Func t { "t" };
+
+	Input<Func> inputRgb { "inputRgb", UInt(8), 3 };
+
+	Output<Func> outputY { "outputY", Int(16), 2 };
+	Output<Func> outputCo { "outputCo", Int(16), 2 };
+	Output<Func> outputCg { "outputCg", Int(16), 2 };
+
+#define B(u, v) (cast<int16_t>(inputRgb(0, u, v)))
+#define G(u, v) (cast<int16_t>(inputRgb(1, u, v)))
+#define R(u, v) (cast<int16_t>(inputRgb(2, u, v)))
+
+	void generate()
+	{
+		co(u, v) = R(u, v) - B(u, v); // Co = R - B;
+		t(u, v) = B(u, v) + (co(u, v) >> 1); // t = B + (Co >> 1);
+		cg(u, v) = G(u, v) - t(u, v); // Cg = G - t;
+		y(u, v) = t(u, v) + (cg(u, v) >> 1); // Y = t + (Cg >> 1);
+
+		outputY(u, v) = cast<int16_t>(y(u, v) - 128); // [-128, 127]
+		outputCo(u, v) = cast<int16_t>(co(u, v)); // [-256, 255]
+		outputCg(u, v) = cast<int16_t>(cg(u, v)); // [-256, 255]
+	}
+
+#undef B
+#undef G
+#undef R
+
+	void schedule()
+	{
+		outputY.vectorize(u, 16, TailStrategy::GuardWithIf).parallel(v);
+		outputCo.vectorize(u, 16, TailStrategy::GuardWithIf).parallel(v);
+		outputCg.vectorize(u, 16, TailStrategy::GuardWithIf).parallel(v);
+	}
+};
+
 class YCoCgR420ToRgb : public Generator<YCoCgR420ToRgb>
 {
 public:
@@ -265,6 +311,7 @@ public:
 	}
 };
 
+HALIDE_REGISTER_GENERATOR(RgbToYCoCgR, RgbToYCoCgR);
 HALIDE_REGISTER_GENERATOR(YCoCgR420ToRgb, YCoCgR420ToRgb);
 HALIDE_REGISTER_GENERATOR(RgbToYCoCgR420, RgbToYCoCgR420);
 HALIDE_REGISTER_GENERATOR(Compare8Stage1, Compare8Stage1);

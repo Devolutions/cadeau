@@ -11,6 +11,7 @@
 	_x.dim = (halide_dimension_t*) & _x ## _dim
 
 void halide_setup_rgb_buffer_t(halide_buffer_t* buffer, uint8_t* data, int width, int height, int stride);
+void halide_setup_16s_buffer_t(halide_buffer_t* buffer, uint8_t* data, int width, int height, int stride);
 void halide_setup_ycocg_buffer_t(halide_buffer_t* buffer, uint8_t* data, int width, int height, int stride);
 void halide_setup_u32_buffer_t(halide_buffer_t* buffer, uint32_t* data, int width, int height, int stride);
 void halide_setup_1d_u32_buffer_t(halide_buffer_t* buffer, uint32_t* data, int width);
@@ -20,6 +21,9 @@ void halide_setup_1d_u8_buffer_t(halide_buffer_t* buffer, uint8_t* data, int wid
 #ifdef __cplusplus
 extern "C" {
 #endif
+
+XPP_EXPORT XppStatus Xpp_RGBToYCoCgR_16s_P3AC4R_halide(const uint8_t* pSrc, uint32_t srcStep,
+					    int16_t* pDst[3], uint32_t dstStep[3], uint32_t width, uint32_t height);
 
 XPP_EXPORT XppStatus Xpp_RGBToYCoCgR420_8u_P3AC4R_halide(const uint8_t* pSrc, uint32_t srcStep, uint8_t* pDst[3],
 							 uint32_t dstStep[3], uint32_t width, uint32_t height);

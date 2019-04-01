@@ -4,11 +4,29 @@
 
 #include <xpp/color.h>
 
+#include <halide/RgbToYCoCgR.h>
 #include <halide/YCoCgR420ToRgb.h>
 #include <halide/RgbToYCoCgR420.h>
-#include <HalideRuntime.h>
 
 #include "XppHalide.h"
+
+XppStatus Xpp_RGBToYCoCgR_16s_P3AC4R_halide(const uint8_t* pSrc, uint32_t srcStep,
+					     int16_t* pDst[3], uint32_t dstStep[3], uint32_t width, uint32_t height)
+{
+	HALIDE_BUFFER_DEFINE(inRgb);
+	HALIDE_BUFFER_DEFINE(outY);
+	HALIDE_BUFFER_DEFINE(outCo);
+	HALIDE_BUFFER_DEFINE(outCg);
+
+	halide_setup_rgb_buffer_t(&inRgb, (uint8_t*) pSrc, width, height, srcStep);
+	halide_setup_16s_buffer_t(&outY, (uint8_t*) pDst[0], width, height, dstStep[0] / 2);
+	halide_setup_16s_buffer_t(&outCo, (uint8_t*) pDst[1], width, height, dstStep[1] / 2);
+	halide_setup_16s_buffer_t(&outCg, (uint8_t*) pDst[2], width, height, dstStep[2] / 2);
+
+	RgbToYCoCgR(&inRgb, &outY, &outCo, &outCg);
+
+	return XppSuccess;
+}
 
 XppStatus Xpp_RGBToYCoCgR420_8u_P3AC4R_halide(const uint8_t* pSrc, uint32_t srcStep, uint8_t* pDst[3],
 					      uint32_t dstStep[3], uint32_t width, uint32_t height)
