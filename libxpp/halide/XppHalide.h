@@ -25,6 +25,9 @@ extern "C" {
 XPP_EXPORT XppStatus Xpp_RGBToYCoCgR_16s_P3AC4R_halide(const uint8_t* pSrc, uint32_t srcStep,
 					    int16_t* pDst[3], uint32_t dstStep[3], uint32_t width, uint32_t height);
 
+XPP_EXPORT XppStatus Xpp_YCoCgRToRGB_16s_P3AC4R_halide(const int16_t* pSrc[3], uint32_t srcStep[3],
+					    uint8_t* pDst, uint32_t dstStep, uint32_t width, uint32_t height);
+
 XPP_EXPORT XppStatus Xpp_RGBToYCoCgR420_8u_P3AC4R_halide(const uint8_t* pSrc, uint32_t srcStep, uint8_t* pDst[3],
 							 uint32_t dstStep[3], uint32_t width, uint32_t height);
 

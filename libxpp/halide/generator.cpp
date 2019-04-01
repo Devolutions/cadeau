@@ -49,6 +49,101 @@ public:
 	}
 };
 
+class YCoCgRToRgb : public Generator<YCoCgRToRgb>
+{
+public:
+	Var u { "u" };
+	Var v { "v" };
+	Var c { "c" };
+
+	Func rgb { "rgb" };
+	Func t { "t" };
+	Func r { "r" };
+	Func g { "g" };
+	Func b { "b" };
+
+	Input<Func> inputY { "inputY", Int(16), 2};
+	Input<Func> inputCo { "inputCo", Int(16), 2};
+	Input<Func> inputCg { "inputCg", Int(16), 2};
+
+	Output<Func> outputRgb { "outputRgb", UInt(8), 3 };
+
+#define Y(u, v) (cast<int16_t>(inputY(u, v) + 128))
+#define Co(u, v) (cast<int16_t>(inputCo(u, v)))
+#define Cg(u, v) (cast<int16_t>(inputCg(u, v)))
+
+	void generate()
+	{
+		t(u, v) = Y(u, v) - (Cg(u, v) >> 1);
+		g(u, v) = Cg(u, v) + t(u, v);
+		b(u, v) = t(u, v) - (Co(u, v) >> 1);
+		r(u, v) = b(u, v) + Co(u, v);
+
+		Expr rb = clamp(b(u, v), 0, 255);
+		Expr rg = clamp(g(u, v), 0, 255);
+		Expr rr = clamp(r(u, v), 0, 255);
+
+		outputRgb(c, u, v) =
+			select(c == 0, cast<uint8_t>(rb),
+			select(c == 1, cast<uint8_t>(rg),
+			select(c == 2, cast<uint8_t>(rr), 255)));
+	}
+
+#undef Y
+#undef Co
+#undef Cg
+
+	void schedule()
+	{
+		outputRgb.vectorize(u, 16, TailStrategy::GuardWithIf).parallel(v);
+	}
+};
+
+class RgbToYCoCgR420 : public Generator<RgbToYCoCgR420>
+{
+public:
+	Var u { "u" };
+	Var v { "v" };
+	Var c { "c" };
+
+	Func y { "y" };
+	Func co { "co" };
+	Func cg { "cg" };
+	Func _co { "_co" };
+	Func _cg { "_cg" };
+	Func t { "t" };
+
+	Input<Func> inputRgb { "inputRgb", UInt(8), 3 };
+
+	Output<Func> outputY { "outputY", UInt(8), 2 };
+	Output<Func> outputCo { "outputCo", UInt(8), 2 };
+	Output<Func> outputCg { "outputCg", UInt(8), 2 };
+
+#define rgbb(u, v) (cast<int16_t>(inputRgb(0, u, v)))
+#define rgbg(u, v) (cast<int16_t>(inputRgb(1, u, v)))
+#define rgbr(u, v) (cast<int16_t>(inputRgb(2, u, v)))
+
+#define subsample(x) ((x(u * 2, v * 2) + x(u * 2 + 1, v * 2) + x(u * 2, v * 2 + 1) + x(u * 2 + 1, v * 2 + 1) + 1024) >> 3)
+
+	void generate()
+	{
+		_co(u, v) = rgbr(u, v) - rgbb(u, v);
+		t(u, v) = rgbb(u, v) + (_co(u, v) >> 1);
+		_cg(u, v) = rgbg(u, v) - t(u, v);
+
+		outputY(u, v) = cast<uint8_t>(t(u, v) + (_cg(u, v) >> 1));
+		outputCo(u, v) = cast<uint8_t>(subsample(_co));
+		outputCg(u, v) = cast<uint8_t>(subsample(_cg));
+	}
+
+	void schedule()
+	{
+		outputY.vectorize(u, 16, TailStrategy::GuardWithIf).parallel(v);
+		outputCo.vectorize(u, 16, TailStrategy::GuardWithIf).parallel(v);
+		outputCg.vectorize(u, 16, TailStrategy::GuardWithIf).parallel(v);
+	}
+};
+
 class YCoCgR420ToRgb : public Generator<YCoCgR420ToRgb>
 {
 public:
@@ -92,51 +187,6 @@ public:
 	void schedule()
 	{
 		outputRgb.vectorize(u, 16, TailStrategy::GuardWithIf).parallel(v);
-	}
-};
-
-class RgbToYCoCgR420 : public Generator<RgbToYCoCgR420>
-{
-public:
-	Var u { "u" };
-	Var v { "v" };
-	Var c { "c" };
-
-	Func y { "y" };
-	Func co { "co" };
-	Func cg { "cg" };
-	Func _co { "_co" };
-	Func _cg { "_cg" };
-	Func t { "t" };
-
-	Input<Func> inputRgb { "inputRgb", UInt(8), 3 };
-
-	Output<Func> outputY { "outputY", UInt(8), 2 };
-	Output<Func> outputCo { "outputCo", UInt(8), 2 };
-	Output<Func> outputCg { "outputCg", UInt(8), 2 };
-
-#define rgbb(u, v) (cast<int16_t>(inputRgb(0, u, v)))
-#define rgbg(u, v) (cast<int16_t>(inputRgb(1, u, v)))
-#define rgbr(u, v) (cast<int16_t>(inputRgb(2, u, v)))
-
-#define subsample(x) ((x(u * 2, v * 2) + x(u * 2 + 1, v * 2) + x(u * 2, v * 2 + 1) + x(u * 2 + 1, v * 2 + 1) + 1024) >> 3)
-	
-	void generate()
-	{
-		_co(u, v) = rgbr(u, v) - rgbb(u, v);
-		t(u, v) = rgbb(u, v) + (_co(u, v) >> 1);
-		_cg(u, v) = rgbg(u, v) - t(u, v);
-		
-		outputY(u, v) = cast<uint8_t>(t(u, v) + (_cg(u, v) >> 1));
-		outputCo(u, v) = cast<uint8_t>(subsample(_co));
-		outputCg(u, v) = cast<uint8_t>(subsample(_cg));
-	}
-	
-	void schedule()
-	{
-		outputY.vectorize(u, 16, TailStrategy::GuardWithIf).parallel(v);
-		outputCo.vectorize(u, 16, TailStrategy::GuardWithIf).parallel(v);
-		outputCg.vectorize(u, 16, TailStrategy::GuardWithIf).parallel(v);
 	}
 };
 
@@ -312,8 +362,9 @@ public:
 };
 
 HALIDE_REGISTER_GENERATOR(RgbToYCoCgR, RgbToYCoCgR);
-HALIDE_REGISTER_GENERATOR(YCoCgR420ToRgb, YCoCgR420ToRgb);
+HALIDE_REGISTER_GENERATOR(YCoCgRToRgb, YCoCgRToRgb);
 HALIDE_REGISTER_GENERATOR(RgbToYCoCgR420, RgbToYCoCgR420);
+HALIDE_REGISTER_GENERATOR(YCoCgR420ToRgb, YCoCgR420ToRgb);
 HALIDE_REGISTER_GENERATOR(Compare8Stage1, Compare8Stage1);
 HALIDE_REGISTER_GENERATOR(Compare32Stage1, Compare32Stage1);
 HALIDE_REGISTER_GENERATOR(Downscale2x, Downscale2x);

@@ -5,8 +5,9 @@
 #include <xpp/color.h>
 
 #include <halide/RgbToYCoCgR.h>
-#include <halide/YCoCgR420ToRgb.h>
+#include <halide/YCoCgRToRgb.h>
 #include <halide/RgbToYCoCgR420.h>
+#include <halide/YCoCgR420ToRgb.h>
 
 #include "XppHalide.h"
 
@@ -24,6 +25,26 @@ XppStatus Xpp_RGBToYCoCgR_16s_P3AC4R_halide(const uint8_t* pSrc, uint32_t srcSte
 	halide_setup_16s_buffer_t(&outCg, (uint8_t*) pDst[2], width, height, dstStep[2] / 2);
 
 	RgbToYCoCgR(&inRgb, &outY, &outCo, &outCg);
+
+	return XppSuccess;
+}
+
+XppStatus Xpp_YCoCgRToRGB_16s_P3AC4R_halide(const int16_t* pSrc[3], uint32_t srcStep[3],
+					     uint8_t* pDst, uint32_t dstStep, uint32_t width, uint32_t height)
+{
+	HALIDE_BUFFER_DEFINE(outRgb);
+	HALIDE_BUFFER_DEFINE(inY);
+	HALIDE_BUFFER_DEFINE(inCo);
+	HALIDE_BUFFER_DEFINE(inCg);
+
+	fprintf(stderr, "Xpp_YCoCgRToRGB_16s_P3AC4R_halide\n");
+
+	halide_setup_rgb_buffer_t(&outRgb, (uint8_t*) pDst, width, height, dstStep);
+	halide_setup_16s_buffer_t(&inY, (uint8_t*) pSrc[0], width, height, srcStep[0] / 2);
+	halide_setup_16s_buffer_t(&inCo, (uint8_t*) pSrc[1], width, height, srcStep[1] / 2);
+	halide_setup_16s_buffer_t(&inCg, (uint8_t*) pSrc[2], width, height, srcStep[2] / 2);
+
+	YCoCgRToRgb(&inY, &inCo, &inCg, &outRgb);
 
 	return XppSuccess;
 }

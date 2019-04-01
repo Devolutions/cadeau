@@ -57,6 +57,7 @@ bool XppPrimitives_Init(XppPrimitives* primitives, uint32_t flags)
 		primitives->Copy = Xpp_Copy_halide;
 		primitives->Compare32 = Xpp_Compare32_halide;
 		primitives->RGBToYCoCgR_16s_P3AC4R = Xpp_RGBToYCoCgR_16s_P3AC4R_halide;
+		primitives->YCoCgRToRGB_16s_P3AC4R = Xpp_YCoCgRToRGB_16s_P3AC4R_halide;
 		primitives->RGBToYCoCgR420_8u_P3AC4R = Xpp_RGBToYCoCgR420_8u_P3AC4R_halide;
 		primitives->YCoCgR420ToRGB_8u_P3AC4R = Xpp_YCoCgR420ToRGB_8u_P3AC4R_halide;
 		result = true;
