@@ -16,9 +16,6 @@ XPP_EXPORT XppStatus Xpp_Compare8_generic(uint8_t* pData1, int step1, uint8_t* p
 XPP_EXPORT XppStatus Xpp_Copy_generic(uint8_t* pDstData, int nDstStep, int nXDst, int nYDst, int nWidth, int nHeight,
 				uint8_t* pSrcData, int nSrcStep, int nXSrc, int nYSrc);
 
-XPP_EXPORT XppStatus Xpp_CopyFromRetina_generic(uint8_t* pDstData, int nDstStep, int nXDst, int nYDst, int nWidth,
-					  int nHeight, uint8_t* pSrcData, int nSrcStep, int nXSrc, int nYSrc);
-
 XPP_EXPORT XppStatus Xpp_Move_generic(uint8_t* pData, int nStep, int nXDst, int nYDst, int nWidth, int nHeight, int nXSrc,
 				int nYSrc);
 
