@@ -2,7 +2,7 @@
 #include <xpp/primitive.h>
 
 #ifdef WITH_SIMD
-#include "simd/simd.h"
+#include "simd/XppSimd.h"
 #endif
 
 #ifdef WITH_HALIDE

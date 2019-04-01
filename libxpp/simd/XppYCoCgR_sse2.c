@@ -2,7 +2,7 @@
 #include <xpp/color.h>
 
 #define XPP_SIMD_INTERNAL
-#include "simd.h"
+#include "XppSimd.h"
 #include "emmintrin.h"
 
 /* The following functions contain a straightforward port of the libjpeg-turbo

@@ -44,9 +44,9 @@ if(WITH_SIMD)
 	add_definitions(-DWITH_SIMD)
 
 	list(APPEND ${MODULE_PREFIX}_SIMD_SOURCES
-		simd/simd.c)
+		simd/XppSimd.c)
 	list(APPEND ${MODULE_PREFIX}_SIMD_HEADERS
-		simd/simd.h)
+		simd/XppSimd.h)
 		
 	if(${CMAKE_SYSTEM_PROCESSOR} MATCHES "arm")
 		set(SIMD_COMPILE_FLAGS "-mfpu=neon")

@@ -3,7 +3,7 @@
 #include <xpp/compare.h>
 
 #define XPP_SIMD_INTERNAL
-#include "simd.h"
+#include "XppSimd.h"
 #include <arm_neon.h>
 
 #define COPY_LOAD(reg, ptr)  \

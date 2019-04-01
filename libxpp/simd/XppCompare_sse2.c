@@ -3,7 +3,7 @@
 #include <xpp/compare.h>
 
 #define XPP_SIMD_INTERNAL
-#include "simd.h"
+#include "XppSimd.h"
 #include "emmintrin.h"
 
 #if !defined(_MSC_VER)

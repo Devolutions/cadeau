@@ -2,7 +2,7 @@
 #include <xpp/color.h>
 
 #define XPP_SIMD_INTERNAL
-#include "simd.h"
+#include "XppSimd.h"
 #include <arm_neon.h>
 
 #define DODECODE(pY, pRGB, co, cg, offset)  \
