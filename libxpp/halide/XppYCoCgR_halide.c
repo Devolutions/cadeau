@@ -37,8 +37,6 @@ XppStatus Xpp_YCoCgRToRGB_16s_P3AC4R_halide(const int16_t* pSrc[3], uint32_t src
 	HALIDE_BUFFER_DEFINE(inCo);
 	HALIDE_BUFFER_DEFINE(inCg);
 
-	fprintf(stderr, "Xpp_YCoCgRToRGB_16s_P3AC4R_halide\n");
-
 	halide_setup_rgb_buffer_t(&outRgb, (uint8_t*) pDst, width, height, dstStep);
 	halide_setup_16s_buffer_t(&inY, (uint8_t*) pSrc[0], width, height, srcStep[0] / 2);
 	halide_setup_16s_buffer_t(&inCo, (uint8_t*) pSrc[1], width, height, srcStep[1] / 2);

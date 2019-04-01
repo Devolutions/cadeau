@@ -109,8 +109,6 @@ public:
 	Func y { "y" };
 	Func co { "co" };
 	Func cg { "cg" };
-	Func _co { "_co" };
-	Func _cg { "_cg" };
 	Func t { "t" };
 
 	Input<Func> inputRgb { "inputRgb", UInt(8), 3 };
@@ -119,22 +117,27 @@ public:
 	Output<Func> outputCo { "outputCo", UInt(8), 2 };
 	Output<Func> outputCg { "outputCg", UInt(8), 2 };
 
-#define rgbb(u, v) (cast<int16_t>(inputRgb(0, u, v)))
-#define rgbg(u, v) (cast<int16_t>(inputRgb(1, u, v)))
-#define rgbr(u, v) (cast<int16_t>(inputRgb(2, u, v)))
+#define B(u, v) (cast<int16_t>(inputRgb(0, u, v)))
+#define G(u, v) (cast<int16_t>(inputRgb(1, u, v)))
+#define R(u, v) (cast<int16_t>(inputRgb(2, u, v)))
 
 #define subsample(x) ((x(u * 2, v * 2) + x(u * 2 + 1, v * 2) + x(u * 2, v * 2 + 1) + x(u * 2 + 1, v * 2 + 1) + 1024) >> 3)
 
 	void generate()
 	{
-		_co(u, v) = rgbr(u, v) - rgbb(u, v);
-		t(u, v) = rgbb(u, v) + (_co(u, v) >> 1);
-		_cg(u, v) = rgbg(u, v) - t(u, v);
+		co(u, v) = R(u, v) - B(u, v);
+		t(u, v) = B(u, v) + (co(u, v) >> 1);
+		cg(u, v) = G(u, v) - t(u, v);
+		y(u, v) = t(u, v) + (cg(u, v) >> 1);
 
-		outputY(u, v) = cast<uint8_t>(t(u, v) + (_cg(u, v) >> 1));
-		outputCo(u, v) = cast<uint8_t>(subsample(_co));
-		outputCg(u, v) = cast<uint8_t>(subsample(_cg));
+		outputY(u, v) = cast<uint8_t>(y(u, v));
+		outputCo(u, v) = cast<uint8_t>(subsample(co));
+		outputCg(u, v) = cast<uint8_t>(subsample(cg));
 	}
+
+#undef B
+#undef G
+#undef R
 
 	void schedule()
 	{
@@ -163,16 +166,16 @@ public:
 
 	Output<Func> outputRgb { "outputRgb", UInt(8), 3 };
 
-#define ycocgy(u, v) (cast<int16_t>(inputY(u, v)))
-#define ycocgco(u, v) ((cast<int16_t>(inputCo(u / 2, v / 2)) << 1) - 255)
-#define ycocgcg(u, v) ((cast<int16_t>(inputCg(u / 2, v / 2)) << 1) - 255)
+#define Y(u, v) (cast<int16_t>(inputY(u, v)))
+#define Co(u, v) ((cast<int16_t>(inputCo(u / 2, v / 2)) << 1) - 255)
+#define Cg(u, v) ((cast<int16_t>(inputCg(u / 2, v / 2)) << 1) - 255)
 	
 	void generate()
 	{
-		t(u, v) = ycocgy(u, v) - (ycocgcg(u, v) >> 1);
-		g(u, v) = ycocgcg(u, v) + t(u, v);
-		b(u, v) = t(u, v) - (ycocgco(u, v) >> 1);
-		r(u, v) = b(u, v) + ycocgco(u, v);
+		t(u, v) = Y(u, v) - (Cg(u, v) >> 1);
+		g(u, v) = Cg(u, v) + t(u, v);
+		b(u, v) = t(u, v) - (Co(u, v) >> 1);
+		r(u, v) = b(u, v) + Co(u, v);
 		
 		Expr rb = clamp(b(u, v), 0, 255);
 		Expr rg = clamp(g(u, v), 0, 255);
@@ -183,6 +186,10 @@ public:
 			select(c == 1, cast<uint8_t>(rg),
 			select(c == 2, cast<uint8_t>(rr), 255)));
 	}
+
+#undef Y
+#undef Co
+#undef Cg
 		
 	void schedule()
 	{
