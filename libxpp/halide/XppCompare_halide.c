@@ -44,7 +44,7 @@ XppStatus Xpp_Compare32_halide(uint8_t* pData1, int step1, uint8_t* pData2, int 
 			rect->right = max(rect->right, i);
 	}
 
-	for (i = 0; i < width; i++)
+	for (i = 0; i < height; i++)
 	{
 		if (diffY[0] == 0)
 			rect->top = min(rect->top, i);
@@ -68,8 +68,8 @@ XppStatus Xpp_Compare8_halide(uint8_t* pData1, int step1, uint8_t* pData2, int s
 	HALIDE_BUFFER_DEFINE(diffYBuffer);
 
 	int i;
-	uint8_t* diffX = xpp_calloc(width, 1);
-	uint8_t* diffY = xpp_calloc(height, 1);
+	uint8_t* diffX = xpp_calloc(width, sizeof(uint8_t));
+	uint8_t* diffY = xpp_calloc(height, sizeof(uint8_t));
 
 	halide_setup_u8_buffer_t(&frame1Buffer, pData1, width, height, step1);
 	halide_setup_u8_buffer_t(&frame2Buffer, pData2, width, height, step2);
@@ -90,7 +90,7 @@ XppStatus Xpp_Compare8_halide(uint8_t* pData1, int step1, uint8_t* pData2, int s
 			rect->right = max(rect->right, i);
 	}
 
-	for (i = 0; i < width; i++)
+	for (i = 0; i < height; i++)
 	{
 		if (diffY[0] == 0)
 			rect->top = min(rect->top, i);
