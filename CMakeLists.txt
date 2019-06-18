@@ -75,7 +75,7 @@ if(USE_CONAN)
 	conan_check()
 
 	conan_cmake_install(
-		CONANFILE conanfile.txt
+		CONANFILE conanfile.py
 		PROFILE ${CONAN_PROFILE}
 		GENERATORS cmake
 		UPDATE
