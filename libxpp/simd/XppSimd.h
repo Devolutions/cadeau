@@ -9,7 +9,7 @@
 #define SIMD_SSE2	1
 #define SIMD_NEON	2
 
-#if defined(__aarch64__) || defined(__x86_64__)
+#if defined(__aarch64__) || defined(__x86_64__) || defined(_M_ARM64)
 #define BITS	64
 #else
 #define BITS	32
