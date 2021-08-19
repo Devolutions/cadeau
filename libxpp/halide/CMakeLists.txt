@@ -1,56 +1,22 @@
 
-set(HALIDE_LLVM_BIN_DIR "${HALIDE_LLVM_ROOT}/bin")
-set(HALIDE_LLVM_COMPILER "${HALIDE_LLVM_BIN_DIR}/clang++")
-
-# clang targets:
-#
-# i686-pc-windows-msvc
-# i686-apple-darwin
-# i686-unknown-linux-gnu
-#
-# x86_64-pc-windows-msvc
-# x86_64-apple-darwin
-# x86_64-unknown-linux-gnu
-
 # https://github.com/wayk/Halide/blob/master/src/Target.cpp#L180
 # https://github.com/halide/Halide/blob/master/tutorial/lesson_15_generators_usage.sh
 
 if(CMAKE_HOST_SYSTEM_NAME STREQUAL Windows)
-	set(HALIDE_GENERATOR_LDFLAGS "-lHalide")
-	set(HALIDE_GENERATOR_CXXFLAGS "-Xclang;-flto-visibility-public-std;-Wno-inconsistent-dllimport")
-	list(APPEND HALIDE_GENERATOR_CXXFLAGS "-D_ALLOW_COMPILER_AND_STL_VERSION_MISMATCH")
 	set(HALIDE_GENERATOR_TARGET "x86_64-pc-windows-msvc")
 	set(HALIDE_SHARED_LIBRARY "Halide.dll")
 	set(HALIDE_OBJECT_SUFFIX ".obj")
 	set(HALIDE_HOST "windows")
+elseif(CMAKE_HOST_SYSTEM_NAME STREQUAL Darwin)
+    set(HALIDE_GENERATOR_TARGET "x86_64-apple-darwin")
+    set(HALIDE_SHARED_LIBRARY "libHalide.dylib")
+    set(HALIDE_OBJECT_SUFFIX ".o")
+    set(HALIDE_HOST "osx")
 else()
-	set(HALIDE_GENERATOR_LDFLAGS "-lHalide")
-	set(HALIDE_GENERATOR_CXXFLAGS "-std=c++11;-fno-rtti")
-	list(APPEND HALIDE_GENERATOR_LDFLAGS "-lpthread;-ldl")
-	list(APPEND HALIDE_GENERATOR_LDFLAGS "-rpath;${HALIDE_LIBRARY_DIR}")
-	if(CMAKE_HOST_SYSTEM_NAME STREQUAL Darwin)
-		execute_process(COMMAND xcode-select -p OUTPUT_VARIABLE XCODE_DEVELOPER_DIR OUTPUT_STRIP_TRAILING_WHITESPACE)
-		set(XCODE_CPP_INC_DIR "${XCODE_DEVELOPER_DIR}/Toolchains/XcodeDefault.xctoolchain/usr/include/c++/v1")
-		set(XCODE_SDK_INC_DIR "${XCODE_DEVELOPER_DIR}/Platforms/MacOSX.platform/Developer/SDKs/MacOSX.sdk/usr/include")
-		list(APPEND HALIDE_GENERATOR_CXXFLAGS "-stdlib=libc++")
-		list(APPEND HALIDE_GENERATOR_CXXFLAGS "-I;${XCODE_CPP_INC_DIR}")
-		list(APPEND HALIDE_GENERATOR_CXXFLAGS "-I;${XCODE_SDK_INC_DIR}")
-		set(HALIDE_GENERATOR_TARGET "x86_64-apple-darwin")
-		set(HALIDE_SHARED_LIBRARY "libHalide.dylib")
-		set(HALIDE_HOST "osx")
-		list(APPEND HALIDE_GENERATOR_LDFLAGS "-mmacosx-version-min=10.9")
-	else()
-		execute_process(COMMAND dpkg-architecture -qDEB_HOST_ARCH
-			OUTPUT_VARIABLE DEB_HOST_ARCH OUTPUT_STRIP_TRAILING_WHITESPACE)
-		if(DEB_HOST_ARCH STREQUAL "i386")
-			set(HALIDE_GENERATOR_TARGET "i686-unknown-linux-gnu")
-		else()
-			set(HALIDE_GENERATOR_TARGET "x86_64-unknown-linux-gnu")
-		endif()
-		set(HALIDE_SHARED_LIBRARY "libHalide.so")
-		set(HALIDE_HOST "linux")
-	endif()
-	set(HALIDE_OBJECT_SUFFIX ".o")
+    set(HALIDE_GENERATOR_TARGET "x86_64-unknown-linux-gnu")
+    set(HALIDE_SHARED_LIBRARY "libHalide.so")
+    set(HALIDE_OBJECT_SUFFIX ".o")
+    set(HALIDE_HOST "linux")
 endif()
 
 if(IOS)
@@ -63,32 +29,30 @@ else()
 	set(HALIDE_TARGET "${HALIDE_HOST}")
 endif()
 
-list(APPEND HALIDE_GENERATOR_LDFLAGS "--target=${HALIDE_GENERATOR_TARGET}")
-
 set(HALIDE_GENERATOR_NAME "xpp-halide-generator")
 if(CMAKE_HOST_SYSTEM_NAME STREQUAL Windows)
 	set(HALIDE_GENERATOR_NAME "${HALIDE_GENERATOR_NAME}.exe")
 endif()
 set(HALIDE_GENERATOR_SOURCES "generator.cpp")
-set(HALIDE_GENERATOR_EXECUTABLE "${CMAKE_CURRENT_BINARY_DIR}/${HALIDE_GENERATOR_NAME}")
 set(HALIDE_OUTPUT_PATH "${CMAKE_BINARY_DIR}/generated/halide")
+set(HALIDE_GENERATOR_EXECUTABLE "${HALIDE_OUTPUT_PATH}/${HALIDE_GENERATOR_NAME}")
 
+set(HALIDE_CMAKE_COMMAND "${CMAKE_COMMAND}")
 if(CMAKE_HOST_SYSTEM_NAME STREQUAL Windows)
-	set(HALIDE_CUSTOM_COMMAND "${CMAKE_COMMAND};-E;env;--unset=INCLUDE;--unset=LIB;--unset=LIBPATH;--unset=PATH")
-elseif(CMAKE_HOST_SYSTEM_NAME STREQUAL Darwin)
-	set(HALIDE_CUSTOM_COMMAND "${CMAKE_COMMAND};-E;env;--unset=SDKROOT;--unset=IPHONEOS_DEPLOYMENT_TARGET")
+    list(APPEND HALIDE_CMAKE_COMMAND "-G;Visual Studio 16 2019;-A;x64")
+endif()
+list(APPEND HALIDE_CMAKE_COMMAND "-DHALIDE_ROOT_DIR=${HALIDE_ROOT_DIR}")
+list(APPEND HALIDE_CMAKE_COMMAND "-S;${CMAKE_CURRENT_SOURCE_DIR}/generator")
+list(APPEND HALIDE_CMAKE_COMMAND "-B;${HALIDE_OUTPUT_PATH}")
+
+set(HALIDE_BUILD_COMMAND "${CMAKE_COMMAND};--build;${HALIDE_OUTPUT_PATH}")
+if(CMAKE_HOST_SYSTEM_NAME STREQUAL Windows)
+    list(APPEND HALIDE_BUILD_COMMAND "--config;Release")
 endif()
 
-#list(APPEND HALIDE_CUSTOM_COMMAND "${CMAKE_COMMAND};-E;environment")
-list(APPEND HALIDE_CUSTOM_COMMAND "${HALIDE_LLVM_COMPILER}"
-		"${CMAKE_CURRENT_SOURCE_DIR}/${HALIDE_GENERATOR_SOURCES}"
-		${HALIDE_GENERATOR_CXXFLAGS} -I ${HALIDE_INCLUDE_DIR} -L ${HALIDE_LIBRARY_DIR}
-		${HALIDE_GENERATOR_LDFLAGS} -o ${HALIDE_GENERATOR_NAME} -v)
-
 add_custom_command(
-	COMMAND ${CMAKE_COMMAND} -E make_directory "${HALIDE_OUTPUT_PATH}"
-	COMMAND ${CMAKE_COMMAND} -E copy_if_different "${HALIDE_LIBRARY_DIR}/${HALIDE_SHARED_LIBRARY}" ${HALIDE_SHARED_LIBRARY}
-	COMMAND ${HALIDE_CUSTOM_COMMAND}
+	COMMAND ${HALIDE_CMAKE_COMMAND}
+    COMMAND ${HALIDE_BUILD_COMMAND}
 	OUTPUT ${HALIDE_GENERATOR_EXECUTABLE}
 	DEPENDS ${HALIDE_GENERATOR_SOURCES})
 

@@ -55,16 +55,7 @@ elseif(CMAKE_HOST_WIN32)
     endif()
 elseif(CMAKE_HOST_UNIX)
     set(CONAN_BUILD_HOST "Linux")
-    execute_process(
-    COMMAND dpkg-architecture -qDEB_HOST_ARCH
-        OUTPUT_VARIABLE CMD_OUTPUT
-        OUTPUT_STRIP_TRAILING_WHITESPACE
-    )
-    if(CMD_OUTPUT STREQUAL "i386")
-        set(CONAN_BUILD_ARCH "x86")
-    else()
-        set(CONAN_BUILD_ARCH "x86_64")
-    endif()
+    set(CONAN_BUILD_ARCH "x86_64")
 endif()
 
 if(NOT CMAKE_BUILD_TYPE)
@@ -80,6 +71,7 @@ if(USE_CONAN)
 		CONANFILE conanfile.py
 		PROFILE ${CONAN_PROFILE}
 		GENERATORS cmake
+        BUILD missing
 		UPDATE
 		SETTINGS "os_build=${CONAN_BUILD_HOST};arch_build=${CONAN_BUILD_ARCH};build_type=${CMAKE_BUILD_TYPE}"
 	)
@@ -171,32 +163,19 @@ else()
 	message(STATUS "libyuv was not found")
 endif()
 
-# clang+llvm
-
-set(HALIDE_LLVM_ROOT "" CACHE PATH "Halide LLVM root directory")
-
-if(USE_CONAN)
-	set(HALIDE_LLVM_ROOT "${CONAN_CLANG-LLVM_ROOT}")
-endif()
-
-if(EXISTS "${HALIDE_LLVM_ROOT}")
-	set(HALIDE_LLVM_FOUND 1)
-	message(STATUS "Using LLVM: ${HALIDE_LLVM_ROOT}")
-else()
-	message(WARNING "LLVM could not be found at ${HALIDE_LLVM_ROOT}")
-endif()
-
 # halide
 
+set(HALIDE_ROOT_DIR "" CACHE PATH "Halide root directory")
 set(HALIDE_INCLUDE_DIR "" CACHE PATH "Halide include directory")
 set(HALIDE_LIBRARY_DIR "" CACHE PATH "Halide library directory")
 
 if(USE_CONAN)
+    set(HALIDE_ROOT_DIR "${CONAN_HALIDE_ROOT}")
 	set(HALIDE_INCLUDE_DIR "${CONAN_HALIDE_ROOT}/include")
 	set(HALIDE_LIBRARY_DIR "${CONAN_HALIDE_ROOT}/lib")
 endif()
 
-if(NOT DEFINED WITH_HALIDE AND HALIDE_LLVM_FOUND)
+if(NOT DEFINED WITH_HALIDE)
 	set(WITH_HALIDE 1)
 endif()
 
