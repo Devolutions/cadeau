@@ -7,23 +7,23 @@
 extern "C" {
 #endif
 
-#define XMF_MAX_PATH				512
+#define XMF_MAX_PATH                    512
 
-#define XMF_PATH_SLASH_CHR			'/'
-#define XMF_PATH_SLASH_STR			"/"
+#define XMF_PATH_SLASH_CHR              '/'
+#define XMF_PATH_SLASH_STR              "/"
 
-#define XMF_PATH_BACKSLASH_CHR			'\\'
-#define XMF_PATH_BACKSLASH_STR			"\\"
+#define XMF_PATH_BACKSLASH_CHR          '\\'
+#define XMF_PATH_BACKSLASH_STR          "\\"
 
 #ifdef _WIN32
-#define XMF_PATH_SEPARATOR_CHR			XMF_PATH_BACKSLASH_CHR
-#define XMF_PATH_SEPARATOR_STR			XMF_PATH_BACKSLASH_STR
+#define XMF_PATH_SEPARATOR_CHR          XMF_PATH_BACKSLASH_CHR
+#define XMF_PATH_SEPARATOR_STR          XMF_PATH_BACKSLASH_STR
 #else
-#define XMF_PATH_SEPARATOR_CHR			XMF_PATH_SLASH_CHR
-#define XMF_PATH_SEPARATOR_STR			XMF_PATH_SLASH_STR
+#define XMF_PATH_SEPARATOR_CHR          XMF_PATH_SLASH_CHR
+#define XMF_PATH_SEPARATOR_STR          XMF_PATH_SLASH_STR
 #endif
 
-#define XMF_FILE_FLAG_TERMINATOR		0x00000001
+#define XMF_FILE_FLAG_TERMINATOR        0x00000001
 
 int XmfFile_Seek(FILE* fp, uint64_t offset, int origin);
 uint64_t XmfFile_Tell(FILE* fp);

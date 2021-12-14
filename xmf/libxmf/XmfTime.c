@@ -5,5 +5,5 @@
 
 uint64_t XmfTime_Get()
 {
-	return GetTickCount64();
+    return GetTickCount64();
 }
