@@ -17,9 +17,6 @@ extern "C" {
 
 XMF_EXPORT uint32_t XmfRecorder_CalculateBitRate(uint32_t frameWidth, uint32_t frameHeight, uint32_t frameRate, uint32_t quality);
 
-XMF_EXPORT int XmfRecorder_Update(XmfRecorder* ctx, uint8_t* frameData, uint32_t frameStep,
-				   uint32_t frameWidth, uint32_t frameHeight, uint32_t updateX,
-				   uint32_t updateY, uint32_t updateWidth, uint32_t updateHeight);
 XMF_EXPORT void XMF_API XmfRecorder_UpdateFrame(XmfRecorder* ctx, uint8_t* buffer, uint32_t updateX, uint32_t updateY,
                                  uint32_t updateWidth, uint32_t updateHeight, uint32_t surfaceStep);
 XMF_EXPORT uint32_t XmfRecorder_GetTimeout(XmfRecorder* ctx);
@@ -31,11 +28,6 @@ XMF_EXPORT void XmfRecorder_SetFrameSize(XmfRecorder* ctx, uint32_t frameWidth, 
 XMF_EXPORT void XmfRecorder_SetVideoQuality(XmfRecorder* ctx, uint32_t videoQuality);
 
 XMF_EXPORT void XmfRecorder_SetFilename(XmfRecorder* ctx, const char* filename);
-XMF_EXPORT void XmfRecorder_SetDirectory(XmfRecorder* ctx, const char* directory);
-XMF_EXPORT size_t XmfRecorder_GetPath(XmfRecorder* ctx, char* path, size_t size);
-
-XMF_EXPORT bool XmfRecorder_IsEnabled(XmfRecorder* ctx);
-XMF_EXPORT void XmfRecorder_SetEnabled(XmfRecorder* ctx, bool enabled);
 
 XMF_EXPORT bool XmfRecorder_Init(XmfRecorder* ctx);
 XMF_EXPORT void XmfRecorder_Uninit(XmfRecorder* ctx);

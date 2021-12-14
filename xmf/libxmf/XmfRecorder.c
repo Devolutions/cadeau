@@ -30,37 +30,6 @@ struct now_recorder
 
 #define TAG "XmfRecorder"
 
-bool XmfRecorder_GenerateFileName(char* prototype, char* directory, int fileNumber, char* pszResult, size_t cchResult)
-{
-	static const char* fmt = "%s%s%s-%d.webm"; // [prototype][-][timestamp]-[video#].webm
-	bool result = false;
-	char timestamp[64];
-	char filename[XMF_MAX_PATH];
-	char* sanitized;
-	time_t t = time(NULL);
-	struct tm* ptm = localtime(&t);
-
-	if (!directory || strlen(directory) == 0)
-		return result;
-
-	strftime(timestamp, sizeof(timestamp), "%FT%T", ptm);
-	sprintf_s(filename, sizeof(filename), fmt,
-		(prototype && strlen(prototype) > 0) ? prototype : "",
-		(prototype && strlen(prototype) > 0) ? "-" : "",
-		timestamp, fileNumber);
-
-	sanitized = XmfFile_SanitizeName(filename, '_', 0);
-
-	if (!sanitized)
-		return result;
-
-	result = XmfPath_Combine(pszResult, cchResult, directory, sanitized);
-
-	free(sanitized);
-
-	return result;
-}
-
 uint32_t XMF_API XmfRecorder_CalculateBitRate(uint32_t frameWidth, uint32_t frameHeight, uint32_t frameRate, 
 	uint32_t quality)
 {
@@ -209,13 +178,9 @@ size_t XMF_API XmfRecorder_GetPath(XmfRecorder* ctx, char* path, size_t size)
 bool XMF_API XmfRecorder_Init(XmfRecorder* ctx)
 {
 	uint32_t targetBitRate;
-	char filename[XMF_MAX_PATH];
 
 	if (ctx->initialized)
 		return true;
-
-	if (!XmfRecorder_GenerateFileName(ctx->filename, ctx->directory, ctx->fileNumber, filename, sizeof(filename)))
-		return false;
 
 	ctx->webm = XmfWebM_New();
 
@@ -224,7 +189,7 @@ bool XMF_API XmfRecorder_Init(XmfRecorder* ctx)
 
 	targetBitRate = XmfRecorder_CalculateBitRate(ctx->frameWidth, ctx->frameHeight, ctx->frameRate, ctx->videoQuality);
 
-	if (!XmfWebM_Init(ctx->webm, ctx->frameWidth, ctx->frameHeight, ctx->frameRate, targetBitRate, filename))
+	if (!XmfWebM_Init(ctx->webm, ctx->frameWidth, ctx->frameHeight, ctx->frameRate, targetBitRate, ctx->filename))
 		goto error;
 
 	ctx->initialized = true;
