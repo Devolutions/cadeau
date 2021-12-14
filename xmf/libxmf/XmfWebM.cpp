@@ -14,6 +14,8 @@
 #include <mkvmuxer/mkvmuxerutil.h>
 #include <mkvmuxer/mkvwriter.h>
 
+#include <winpr/string.h>
+
 #include "XmfFile.h"
 #include "XmfMath.h"
 #include "XmfTime.h"

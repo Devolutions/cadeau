@@ -4,10 +4,9 @@
 
 #include "XmfFile.h"
 #include "XmfMath.h"
+#include "XmfTime.h"
 #include "XmfRecorder.h"
 #include "XmfWebM.h"
-
-#include <time.h>
 
 #define BIT_RATE_MIN 32
 #define BIT_RATE_MAX 2048
@@ -160,19 +159,6 @@ void XMF_API XmfRecorder_SetEnabled(XmfRecorder* ctx, bool enabled)
 {
 	if (ctx)
 		ctx->enabled = enabled;
-}
-
-size_t XMF_API XmfRecorder_GetPath(XmfRecorder* ctx, char* path, size_t size)
-{
-	if (!ctx)
-		return 0;
-
-	size_t path_len = strlen(ctx->directory);
-
-	if (size > path_len)
-		strncpy(path, ctx->directory, path_len);
-
-	return path_len + 1;
 }
 
 bool XMF_API XmfRecorder_Init(XmfRecorder* ctx)
