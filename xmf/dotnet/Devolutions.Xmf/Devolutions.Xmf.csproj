@@ -1,7 +1,16 @@
 <Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
+    <PackageId>Devolutions.Xmf</PackageId>
+    <Version>2022.01.07.2</Version>
+    <Authors>mamoreau@devolutions.net</Authors>
+    <Company>Devolutions</Company>
     <TargetFramework>netstandard2.0</TargetFramework>
   </PropertyGroup>
+
+  	<ItemGroup>
+		<Content CopyToOutputDirectory="PreserveNewest" Include="native/win-x64/xmf.dll" Link="xmf.dll" Pack="true" PackagePath="runtimes/win-x64/native/xmf.dll" />
+        <Content CopyToOutputDirectory="PreserveNewest" Include="native/win-arm64/xmf.dll" Link="xmf.dll" Pack="true" PackagePath="runtimes/win-arm64/native/xmf.dll" />
+	</ItemGroup>
 
 </Project>

@@ -6,7 +6,7 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <ProjectReference Include="../Devolutions.Xmf/Devolutions.Xmf.csproj" />
+    <PackageReference Include="Devolutions.Xmf" Version="2022.01.07.2" />
   </ItemGroup>
 
 </Project>
