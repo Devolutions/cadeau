@@ -55,7 +55,7 @@ typedef struct IXmfRecorderVtbl
     void(STDCALL* Uninit)(IXmfRecorder* This);
     void(STDCALL* SetFilename)(IXmfRecorder* This, const char* filename);
     void(STDCALL* SetFrameSize)(IXmfRecorder* This, uint32_t frameWidth, uint32_t frameHeight);
-    uint32_t(STDCALL* GetFrameRate)(IXmfRecorder* This, uint32_t* pFrameRate);
+    uint32_t(STDCALL* GetFrameRate)(IXmfRecorder* This);
     void(STDCALL* SetFrameRate)(IXmfRecorder* This, uint32_t frameRate);
     void(STDCALL* SetVideoQuality)(IXmfRecorder* This, uint32_t videoQuality);
     uint32_t(STDCALL* GetTimeout)(IXmfRecorder* This);

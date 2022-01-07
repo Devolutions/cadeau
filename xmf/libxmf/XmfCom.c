@@ -81,7 +81,7 @@ HRESULT STDCALL XmfClassFactory_CreateInstance(IUnknown* pUnkOuter, REFIID riid,
 {
 	HRESULT hr = E_NOINTERFACE;
 
-	//if (!pUnkOuter)
+	if (!pUnkOuter)
 		pUnkOuter = (IUnknown*) &g_IClassFactory;
 
 	if (XmfGuid_IsEqual(riid, &IID_IUnknown))

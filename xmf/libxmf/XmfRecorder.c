@@ -122,9 +122,8 @@ void XMF_API XmfRecorder_SetMinimumFrameRate(XmfRecorder* ctx, uint32_t frameRat
     ctx->frameRateMin = clamp(frameRate, XMF_RECORDER_FRAME_RATE_MIN, XMF_RECORDER_FRAME_RATE_MAX);
 }
 
-uint32_t XMF_API XmfRecorder_GetFrameRate(XmfRecorder* ctx, uint32_t* pFrameRate)
+uint32_t XMF_API XmfRecorder_GetFrameRate(XmfRecorder* ctx)
 {
-    *pFrameRate = ctx->frameRate;
     return ctx->frameRate;
 }
 
