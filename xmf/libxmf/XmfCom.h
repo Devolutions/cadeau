@@ -7,7 +7,11 @@
 #include <winpr/rpc.h>
 
 #ifndef STDCALL
+#ifdef _WIN32
 #define STDCALL __stdcall
+#else
+#define STDCALL 
+#endif
 #endif
 
 #ifdef __cplusplus
