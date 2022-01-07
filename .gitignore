@@ -2,3 +2,5 @@
 .vscode/
 build*/
 cmake-build*/
+bin/
+obj/
