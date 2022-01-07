@@ -13,7 +13,7 @@ namespace Devolutions.XmfCli
             IXmfRecorder recorder = XmfApi.CreateRecorder();
             string tempPath = Path.GetTempPath();
             string filename = Path.Combine(tempPath, "video.webm");
-            Console.WriteLine("{}", filename);
+            Console.WriteLine("{0}", filename);
             recorder.SetFilename(filename);
             recorder.SetFrameSize(1024, 768);
             recorder.SetFrameRate(25);
