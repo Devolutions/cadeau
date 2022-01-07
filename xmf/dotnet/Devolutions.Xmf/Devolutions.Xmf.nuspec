@@ -10,9 +10,13 @@
     <description>eXtreme Media Foundation (XMF)</description>
     <copyright>Copyright Devolutions 2021-2022</copyright>
     <license type="expression">MIT OR Apache-2.0</license>
+    <dependencies>
+      <group targetFramework=".NETStandard2.0" />
+    </dependencies>
   </metadata>
   <files>
     <file src="bin\Release\netstandard2.0\Devolutions.Xmf.dll" target="lib\netstandard2.0\" />
-    <file src="native\x64\libxmf.dll" target="content\x64" />
+    <file src="native\win-x64\*" target="runtimes\win-x64\native\" />
+    <file src="native\win-arm64\*" target="runtimes\win-arm64\native\" />
   </files>
 </package>

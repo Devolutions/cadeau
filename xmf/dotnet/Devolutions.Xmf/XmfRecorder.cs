@@ -43,7 +43,7 @@ namespace Devolutions.Xmf
             return (IXmfRecorder)instance;
         }
 
-        [DllImport("libxmf.dll")]
+        [DllImport("xmf")]
         public static extern uint XmfClassFactory_CreateInstance(
             [MarshalAs(UnmanagedType.IUnknown)] object pUnkOuter,
             ref Guid riid,
