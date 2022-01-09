@@ -2,12 +2,14 @@ set(MODULE_NAME "libxmf")
 set(MODULE_PREFIX "LIBXMF")
 
 set(${MODULE_PREFIX}_SOURCES
+    XmfCom.c
     XmfFile.c
     XmfTime.c
     XmfWebM.cpp
     XmfRecorder.c)
 
 set(${MODULE_PREFIX}_HEADERS
+    XmfCom.h
     XmfMath.h
     XmfFile.h
     XmfTime.h

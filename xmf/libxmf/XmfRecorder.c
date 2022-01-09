@@ -7,12 +7,16 @@
 #include "XmfTime.h"
 #include "XmfRecorder.h"
 #include "XmfWebM.h"
+#include "XmfCom.h"
 
 #define BIT_RATE_MIN 32
 #define BIT_RATE_MAX 2048
 
 struct now_recorder
 {
+    void* vtbl;
+    ULONG refCount;
+
     bool initialized;
     bool enabled;
     XmfWebM* webm;
@@ -118,6 +122,11 @@ void XMF_API XmfRecorder_SetMinimumFrameRate(XmfRecorder* ctx, uint32_t frameRat
     ctx->frameRateMin = clamp(frameRate, XMF_RECORDER_FRAME_RATE_MIN, XMF_RECORDER_FRAME_RATE_MAX);
 }
 
+uint32_t XMF_API XmfRecorder_GetFrameRate(XmfRecorder* ctx)
+{
+    return ctx->frameRate;
+}
+
 void XMF_API XmfRecorder_SetFrameRate(XmfRecorder* ctx, uint32_t frameRate)
 {
     ctx->frameRate = clamp(frameRate, XMF_RECORDER_FRAME_RATE_MIN, XMF_RECORDER_FRAME_RATE_MAX);
@@ -211,6 +220,8 @@ void XMF_API XmfRecorder_Uninit(XmfRecorder* ctx)
     ctx->fileNumber++;
 }
 
+static IXmfRecorderVtbl g_IXmfRecorderVtbl;
+
 XmfRecorder* XMF_API XmfRecorder_New()
 {
     XmfRecorder* ctx;
@@ -219,6 +230,9 @@ XmfRecorder* XMF_API XmfRecorder_New()
 
     if (!ctx)
         return NULL;
+
+    ctx->vtbl = (void*) & g_IXmfRecorderVtbl;
+    ctx->refCount = 1;
 
     ctx->frameRateMin = 5;
     ctx->frameRate = 24;
@@ -238,3 +252,56 @@ void XMF_API XmfRecorder_Free(XmfRecorder* ctx)
 
     free(ctx);
 }
+
+HRESULT STDCALL XmfRecorder_QueryInterface(IXmfRecorder* This, REFIID riid, void** ppvObject)
+{
+    HRESULT hr = E_NOINTERFACE;
+
+    if (XmfGuid_IsEqual(riid, &IID_IUnknown))
+    {
+        *ppvObject = (void*)((IUnknown*)This);
+        This->refCount++;
+        hr = S_OK;
+    }
+    else if (XmfGuid_IsEqual(riid, &IID_IXmfRecorder))
+    {
+        *ppvObject = (void*)((IXmfRecorder*)This);
+        This->refCount++;
+        hr = S_OK;
+    }
+
+    return hr;
+}
+
+ULONG STDCALL XmfRecorder_AddRef(IXmfRecorder* This)
+{
+    ULONG refCount = This->refCount++;
+    return refCount;
+}
+
+ULONG STDCALL XmfRecorder_Release(IXmfRecorder* This)
+{
+    ULONG refCount = This->refCount--;
+
+    if (refCount == 0) {
+        XmfRecorder_Free((XmfRecorder*) This);
+    }
+
+    return refCount;
+}
+
+static IXmfRecorderVtbl g_IXmfRecorderVtbl = {
+    XmfRecorder_QueryInterface,
+    XmfRecorder_AddRef,
+    XmfRecorder_Release,
+    XmfRecorder_Init,
+    XmfRecorder_Uninit,
+    XmfRecorder_SetFilename,
+    XmfRecorder_SetFrameSize,
+    XmfRecorder_GetFrameRate,
+    XmfRecorder_SetFrameRate,
+    XmfRecorder_SetVideoQuality,
+    XmfRecorder_GetTimeout,
+    XmfRecorder_Timeout,
+    XmfRecorder_UpdateFrame
+};
