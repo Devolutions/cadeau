@@ -1,10 +1,16 @@
-name: xmf native build
-on: workflow_dispatch
+name: xmf build
+on:
+  workflow_dispatch:
+    inputs:
+      version:
+        description: 'release version'
+        default: "latest"
+        required: true
 env:
   conan-version: 1.43.4
 jobs:
   build-native:
-    name: native build
+    name: native xmf build
     runs-on: ${{ matrix.runner }}
     env:
       CONAN_LOGIN_USERNAME: ${{ secrets.ARTIFACTORY_USERNAME }}
@@ -28,6 +34,15 @@ jobs:
     steps:
       - name: Check out ${{ github.repository }}
         uses: actions/checkout@v3
+
+      - name: Prepare environment
+        shell: pwsh
+        run: |
+          $Version = '${{ github.event.inputs.version }}'
+          if ($Version -eq 'latest') {
+            $Version = (Get-Date -Format "yyyy.MM.dd") + ".0"
+          }
+          Set-Content -Path .\VERSION -Value $Version -NoNewLine -Force
 
       - name: Configure Windows runner
         if: matrix.os == 'win'
