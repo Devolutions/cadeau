@@ -1,0 +1,110 @@
+name: xmf build
+on:
+  workflow_dispatch:
+    inputs:
+      version:
+        description: 'release version'
+        default: "latest"
+        required: true
+env:
+  conan-version: 1.43.4
+jobs:
+  build-native:
+    name: native xmf build
+    runs-on: ${{ matrix.runner }}
+    env:
+      CONAN_LOGIN_USERNAME: ${{ secrets.ARTIFACTORY_USERNAME }}
+      CONAN_PASSWORD: ${{ secrets.ARTIFACTORY_READ_TOKEN }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ win, osx, linux ]
+        arch: [ x64, arm64 ]
+        include:
+          - os: win
+            runner: windows-2022
+          - os: osx
+            runner: macos-12
+          - os: linux
+            runner: ubuntu-20.04
+        exclude:
+          - os: linux
+            arch: arm64
+
+    steps:
+      - name: Check out ${{ github.repository }}
+        uses: actions/checkout@v3
+
+      - name: Prepare environment
+        shell: pwsh
+        run: |
+          $Version = '${{ github.event.inputs.version }}'
+          if ($Version -eq 'latest') {
+            $Version = (Get-Date -Format "yyyy.MM.dd") + ".0"
+          }
+          Set-Content -Path .\VERSION -Value $Version -NoNewLine -Force
+
+      - name: Configure Windows runner
+        if: matrix.os == 'win'
+        shell: pwsh
+        run: |
+          choco install ninja
+          Install-Module -Name VsDevShell -Force
+
+      - name: Configure macOS runner
+        if: matrix.os == 'osx'
+        shell: pwsh
+        run: |
+          brew install ninja
+          echo "MACOSX_DEPLOYMENT_TARGET=10.10" >> $Env:GITHUB_ENV
+
+      - name: Configure Linux runner
+        if: matrix.os == 'linux'
+        shell: pwsh
+        run: |
+          sudo apt update
+          sudo apt install ninja-build
+
+      - name: Configure conan
+        shell: pwsh
+        run: |
+          pip3 install conan==${{env.conan-version}} --upgrade
+          conan config install --type=git -sf settings https://github.com/Devolutions/conan-public
+          conan remote clean
+          conan remote add artifactory https://devolutions.jfrog.io/devolutions/api/conan/conan-local
+
+      - name: Build xmf (${{matrix.os}}-${{matrix.arch}})
+        working-directory: xmf
+        shell: pwsh
+        run: |
+          $DotNetOs = '${{matrix.os}}'
+          $DotNetArch = '${{matrix.arch}}'
+          $DotNetRid = '${{matrix.os}}-${{matrix.arch}}'
+          $BuildDir = "build-$DotNetRid"
+          Remove-Item -Path $BuildDir -Recurse -Force | Out-Null
+          New-Item -Path $BuildDir -ItemType Directory -ErrorAction SilentlyContinue | Out-Null
+          New-Item -Path ".\runtimes\${DotNetRid}\native" -ItemType Directory -ErrorAction SilentlyContinue | Out-Null
+
+          if ($DotNetOs -eq 'win') {
+            $MsvcArch = @{'x64'='x64';'arm64'='ARM64'}[$DotNetArch]
+            cmake -G "Visual Studio 17 2022" -A $MsvcArch . -B $BuildDir
+            cmake --build $BuildDir --config Release
+            Copy-Item "$BuildDir\libxmf\Release\libxmf.dll" ".\runtimes\${DotNetRid}\native\xmf.dll" -Force
+          }
+          else if ($DotNetOs -eq 'osx') {
+            $AppleArch = @{'x64'='x86_64';'arm64'='arm64'}[$DotNetArch]
+            cmake . -G Ninja -B $BuildDir -DCMAKE_OSX_ARCHITECTURES="$AppleArch"
+            cmake --build $BuildDir
+            Copy-Item "$BuildDir\libxmf\libxmf.dylib" ".\runtimes\${DotNetRid}\native\libxmf.dylib" -Force
+          }
+          else if ($DotNetOs -eq 'linux') {
+            cmake . -G Ninja -B $BuildDir
+            cmake --build $BuildDir
+            Copy-Item "$BuildDir\libxmf\libxmf.so" ".\runtimes\${DotNetRid}\native\libxmf.so" -Force
+          }
+
+      - name: Upload xmf (${{matrix.os}}-${{matrix.arch}})
+        uses: actions/upload-artifact@v3
+        with:
+          name: xmf-${{matrix.os}}-${{matrix.arch}}
+          path: xmf/runtimes/${{matrix.os}}-${{matrix.arch}}

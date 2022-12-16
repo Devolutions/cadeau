@@ -2,6 +2,9 @@
 .vscode/
 build*/
 cmake-build*/
+CMakeFiles/
 bin/
 obj/
 *.nupkg
+runtimes/
+package/
