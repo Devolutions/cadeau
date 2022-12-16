@@ -3,7 +3,7 @@ on:
   workflow_dispatch:
     inputs:
       version:
-        description: 'release version'
+        description: 'build version number'
         default: "latest"
         required: true
 env:
@@ -80,26 +80,31 @@ jobs:
           $DotNetArch = '${{matrix.arch}}'
           $DotNetRid = '${{matrix.os}}-${{matrix.arch}}'
           $BuildDir = "build-$DotNetRid"
-          Remove-Item -Path $BuildDir -Recurse -Force | Out-Null
+          Remove-Item -Path $BuildDir -Recurse -ErrorAction SilentlyContinue | Out-Null
           New-Item -Path $BuildDir -ItemType Directory -ErrorAction SilentlyContinue | Out-Null
+          New-Item -Path ".\runtimes\${DotNetRid}\native" -ItemType Directory -ErrorAction SilentlyContinue | Out-Null
 
           $InstallPath = ".\runtimes\${DotNetRid}\native"
           New-Item -Path $InstallPath -ItemType Directory -ErrorAction SilentlyContinue | Out-Null
+          
+          $CMakeArgs = @("-DCMAKE_BUILD_TYPE=Release", "-DCMAKE_INSTALL_PREFIX=`"$InstallPath`"")
 
           if ($DotNetOs -eq 'win') {
             $MsvcArch = @{'x64'='x64';'arm64'='ARM64'}[$DotNetArch]
-            cmake -G "Visual Studio 17 2022" -A $MsvcArch . -B $BuildDir -DCMAKE_INSTALL_PREFIX="$InstallPath"
+            Enter-VsDevShell $MsvcArch
+            cmake -G Ninja . -B $BuildDir $CMakeArgs
             cmake --build $BuildDir --config Release
             cmake --install $BuildDir --config Release
           }
-          else if ($DotNetOs -eq 'osx') {
+          elseif ($DotNetOs -eq 'osx') {
             $AppleArch = @{'x64'='x86_64';'arm64'='arm64'}[$DotNetArch]
-            cmake . -G Ninja -B $BuildDir -DCMAKE_OSX_ARCHITECTURES="$AppleArch" -DCMAKE_INSTALL_PREFIX="$InstallPath"
+            $CMakeArgs += "-DCMAKE_OSX_ARCHITECTURES=`"$AppleArch`""
+            cmake . -G Ninja -B $BuildDir $CMakeArgs
             cmake --build $BuildDir
             cmake --install $BuildDir
           }
-          else if ($DotNetOs -eq 'linux') {
-            cmake . -G Ninja -B $BuildDir -DCMAKE_INSTALL_PREFIX="$InstallPath"
+          elseif ($DotNetOs -eq 'linux') {
+            cmake . -G Ninja -B $BuildDir $CMakeArgs
             cmake --build $BuildDir
             cmake --install $BuildDir
           }
@@ -108,4 +113,4 @@ jobs:
         uses: actions/upload-artifact@v3
         with:
           name: xpp-${{matrix.os}}-${{matrix.arch}}
-          path: xpp/runtimes/${{matrix.os}}-${{matrix.arch}}
+          path: runtimes/${{matrix.os}}-${{matrix.arch}}/native

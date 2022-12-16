@@ -3,7 +3,7 @@ on:
   workflow_dispatch:
     inputs:
       version:
-        description: 'release version'
+        description: 'build version number'
         default: "latest"
         required: true
 env:
@@ -27,9 +27,6 @@ jobs:
             runner: macos-12
           - os: linux
             runner: ubuntu-20.04
-        exclude:
-          - os: linux
-            arch: arm64
 
     steps:
       - name: Check out ${{ github.repository }}
@@ -48,7 +45,7 @@ jobs:
         if: matrix.os == 'win'
         shell: pwsh
         run: |
-          choco install ninja
+          choco install ninja 7zip wget
           Install-Module -Name VsDevShell -Force
 
       - name: Configure macOS runner
@@ -63,7 +60,47 @@ jobs:
         shell: pwsh
         run: |
           sudo apt update
-          sudo apt install ninja-build
+          sudo apt install xz-utils ninja-build
+
+      - name: Install clang+llvm
+        shell: pwsh
+        run: |
+          $CLANG_LLVM_VERSION='14.0.6'
+          $CLANG_LLVM_OS=@{'win'='windows';'osx'='macos';'linux'='ubuntu-20.04'}['${{matrix.os}}']
+          $CLANG_LLVM_BASE_URL="https://github.com/awakecoding/llvm-prebuilt/releases/download/v2022.2.0"
+          $CLANG_LLVM_NAME="clang+llvm-${CLANG_LLVM_VERSION}-x86_64-${CLANG_LLVM_OS}"
+          wget -q "${CLANG_LLVM_BASE_URL}/${CLANG_LLVM_NAME}.tar.xz"
+          if ($IsWindows) {
+            $LLVM_PREFIX="C:/llvm"
+            cmd.exe /c "7z.exe x ${CLANG_LLVM_NAME}.tar.xz -so | 7z x -si -ttar -o`"C:/temp`""
+            mv "C:/temp/${CLANG_LLVM_NAME}" $LLVM_PREFIX
+          } else {
+            $LLVM_PREFIX="/opt/llvm"
+            tar -xf "${CLANG_LLVM_NAME}.tar.xz" -C /tmp
+            sudo mv "/tmp/${CLANG_LLVM_NAME}" $LLVM_PREFIX
+          }
+          $LLVM_BIN_PATH="$LLVM_PREFIX/bin"
+          $LLVM_DIR="$LLVM_PREFIX/lib/cmake/llvm"
+          echo "LLVM_DIR=$LLVM_DIR" >> $Env:GITHUB_ENV
+          echo "PATH=$LLVM_BIN_PATH$([IO.Path]::PathSeparator)$Env:PATH" >> $Env:GITHUB_ENV
+
+      - name: Configure CBake
+        if: matrix.os == 'linux'
+        shell: pwsh
+        run: |
+          $CBakeVersion = "v2022.12.16.0"
+          $CBakeRepoUrl = "https://github.com/Devolutions/CBake"
+          $CBakeDownloadUrl = "$CBakeRepoUrl/releases/download/$CBakeVersion"
+          git clone -b $CBakeVersion "https://github.com/Devolutions/CBake" cbake
+          @('ubuntu-20.04-amd64-sysroot.tar.xz', 'ubuntu-20.04-arm64-sysroot.tar.xz') | % {
+            curl -L --output "cbake/sysroots/$_" "$CBakeDownloadUrl/$_"
+            tar -C "cbake/sysroots" -xf "cbake/sysroots/$_"
+            Remove-Item "cbake/sysroots/$_" | Out-Null
+          }
+          $CBakeHome = Join-Path (Get-Location) 'cbake'
+          $CMakeToolchainFile = Join-Path $CBakeHome "cmake/linux.toolchain.cmake"
+          echo "CBAKE_HOME=$CBakeHome" >> $Env:GITHUB_ENV
+          echo "CMAKE_TOOLCHAIN_FILE=$CMakeToolchainFile" >> $Env:GITHUB_ENV
 
       - name: Configure conan
         shell: pwsh
@@ -81,26 +118,32 @@ jobs:
           $DotNetArch = '${{matrix.arch}}'
           $DotNetRid = '${{matrix.os}}-${{matrix.arch}}'
           $BuildDir = "build-$DotNetRid"
-          Remove-Item -Path $BuildDir -Recurse -Force | Out-Null
+          Remove-Item -Path $BuildDir -Recurse -ErrorAction SilentlyContinue | Out-Null
           New-Item -Path $BuildDir -ItemType Directory -ErrorAction SilentlyContinue | Out-Null
           New-Item -Path ".\runtimes\${DotNetRid}\native" -ItemType Directory -ErrorAction SilentlyContinue | Out-Null
 
+          $CMakeArgs = @("-DCMAKE_BUILD_TYPE=Release")
+
           if ($DotNetOs -eq 'win') {
             $MsvcArch = @{'x64'='x64';'arm64'='ARM64'}[$DotNetArch]
-            cmake -G "Visual Studio 17 2022" -A $MsvcArch . -B $BuildDir
-            cmake --build $BuildDir --config Release
-            Copy-Item "$BuildDir\libxmf\Release\libxmf.dll" ".\runtimes\${DotNetRid}\native\xmf.dll" -Force
+            Enter-VsDevShell $MsvcArch
+            cmake -G Ninja . -B $BuildDir $CMakeArgs
+            cmake --build $BuildDir
+            Copy-Item "$BuildDir\lib\xmf.dll" ".\runtimes\${DotNetRid}\native\xmf.dll" -Force
           }
-          else if ($DotNetOs -eq 'osx') {
+          elseif ($DotNetOs -eq 'osx') {
             $AppleArch = @{'x64'='x86_64';'arm64'='arm64'}[$DotNetArch]
-            cmake . -G Ninja -B $BuildDir -DCMAKE_OSX_ARCHITECTURES="$AppleArch"
+            $CMakeArgs += "-DCMAKE_OSX_ARCHITECTURES=`"$AppleArch`""
+            cmake . -G Ninja -B $BuildDir $CMakeArgs
             cmake --build $BuildDir
-            Copy-Item "$BuildDir\libxmf\libxmf.dylib" ".\runtimes\${DotNetRid}\native\libxmf.dylib" -Force
+            Copy-Item "$BuildDir\lib\libxmf.dylib" ".\runtimes\${DotNetRid}\native\libxmf.dylib" -Force
           }
-          else if ($DotNetOs -eq 'linux') {
-            cmake . -G Ninja -B $BuildDir
+          elseif ($DotNetOs -eq 'linux') {
+            $LinuxArch = @{'x64'='amd64';'arm64'='arm64'}[$DotNetArch]
+            $CMakeArgs += "-DSYSROOT_NAME=`"ubuntu-20.04-$LinuxArch`""
+            cmake . -G Ninja -B $BuildDir $CMakeArgs
             cmake --build $BuildDir
-            Copy-Item "$BuildDir\libxmf\libxmf.so" ".\runtimes\${DotNetRid}\native\libxmf.so" -Force
+            Copy-Item "$BuildDir\lib\libxmf.so" ".\runtimes\${DotNetRid}\native\libxmf.so" -Force
           }
 
       - name: Upload xmf (${{matrix.os}}-${{matrix.arch}})
