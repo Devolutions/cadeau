@@ -75,9 +75,9 @@ struct _IXmfRecorder
     ULONG refCount;
 };
 
-const GUID IID_IUnknown;
-const GUID IID_IClassFactory;
-const GUID IID_IXmfRecorder;
+extern const GUID IID_IUnknown;
+extern const GUID IID_IClassFactory;
+extern const GUID IID_IXmfRecorder;
 
 bool XmfGuid_IsEqual(const GUID* guid1, const GUID* guid2);
 
