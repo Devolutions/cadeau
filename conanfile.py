@@ -7,5 +7,5 @@ class Importer(ConanFile):
     generators = 'cmake'
 
     def build_requirements(self):
-        self.build_requires('halide/12.0.1-1@devolutions/stable')
-        self.build_requires('libyuv/1661-3@devolutions/stable')
+        self.build_requires('halide/12.0.1@devolutions/stable')
+        self.build_requires('libyuv/1.0.0@devolutions/stable')
