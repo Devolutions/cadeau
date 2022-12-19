@@ -20,7 +20,7 @@ uint64_t XmfWebM_FrameCount(XmfWebM* ctx);
 now_webm_time XmfWebM_Duration(XmfWebM* ctx);
 
 bool XmfWebM_Init(XmfWebM* ctx, uint32_t frameWidth, uint32_t frameHeight, uint32_t frameRate,
-			      uint32_t targetBitRate, const char* filename);
+                uint32_t targetBitRate, const char* filename);
 void XmfWebM_Uninit(XmfWebM* ctx);
 
 XmfWebM* XmfWebM_New();

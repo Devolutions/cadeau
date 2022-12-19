@@ -1,7 +1,4 @@
 
-# https://github.com/wayk/Halide/blob/master/src/Target.cpp#L180
-# https://github.com/halide/Halide/blob/master/tutorial/lesson_15_generators_usage.sh
-
 if(CMAKE_HOST_SYSTEM_NAME STREQUAL Windows)
 	set(HALIDE_GENERATOR_TARGET "x86_64-pc-windows-msvc")
 	set(HALIDE_SHARED_LIBRARY "Halide.dll")
@@ -37,7 +34,10 @@ set(HALIDE_GENERATOR_SOURCES "generator.cpp")
 set(HALIDE_OUTPUT_PATH "${CMAKE_BINARY_DIR}/generated/halide")
 set(HALIDE_GENERATOR_EXECUTABLE "${HALIDE_OUTPUT_PATH}/${HALIDE_GENERATOR_NAME}")
 
-set(HALIDE_CMAKE_COMMAND "${CMAKE_COMMAND}")
+set(HALIDE_CMAKE_COMMAND "${CMAKE_COMMAND};-E;env")
+list(APPEND HALIDE_CMAKE_COMMAND "--unset=CMAKE_TOOLCHAIN_FILE")
+list(APPEND HALIDE_CMAKE_COMMAND "--unset=CMAKE_OSX_ARCHITECTURES")
+list(APPEND HALIDE_CMAKE_COMMAND "${CMAKE_COMMAND}")
 if(CMAKE_HOST_SYSTEM_NAME STREQUAL Windows)
     list(APPEND HALIDE_CMAKE_COMMAND "-G;Visual Studio 17 2022;-A;x64")
 endif()

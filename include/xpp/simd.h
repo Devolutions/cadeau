@@ -7,9 +7,9 @@
 extern "C" {
 #endif
 
-#define XPP_SIMD_NONE		0
-#define XPP_SIMD_SSE2		1
-#define XPP_SIMD_NEON		2
+#define XPP_SIMD_NONE       0
+#define XPP_SIMD_SSE2       1
+#define XPP_SIMD_NEON       2
 
 XPP_EXPORT uint32_t Xpp_SimdInit(void);
 XPP_EXPORT uint32_t Xpp_SimdGet(void);

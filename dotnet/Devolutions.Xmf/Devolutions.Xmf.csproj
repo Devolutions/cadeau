@@ -9,8 +9,8 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <Content CopyToOutputDirectory="PreserveNewest" Include="../../runtimes/win-x64/native/xmf.dll" Pack="true" PackagePath="runtimes/win-x64/native/xmf.dll" />
-    <Content CopyToOutputDirectory="PreserveNewest" Include="../../runtimes/win-arm64/native/xmf.dll" Pack="true" PackagePath="runtimes/win-arm64/native/xmf.dll" />
+    <Content CopyToOutputDirectory="PreserveNewest" Include="../runtimes/win-x64/native/xmf.dll" Pack="true" PackagePath="runtimes/win-x64/native/xmf.dll" />
+    <Content CopyToOutputDirectory="PreserveNewest" Include="../runtimes/win-arm64/native/xmf.dll" Pack="true" PackagePath="runtimes/win-arm64/native/xmf.dll" />
   </ItemGroup>
 
 </Project>

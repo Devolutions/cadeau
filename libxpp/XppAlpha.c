@@ -8,61 +8,61 @@
 #include <xpp/color.h>
 
 XppStatus Xpp_MultiplyAlpha(const uint8_t* pSrc, uint32_t srcStep,
-	uint8_t* pDst, uint32_t dstStep, uint32_t width, uint32_t height)
+    uint8_t* pDst, uint32_t dstStep, uint32_t width, uint32_t height)
 {
-	int x, y;
-	int srcPad;
-	int dstPad;
+    int32_t x, y;
+    int32_t srcPad;
+    int32_t dstPad;
 
-	srcPad = (srcStep - (width * 4));
-	dstPad = (dstStep - (width * 4));
+    srcPad = (srcStep - (width * 4));
+    dstPad = (dstStep - (width * 4));
 
-	for (y = 0; y < height; y++)
-	{
-		for (x = 0; x < width; x++)
-		{
-			pDst[0] = ((pSrc[0] * pSrc[3]) / 255);
-			pDst[1] = ((pSrc[1] * pSrc[3]) / 255);
-			pDst[2] = ((pSrc[2] * pSrc[3]) / 255);
-			pDst[3] = pSrc[3];
+    for (y = 0; y < height; y++)
+    {
+        for (x = 0; x < width; x++)
+        {
+            pDst[0] = ((pSrc[0] * pSrc[3]) / 255);
+            pDst[1] = ((pSrc[1] * pSrc[3]) / 255);
+            pDst[2] = ((pSrc[2] * pSrc[3]) / 255);
+            pDst[3] = pSrc[3];
 
-			pSrc += 4;
-			pDst += 4;
-		}
+            pSrc += 4;
+            pDst += 4;
+        }
 
-		pSrc += srcPad;
-		pDst += dstPad;
-	}
+        pSrc += srcPad;
+        pDst += dstPad;
+    }
 
-	return XppSuccess;
+    return XppSuccess;
 }
 
 XppStatus Xpp_UnmultiplyAlpha(const uint8_t* pSrc, uint32_t srcStep,
-	uint8_t* pDst, uint32_t dstStep, uint32_t width, uint32_t height)
+    uint8_t* pDst, uint32_t dstStep, uint32_t width, uint32_t height)
 {
-	int x, y;
-	int srcPad;
-	int dstPad;
+    int32_t x, y;
+    int32_t srcPad;
+    int32_t dstPad;
 
-	srcPad = (srcStep - (width * 4));
-	dstPad = (dstStep - (width * 4));
+    srcPad = (srcStep - (width * 4));
+    dstPad = (dstStep - (width * 4));
 
-	for (y = 0; y < height; y++)
-	{
-		for (x = 0; x < width; x++)
-		{
-			pDst[0] = (pSrc[0] * 255) / pSrc[3];
-			pDst[1] = (pSrc[1] * 255) / pSrc[3];
-			pDst[2] = (pSrc[2] * 255) / pSrc[3];
-			pDst[3] = pSrc[3];
+    for (y = 0; y < height; y++)
+    {
+        for (x = 0; x < width; x++)
+        {
+            pDst[0] = (pSrc[0] * 255) / pSrc[3];
+            pDst[1] = (pSrc[1] * 255) / pSrc[3];
+            pDst[2] = (pSrc[2] * 255) / pSrc[3];
+            pDst[3] = pSrc[3];
 
-			pSrc += 4;
-			pDst += 4;
-		}
+            pSrc += 4;
+            pDst += 4;
+        }
 
-		pSrc += srcPad;
-		pDst += dstPad;
-	}
+        pSrc += srcPad;
+        pDst += dstPad;
+    }
 
-	return XppSuccess;
+    return XppSuccess;
 }
