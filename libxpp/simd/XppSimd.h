@@ -5,14 +5,14 @@
 #include <xpp/math.h>
 #include <xpp/color.h>
 
-#define SIMD_NONE	0
-#define SIMD_SSE2	1
-#define SIMD_NEON	2
+#define SIMD_NONE    0
+#define SIMD_SSE2    1
+#define SIMD_NEON    2
 
 #if defined(__aarch64__) || defined(__x86_64__) || defined(_M_ARM64)
-#define BITS	64
+#define BITS    64
 #else
-#define BITS	32
+#define BITS    32
 #endif
 
 uint32_t init_simd(void);
@@ -32,12 +32,12 @@ uint32_t override_simd(uint32_t simd);
 #else
 
 XppStatus Xpp_Copy_simd(uint8_t* pDstData, int nDstStep, int nXDst, int nYDst,
-	int nWidth, int nHeight, uint8_t* pSrcData, int nSrcStep, int nXSrc, int nYSrc);
+    int nWidth, int nHeight, uint8_t* pSrcData, int nSrcStep, int nXSrc, int nYSrc);
 
 #endif
 
 XppStatus Xpp_Move_simd(uint8_t* pData, int nStep, int nXDst, int nYDst,
-	int nWidth, int nHeight, int nXSrc, int nYSrc);
+    int nWidth, int nHeight, int nXSrc, int nYSrc);
 
 #if !defined(LINEAR_COMPARE32) && (defined(__arm__) || defined(__aarch64__)) && defined(__ANDROID__)
 
@@ -46,7 +46,7 @@ XppStatus Xpp_Move_simd(uint8_t* pData, int nStep, int nXDst, int nYDst,
 #else
 
 XppStatus Xpp_Compare32_simd(uint8_t* pData1, int step1, uint8_t* pData2, int step2,
-	int width, int height, XppRect* rect);
+    int width, int height, XppRect* rect);
 
 #endif
 
@@ -60,15 +60,15 @@ XppStatus Xpp_Compare32_simd(uint8_t* pData1, int step1, uint8_t* pData2, int st
 #else
 
 XppStatus Xpp_Compare8_simd(uint8_t* pData1, int step1, uint8_t* pData2, int step2,
-	int width, int height, XppRect* rect);
+    int width, int height, XppRect* rect);
 
 #endif
 
 XppStatus Xpp_YCoCgR420ToRGB_8u_P3AC4R_simd(const uint8_t* pSrc[3],
-	uint32_t srcStep[3], uint8_t* pDst, uint32_t dstStep, uint32_t width, uint32_t height);
+    uint32_t srcStep[3], uint8_t* pDst, uint32_t dstStep, uint32_t width, uint32_t height);
 
 XppStatus Xpp_RGBToYCoCgR420_8u_P3AC4R_simd(const uint8_t* pSrc, uint32_t srcStep,
-	uint8_t* pDst[3], uint32_t dstStep[3], uint32_t width, uint32_t height);
+    uint8_t* pDst[3], uint32_t dstStep[3], uint32_t width, uint32_t height);
 
 #endif
 

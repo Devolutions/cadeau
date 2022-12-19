@@ -37,104 +37,104 @@ static uint32_t simd_type = ~0;
 
 static int check_feature(char *buffer, char *feature)
 {
-	char *p;
-	if (*feature == 0)
-		return 0;
-	if (strncmp(buffer, "Features", 8) != 0)
-		return 0;
-	buffer += 8;
-	while (isspace(*buffer))
-		buffer++;
+    char *p;
+    if (*feature == 0)
+        return 0;
+    if (strncmp(buffer, "Features", 8) != 0)
+        return 0;
+    buffer += 8;
+    while (isspace(*buffer))
+        buffer++;
 
-	/* Check if 'feature' is present in the buffer as a separate word */
-	while ((p = strstr(buffer, feature))) {
-		if (p > buffer && !isspace(*(p - 1))) {
-			buffer++;
-			continue;
-		}
-		p += strlen(feature);
-		if (*p != 0 && !isspace(*p)) {
-			buffer++;
-			continue;
-		}
-		return 1;
-	}
-	return 0;
+    /* Check if 'feature' is present in the buffer as a separate word */
+    while ((p = strstr(buffer, feature))) {
+        if (p > buffer && !isspace(*(p - 1))) {
+            buffer++;
+            continue;
+        }
+        p += strlen(feature);
+        if (*p != 0 && !isspace(*p)) {
+            buffer++;
+            continue;
+        }
+        return 1;
+    }
+    return 0;
 }
 
 static int parse_proc_cpuinfo(int bufsize)
 {
-	char* buffer = (char*) xpp_malloc(bufsize);
-	FILE* fd;
+    char* buffer = (char*) xpp_malloc(bufsize);
+    FILE* fd;
 
-	if (!buffer)
-		return 0;
+    if (!buffer)
+        return 0;
 
-	fd = fopen("/proc/cpuinfo", "r");
-	if (fd) {
-		while (fgets(buffer, bufsize, fd)) {
-			if (!strchr(buffer, '\n') && !feof(fd)) {
-				/* "impossible" happened - insufficient size of the buffer! */
-				fclose(fd);
-				xpp_free(buffer);
-				return 0;
-			}
-			if (check_feature(buffer, "neon"))
-				simd_type = SIMD_NEON;
-		}
-		fclose(fd);
-	}
-	xpp_free(buffer);
-	return 1;
+    fd = fopen("/proc/cpuinfo", "r");
+    if (fd) {
+        while (fgets(buffer, bufsize, fd)) {
+            if (!strchr(buffer, '\n') && !feof(fd)) {
+                /* "impossible" happened - insufficient size of the buffer! */
+                fclose(fd);
+                xpp_free(buffer);
+                return 0;
+            }
+            if (check_feature(buffer, "neon"))
+                simd_type = SIMD_NEON;
+        }
+        fclose(fd);
+    }
+    xpp_free(buffer);
+    return 1;
 }
 
 #endif
 
 uint32_t get_simd(void)
 {
-	return simd_type;
+    return simd_type;
 }
 
 uint32_t override_simd(unsigned int simd)
 {
-	return simd_type = simd;
+    return simd_type = simd;
 }
 
 uint32_t auto_simd(void)
 {
-	simd_type = ~0U;
-	return init_simd();
+    simd_type = ~0U;
+    return init_simd();
 }
 
 uint32_t init_simd(void)
 {
-	char* env = NULL;
+    char* env = NULL;
 #ifdef NEED_CPU_FEATURE_DETECTION
-	int bufsize = 1024;  /* an initial guess for the line buffer size limit */
+    int bufsize = 1024;  /* an initial guess for the line buffer size limit */
 #endif
 
-	if (simd_type != ~0U)
-		return simd_type;
+    if (simd_type != ~0U)
+        return simd_type;
 
 #if defined(__aarch64__) || defined(__APPLE__) || defined(__ARM_NEON__)
-	/* NEON is always available with ARMv8, and any iPhones that lacked NEON
-	   support (specifically, the 3G and earlier) are long obsolete. */
+    /* NEON is always available with ARMv8, and any iPhones that lacked NEON
+       support (specifically, the 3G and earlier) are long obsolete. */
 
-	simd_type = SIMD_NEON;
+    simd_type = SIMD_NEON;
 
 #elif defined(__linux__) || defined(ANDROID) || defined(__ANDROID__)
 
-	while (!parse_proc_cpuinfo(bufsize)) {
-		bufsize *= 2;
-		if (bufsize > SOMEWHAT_SANE_PROC_CPUINFO_SIZE_LIMIT)
-			break;
-	}
+    while (!parse_proc_cpuinfo(bufsize)) {
+        bufsize *= 2;
+        if (bufsize > SOMEWHAT_SANE_PROC_CPUINFO_SIZE_LIMIT)
+            break;
+    }
 
 #endif
 
-	env = getenv("SIMD_FORCENONE");
-	if ((env != NULL) && (strcmp(env, "1") == 0))
-		simd_type = SIMD_NONE;
+    env = getenv("SIMD_FORCENONE");
+    if ((env != NULL) && (strcmp(env, "1") == 0))
+        simd_type = SIMD_NONE;
 
-	return simd_type;
+    return simd_type;
 }

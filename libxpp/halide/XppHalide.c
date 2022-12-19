@@ -51,129 +51,129 @@ const struct halide_type_t halide_type_uint64_t = { halide_type_uint, 64, 1 }; /
 
 void halide_setup_rgb_buffer_t(halide_buffer_t* buffer, uint8_t* data, int width, int height, int stride)
 {
-	buffer->device = 0;
-	buffer->device_interface = NULL;
-	buffer->type = halide_type_uint8_t;
-	buffer->host = data;
-	buffer->flags = halide_buffer_flag_host_dirty;
-	buffer->dim[0].min = 0;
-	buffer->dim[0].extent = 4;
-	buffer->dim[0].stride = 1;
-	buffer->dim[0].flags = 0;
-	buffer->dim[1].min = 0;
-	buffer->dim[1].extent = width;
-	buffer->dim[1].stride = 4;
-	buffer->dim[1].flags = 0;
-	buffer->dim[2].min = 0;
-	buffer->dim[2].extent = height;
-	buffer->dim[2].stride = stride;
-	buffer->dim[2].flags = 0;
-	buffer->dimensions = 3;
-	buffer->padding = NULL;
+    buffer->device = 0;
+    buffer->device_interface = NULL;
+    buffer->type = halide_type_uint8_t;
+    buffer->host = data;
+    buffer->flags = halide_buffer_flag_host_dirty;
+    buffer->dim[0].min = 0;
+    buffer->dim[0].extent = 4;
+    buffer->dim[0].stride = 1;
+    buffer->dim[0].flags = 0;
+    buffer->dim[1].min = 0;
+    buffer->dim[1].extent = width;
+    buffer->dim[1].stride = 4;
+    buffer->dim[1].flags = 0;
+    buffer->dim[2].min = 0;
+    buffer->dim[2].extent = height;
+    buffer->dim[2].stride = stride;
+    buffer->dim[2].flags = 0;
+    buffer->dimensions = 3;
+    buffer->padding = NULL;
 }
 
 void halide_setup_16s_buffer_t(halide_buffer_t* buffer, uint8_t* data, int width, int height, int stride)
 {
-	buffer->device = 0;
-	buffer->device_interface = NULL;
-	buffer->type = halide_type_int16_t;
-	buffer->host = data;
-	buffer->flags = halide_buffer_flag_host_dirty;
-	buffer->dim[0].min = 0;
-	buffer->dim[0].extent = width;
-	buffer->dim[0].stride = 1;
-	buffer->dim[0].flags = 0;
-	buffer->dim[1].min = 0;
-	buffer->dim[1].extent = height;
-	buffer->dim[1].stride = stride;
-	buffer->dim[1].flags = 0;
-	buffer->dimensions = 2;
-	buffer->padding = NULL;
+    buffer->device = 0;
+    buffer->device_interface = NULL;
+    buffer->type = halide_type_int16_t;
+    buffer->host = data;
+    buffer->flags = halide_buffer_flag_host_dirty;
+    buffer->dim[0].min = 0;
+    buffer->dim[0].extent = width;
+    buffer->dim[0].stride = 1;
+    buffer->dim[0].flags = 0;
+    buffer->dim[1].min = 0;
+    buffer->dim[1].extent = height;
+    buffer->dim[1].stride = stride;
+    buffer->dim[1].flags = 0;
+    buffer->dimensions = 2;
+    buffer->padding = NULL;
 }
 
 void halide_setup_ycocg_buffer_t(halide_buffer_t* buffer, uint8_t* data, int width, int height, int stride)
 {
-	buffer->device = 0;
-	buffer->device_interface = NULL;
-	buffer->type = halide_type_uint8_t;
-	buffer->host = data;
-	buffer->flags = halide_buffer_flag_host_dirty;
-	buffer->dim[0].min = 0;
-	buffer->dim[0].extent = width;
-	buffer->dim[0].stride = 1;
-	buffer->dim[0].flags = 0;
-	buffer->dim[1].min = 0;
-	buffer->dim[1].extent = height;
-	buffer->dim[1].stride = stride;
-	buffer->dim[1].flags = 0;
-	buffer->dimensions = 2;
-	buffer->padding = NULL;
+    buffer->device = 0;
+    buffer->device_interface = NULL;
+    buffer->type = halide_type_uint8_t;
+    buffer->host = data;
+    buffer->flags = halide_buffer_flag_host_dirty;
+    buffer->dim[0].min = 0;
+    buffer->dim[0].extent = width;
+    buffer->dim[0].stride = 1;
+    buffer->dim[0].flags = 0;
+    buffer->dim[1].min = 0;
+    buffer->dim[1].extent = height;
+    buffer->dim[1].stride = stride;
+    buffer->dim[1].flags = 0;
+    buffer->dimensions = 2;
+    buffer->padding = NULL;
 }
 
 void halide_setup_u32_buffer_t(halide_buffer_t* buffer, uint32_t* data, int width, int height, int stride)
 {
-	buffer->device = 0;
-	buffer->device_interface = NULL;
-	buffer->type = halide_type_uint32_t;
-	buffer->host = (uint8_t*) data;
-	buffer->flags = halide_buffer_flag_host_dirty;
-	buffer->dim[0].min = 0;
-	buffer->dim[0].extent = width;
-	buffer->dim[0].stride = 1;
-	buffer->dim[0].flags = 0;
-	buffer->dim[1].min = 0;
-	buffer->dim[1].extent = height;
-	buffer->dim[1].stride = stride;
-	buffer->dim[1].flags = 0;
-	buffer->dimensions = 2;
-	buffer->padding = NULL;
+    buffer->device = 0;
+    buffer->device_interface = NULL;
+    buffer->type = halide_type_uint32_t;
+    buffer->host = (uint8_t*) data;
+    buffer->flags = halide_buffer_flag_host_dirty;
+    buffer->dim[0].min = 0;
+    buffer->dim[0].extent = width;
+    buffer->dim[0].stride = 1;
+    buffer->dim[0].flags = 0;
+    buffer->dim[1].min = 0;
+    buffer->dim[1].extent = height;
+    buffer->dim[1].stride = stride;
+    buffer->dim[1].flags = 0;
+    buffer->dimensions = 2;
+    buffer->padding = NULL;
 }
 
 void halide_setup_1d_u32_buffer_t(halide_buffer_t* buffer, uint32_t* data, int width)
 {
-	buffer->device = 0;
-	buffer->device_interface = NULL;
-	buffer->type = halide_type_uint32_t;
-	buffer->host = (uint8_t*) data;
-	buffer->flags = halide_buffer_flag_host_dirty;
-	buffer->dim[0].min = 0;
-	buffer->dim[0].extent = width;
-	buffer->dim[0].stride = 1;
-	buffer->dim[0].flags = 0;
-	buffer->dimensions = 1;
-	buffer->padding = NULL;
+    buffer->device = 0;
+    buffer->device_interface = NULL;
+    buffer->type = halide_type_uint32_t;
+    buffer->host = (uint8_t*) data;
+    buffer->flags = halide_buffer_flag_host_dirty;
+    buffer->dim[0].min = 0;
+    buffer->dim[0].extent = width;
+    buffer->dim[0].stride = 1;
+    buffer->dim[0].flags = 0;
+    buffer->dimensions = 1;
+    buffer->padding = NULL;
 }
 
 void halide_setup_u8_buffer_t(halide_buffer_t* buffer, uint8_t* data, int width, int height, int stride)
 {
-	buffer->device = 0;
-	buffer->device_interface = NULL;
-	buffer->type = halide_type_uint32_t;
-	buffer->host = data;
-	buffer->flags = halide_buffer_flag_host_dirty;
-	buffer->dim[0].min = 0;
-	buffer->dim[0].extent = width;
-	buffer->dim[0].stride = 1;
-	buffer->dim[0].flags = 0;
-	buffer->dim[1].min = 0;
-	buffer->dim[1].extent = height;
-	buffer->dim[1].stride = stride;
-	buffer->dim[1].flags = 0;
-	buffer->dimensions = 2;
-	buffer->padding = NULL;
+    buffer->device = 0;
+    buffer->device_interface = NULL;
+    buffer->type = halide_type_uint32_t;
+    buffer->host = data;
+    buffer->flags = halide_buffer_flag_host_dirty;
+    buffer->dim[0].min = 0;
+    buffer->dim[0].extent = width;
+    buffer->dim[0].stride = 1;
+    buffer->dim[0].flags = 0;
+    buffer->dim[1].min = 0;
+    buffer->dim[1].extent = height;
+    buffer->dim[1].stride = stride;
+    buffer->dim[1].flags = 0;
+    buffer->dimensions = 2;
+    buffer->padding = NULL;
 }
 
 void halide_setup_1d_u8_buffer_t(halide_buffer_t* buffer, uint8_t* data, int width)
 {
-	buffer->device = 0;
-	buffer->device_interface = NULL;
-	buffer->type = halide_type_uint8_t;
-	buffer->host = data;
-	buffer->flags = halide_buffer_flag_host_dirty;
-	buffer->dim[0].min = 0;
-	buffer->dim[0].extent = width;
-	buffer->dim[0].stride = 1;
-	buffer->dim[0].flags = 0;
-	buffer->dimensions = 1;
-	buffer->padding = NULL;
+    buffer->device = 0;
+    buffer->device_interface = NULL;
+    buffer->type = halide_type_uint8_t;
+    buffer->host = data;
+    buffer->flags = halide_buffer_flag_host_dirty;
+    buffer->dim[0].min = 0;
+    buffer->dim[0].extent = width;
+    buffer->dim[0].stride = 1;
+    buffer->dim[0].flags = 0;
+    buffer->dimensions = 1;
+    buffer->padding = NULL;
 }

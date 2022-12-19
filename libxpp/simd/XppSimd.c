@@ -24,20 +24,20 @@
 
 uint32_t Xpp_SimdInit(void)
 {
-	return init_simd();
+    return init_simd();
 }
 
 uint32_t Xpp_SimdGet(void)
 {
-	return get_simd();
+    return get_simd();
 }
 
 uint32_t Xpp_SimdAuto(void)
 {
-	return auto_simd();
+    return auto_simd();
 }
 
 uint32_t Xpp_SimdSet(uint32_t simd)
 {
-	return override_simd(simd);
+    return override_simd(simd);
 }

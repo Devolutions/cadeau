@@ -8,7 +8,10 @@ set(CMAKE_POSITION_INDEPENDENT_CODE ON)
 
 set(CMAKE_MODULE_PATH "${CMAKE_SOURCE_DIR}/cmake")
 
-option(USE_CONAN "Use conan package manager" ON)
+option(WITH_SIMD "Use SIMD optimization" ON)
+option(WITH_HALIDE "Use Halide optimization" ON)
+
+option(USE_CONAN "Use conan package manager" OFF)
 option(XPP_INSTALL "Generate cmake installation script" ON)
 
 include(ConanHelper)
@@ -17,10 +20,11 @@ include(CMakePackageConfigHelpers)
 file(STRINGS "${CMAKE_SOURCE_DIR}/VERSION" VERSION_STRINGS)
 list(GET VERSION_STRINGS 0 VERSION_STRING)
 
-string(REGEX REPLACE "([0-9]+).[0-9]+.[0-9]+" "\\1" XPP_VERSION_MAJOR ${VERSION_STRING})
-string(REGEX REPLACE "[0-9]+.([0-9]+).[0-9]+" "\\1" XPP_VERSION_MINOR ${VERSION_STRING})
-string(REGEX REPLACE "[0-9]+.[0-9]+.([0-9]+)" "\\1" XPP_VERSION_PATCH ${VERSION_STRING})
-set(XPP_VERSION "${XPP_VERSION_MAJOR}.${XPP_VERSION_MINOR}.${XPP_VERSION_PATCH}")
+string(REGEX REPLACE "([0-9]+).[0-9]+.[0-9]+.[0-9]+" "\\1" XPP_VERSION_MAJOR ${VERSION_STRING})
+string(REGEX REPLACE "[0-9]+.([0-9]+).[0-9]+.[0-9]+" "\\1" XPP_VERSION_MINOR ${VERSION_STRING})
+string(REGEX REPLACE "[0-9]+.[0-9]+.([0-9]+).[0-9]+" "\\1" XPP_VERSION_PATCH ${VERSION_STRING})
+string(REGEX REPLACE "[0-9]+.[0-9]+.[0-9]+.([0-9]+)" "\\1" XPP_VERSION_BUILD ${VERSION_STRING})
+set(XPP_VERSION "${XPP_VERSION_MAJOR}.${XPP_VERSION_MINOR}.${XPP_VERSION_PATCH}.${XPP_VERSION_BUILD}")
 
 if(NOT DEFINED MSVC_RUNTIME)
     set(MSVC_RUNTIME "static")
@@ -43,57 +47,26 @@ endif()
 
 set(CMAKE_EXPORT_DIR "lib/cmake/xpp")
 
-if(NOT DEFINED WITH_SIMD)
-	set(WITH_SIMD 1)
-endif()
-
-# libyuv
-
-if(NOT DEFINED WITH_LIBYUV)
-	set(WITH_LIYUV 1)
-endif()
-
-find_path(LIBYUV_INCLUDE_DIR
-	NAMES libyuv/libyuv.h
-	PATH_SUFFIXES include)
-
-if(WIN32)
-	find_library(LIBYUV_LIBRARY
-		NAMES libyuv.lib
-		PATH_SUFFIXES lib)
-else()
-	find_library(LIBYUV_LIBRARY
-		NAMES yuv
-		PATH_SUFFIXES lib)
-endif()
-
-if(LIBYUV_INCLUDE_DIR AND LIBYUV_LIBRARY)
-	set(LIBYUV_FOUND TRUE)
-	add_definitions("-DWITH_LIBYUV")
-	add_library(libyuv STATIC IMPORTED)
-	set_property(TARGET libyuv PROPERTY IMPORTED_LOCATION ${LIBYUV_LIBRARY})
-endif()
-
-if(LIBYUV_FOUND)
-	message(STATUS "Found libyuv: ${LIBYUV_LIBRARY}")
-else()
-	message(STATUS "libyuv was not found")
-endif()
-
 # halide
 
-set(HALIDE_ROOT_DIR "" CACHE PATH "Halide root directory")
-set(HALIDE_INCLUDE_DIR "" CACHE PATH "Halide include directory")
-set(HALIDE_LIBRARY_DIR "" CACHE PATH "Halide library directory")
+if(WITH_HALIDE)
+    find_path(HALIDE_ROOT_DIR
+        NAMES "include/Halide.h"
+        HINTS
+            ${HALIDE_ROOT_DIR}
+            ENV HALIDE_ROOT_DIR)
 
-if(USE_CONAN)
-    set(HALIDE_ROOT_DIR "${CONAN_HALIDE_ROOT}")
-	set(HALIDE_INCLUDE_DIR "${CONAN_HALIDE_ROOT}/include")
-	set(HALIDE_LIBRARY_DIR "${CONAN_HALIDE_ROOT}/lib")
-endif()
+    if(NOT HALIDE_ROOT_DIR)
+        message(FATAL_ERROR "Halide could not be found! - set HALIDE_ROOT_DIR")
+    endif()
 
-if(NOT DEFINED WITH_HALIDE)
-	set(WITH_HALIDE 1)
+    message(STATUS "HALIDE_ROOT_DIR: ${HALIDE_ROOT_DIR}")
+    
+    set(HALIDE_ROOT_DIR "${HALIDE_ROOT_DIR}" CACHE PATH "Halide root directory")
+    set(HALIDE_INCLUDE_DIR "${HALIDE_ROOT_DIR}/include" CACHE PATH "Halide include directory")
+    set(HALIDE_LIBRARY_DIR "${HALIDE_ROOT_DIR}/lib" CACHE PATH "Halide library directory")
+
+    include_directories("${HALIDE_INCLUDE_DIR}")
 endif()
 
 add_definitions(-DXPP_EXPORTS)

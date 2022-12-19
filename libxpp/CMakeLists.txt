@@ -14,7 +14,6 @@ set(${MODULE_PREFIX}_SOURCES
 	XppCopy.c
 	XppCompare.c
 	XppMath.c
-	XppScale.c
 	XppPrimitive.c)
 
 if(WITH_HALIDE)
@@ -69,18 +68,10 @@ if(WITH_SIMD)
 	list(APPEND ${MODULE_PREFIX}_HEADERS ${${MODULE_PREFIX}_SIMD_HEADERS})
 endif()
 
-if(LIBYUV_FOUND)
-	include_directories(${LIBYUV_INCLUDE_DIR})
-endif()
-
 add_library(${MODULE_NAME} STATIC ${${MODULE_PREFIX}_SOURCES} ${${MODULE_PREFIX}_HEADERS})
 
 if(WITH_HALIDE)
 	add_dependencies(${MODULE_NAME} halide-generate-all)
-endif()
-
-if(LIBYUV_FOUND)
-	list(APPEND ${MODULE_PREFIX}_LIBS libyuv)
 endif()
 
 target_include_directories(${MODULE_NAME}
