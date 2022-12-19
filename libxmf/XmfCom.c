@@ -67,12 +67,12 @@ HRESULT STDCALL XmfClassFactory_QueryInterface(IClassFactory* This, REFIID riid,
     return hr;
 }
 
-ULONG STDCALL XmfClassFactory_AddRef(IClassFactory* This)
+uint32_t STDCALL XmfClassFactory_AddRef(IClassFactory* This)
 {
     return 0;
 }
 
-ULONG STDCALL XmfClassFactory_Release(IClassFactory* This)
+uint32_t STDCALL XmfClassFactory_Release(IClassFactory* This)
 {
     return 0;
 }

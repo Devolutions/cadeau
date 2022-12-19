@@ -15,7 +15,7 @@
 struct now_recorder
 {
     void* vtbl;
-    ULONG refCount;
+    uint32_t refCount;
 
     bool initialized;
     bool enabled;
@@ -273,15 +273,15 @@ HRESULT STDCALL XmfRecorder_QueryInterface(IXmfRecorder* This, REFIID riid, void
     return hr;
 }
 
-ULONG STDCALL XmfRecorder_AddRef(IXmfRecorder* This)
+uint32_t STDCALL XmfRecorder_AddRef(IXmfRecorder* This)
 {
-    ULONG refCount = This->refCount++;
+    uint32_t refCount = This->refCount++;
     return refCount;
 }
 
-ULONG STDCALL XmfRecorder_Release(IXmfRecorder* This)
+uint32_t STDCALL XmfRecorder_Release(IXmfRecorder* This)
 {
-    ULONG refCount = This->refCount--;
+    uint32_t refCount = This->refCount--;
 
     if (refCount == 0) {
         XmfRecorder_Free((XmfRecorder*) This);
