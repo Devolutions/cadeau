@@ -1,6 +1,6 @@
 cmake_minimum_required(VERSION 3.15)
 
-project(xpp C)
+project(xpp C CXX)
 
 include(CTest)
 
@@ -18,6 +18,10 @@ option(XPP_INSTALL "Generate cmake installation script" ON)
 
 include(ConanHelper)
 include(CMakePackageConfigHelpers)
+
+if(WIN32)
+    include(WindowsRC)
+endif()
 
 file(STRINGS "${CMAKE_SOURCE_DIR}/VERSION" VERSION_STRINGS)
 list(GET VERSION_STRINGS 0 VERSION_STRING)
