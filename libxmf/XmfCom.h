@@ -23,8 +23,8 @@ typedef struct _IUnknown IUnknown;
 typedef struct IUnknownVtbl
 {
     HRESULT(STDCALL* QueryInterface)(IUnknown* This, REFIID riid, void** ppvObject);
-    ULONG(STDCALL* AddRef)(IUnknown* This);
-    ULONG(STDCALL* Release)(IUnknown* This);
+    uint32_t(STDCALL* AddRef)(IUnknown* This);
+    uint32_t(STDCALL* Release)(IUnknown* This);
 } IUnknownVtbl;
 
 struct _IUnknown
@@ -37,8 +37,8 @@ typedef struct _IClassFactory IClassFactory;
 typedef struct IClassFactoryVtbl
 {
     HRESULT(STDCALL* QueryInterface)(IClassFactory* This, REFIID riid, void** ppvObject);
-    ULONG(STDCALL* AddRef)(IClassFactory* This);
-    ULONG(STDCALL* Release)(IClassFactory* This);
+    uint32_t(STDCALL* AddRef)(IClassFactory* This);
+    uint32_t(STDCALL* Release)(IClassFactory* This);
     HRESULT(STDCALL* CreateInstance)(IUnknown* pUnkOuter, REFIID riid, void** ppvObject);
     HRESULT(STDCALL* LockServer)(IClassFactory* This, BOOL fLock);
 } IClassFactoryVtbl;
@@ -53,8 +53,8 @@ typedef struct _IXmfRecorder IXmfRecorder;
 typedef struct IXmfRecorderVtbl
 {
     HRESULT(STDCALL* QueryInterface)(IXmfRecorder* This, REFIID riid, void** ppvObject);
-    ULONG(STDCALL* AddRef)(IXmfRecorder* This);
-    ULONG(STDCALL* Release)(IXmfRecorder* This);
+    uint32_t(STDCALL* AddRef)(IXmfRecorder* This);
+    uint32_t(STDCALL* Release)(IXmfRecorder* This);
     bool(STDCALL* Init)(IXmfRecorder* This);
     void(STDCALL* Uninit)(IXmfRecorder* This);
     void(STDCALL* SetFilename)(IXmfRecorder* This, const char* filename);
@@ -72,7 +72,7 @@ typedef struct IXmfRecorderVtbl
 struct _IXmfRecorder
 {
     IXmfRecorderVtbl* vtbl;
-    ULONG refCount;
+    uint32_t refCount;
 };
 
 extern const GUID IID_IUnknown;

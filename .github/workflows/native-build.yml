@@ -1,4 +1,4 @@
-name: xpp build
+name: native build
 on:
   workflow_dispatch:
     inputs:
@@ -65,19 +65,19 @@ jobs:
       - name: Install clang+llvm
         shell: pwsh
         run: |
-          $CLANG_LLVM_VERSION='14.0.6'
-          $CLANG_LLVM_OS=@{'win'='windows';'osx'='macos';'linux'='ubuntu-20.04'}['${{matrix.os}}']
-          $CLANG_LLVM_BASE_URL="https://github.com/awakecoding/llvm-prebuilt/releases/download/v2022.2.0"
-          $CLANG_LLVM_NAME="clang+llvm-${CLANG_LLVM_VERSION}-x86_64-${CLANG_LLVM_OS}"
-          wget -q "${CLANG_LLVM_BASE_URL}/${CLANG_LLVM_NAME}.tar.xz"
+          $ClangLlvmVersion='14.0.6'
+          $ClangLlvmPlatform=@{'win'='windows';'osx'='macos';'linux'='ubuntu-20.04'}['${{matrix.os}}']
+          $ClangLlvmBaseUrl="https://github.com/awakecoding/llvm-prebuilt/releases/download/v2022.2.0"
+          $ClangLlvmName="clang+llvm-${ClangLlvmVersion}-x86_64-${ClangLlvmPlatform}"
+          wget -q "${ClangLlvmBaseUrl}/${ClangLlvmName}.tar.xz"
           if ($IsWindows) {
             $LLVM_PREFIX="C:/llvm"
-            cmd.exe /c "7z.exe x ${CLANG_LLVM_NAME}.tar.xz -so | 7z x -si -ttar -o`"C:/temp`""
-            mv "C:/temp/${CLANG_LLVM_NAME}" $LLVM_PREFIX
+            cmd.exe /c "7z.exe x ${ClangLlvmName}.tar.xz -so | 7z x -si -ttar -o`"C:/temp`""
+            mv "C:/temp/${ClangLlvmName}" $LLVM_PREFIX
           } else {
             $LLVM_PREFIX="/opt/llvm"
-            tar -xf "${CLANG_LLVM_NAME}.tar.xz" -C /tmp
-            sudo mv "/tmp/${CLANG_LLVM_NAME}" $LLVM_PREFIX
+            tar -xf "${ClangLlvmName}.tar.xz" -C /tmp
+            sudo mv "/tmp/${ClangLlvmName}" $LLVM_PREFIX
           }
           $LLVM_BIN_PATH="$LLVM_PREFIX/bin"
           $LLVM_DIR="$LLVM_PREFIX/lib/cmake/llvm"
@@ -139,11 +139,12 @@ jobs:
           New-Item -Path $BuildDir -ItemType Directory -ErrorAction SilentlyContinue | Out-Null
           New-Item -Path ".\runtimes\${DotNetRid}\native" -ItemType Directory -ErrorAction SilentlyContinue | Out-Null
 
-          $InstallPath = ".\runtimes\${DotNetRid}\native"
+          $InstallPath = ".\install-${DotNetRid}"
           New-Item -Path $InstallPath -ItemType Directory -ErrorAction SilentlyContinue | Out-Null
           
           $CMakeArgs = @("-DCMAKE_BUILD_TYPE=Release", "-DCMAKE_INSTALL_PREFIX=`"$InstallPath`"")
-          $CMakeArgs += @("-DUSE_CONAN=OFF", "-DHALIDE_ROOT_DIR=`"$($Env:HALIDE_ROOT_DIR)`"")
+          $CMakeArgs += @("-DHALIDE_ROOT_DIR=`"$($Env:HALIDE_ROOT_DIR)`"")
+          $CMakeArgs += @("-DWITH_XMF=ON", "-DUSE_CONAN=ON")
 
           if ($DotNetOs -eq 'win') {
             $MsvcArch = @{'x64'='x64';'arm64'='ARM64'}[$DotNetArch]
@@ -151,6 +152,7 @@ jobs:
             cmake -G Ninja . -B $BuildDir $CMakeArgs
             cmake --build $BuildDir --config Release
             cmake --install $BuildDir --config Release
+            Copy-Item "$BuildDir\lib\xmf.dll" ".\runtimes\${DotNetRid}\native\xmf.dll" -Force
           }
           elseif ($DotNetOs -eq 'osx') {
             $AppleArch = @{'x64'='x86_64';'arm64'='arm64'}[$DotNetArch]
@@ -158,6 +160,7 @@ jobs:
             cmake . -G Ninja -B $BuildDir $CMakeArgs
             cmake --build $BuildDir
             cmake --install $BuildDir
+            Copy-Item "$BuildDir\lib\libxmf.dylib" ".\runtimes\${DotNetRid}\native\libxmf.dylib" -Force
           }
           elseif ($DotNetOs -eq 'linux') {
             $LinuxArch = @{'x64'='amd64';'arm64'='arm64'}[$DotNetArch]
@@ -167,6 +170,7 @@ jobs:
             cmake . -G Ninja -B $BuildDir $CMakeArgs
             cmake --build $BuildDir
             cmake --install $BuildDir
+            Copy-Item "$BuildDir\lib\libxmf.so" ".\runtimes\${DotNetRid}\native\libxmf.so" -Force
           }
 
       - name: Upload xpp (${{matrix.os}}-${{matrix.arch}})

@@ -23,10 +23,10 @@ if(WIN32)
 
     windows_rc_generate_version_info(
             NAME "XMF" TYPE "DLL"
-            VERSION "${XMF_VERSION}"
+            VERSION "${XPP_VERSION}"
             FILENAME "xmf.dll"
-            VENDOR "${XMF_VENDOR}"
-            COPYRIGHT "${XMF_COPYRIGHT}"
+            VENDOR "${XPP_VENDOR}"
+            COPYRIGHT "${XPP_COPYRIGHT}"
             OUTPUT ${CMAKE_CURRENT_BINARY_DIR}/version.rc)
 
     include_directories("${CMAKE_CURRENT_BINARY_DIR}")
@@ -39,4 +39,18 @@ add_library(${MODULE_NAME} SHARED
         ${${MODULE_PREFIX}_HEADERS}
         ${${MODULE_PREFIX}_RESOURCES})
 
-target_link_libraries(${MODULE_NAME} ${CONAN_TARGETS})
+target_link_libraries(${MODULE_NAME} xpp ${CONAN_TARGETS})
+
+if(XPP_INSTALL)
+	install(TARGETS ${MODULE_NAME}
+		EXPORT xpp-targets
+		ARCHIVE DESTINATION lib
+		LIBRARY DESTINATION lib)
+
+	export(TARGETS ${MODULE_NAME}
+		APPEND FILE ${PROJECT_BINARY_DIR}/xpp-targets.cmake)
+
+	install(EXPORT xpp-targets
+	        FILE xpp-targets.cmake
+	        DESTINATION "${CMAKE_EXPORT_DIR}")
+endif()

@@ -11,7 +11,9 @@ set(CMAKE_MODULE_PATH "${CMAKE_SOURCE_DIR}/cmake")
 option(WITH_SIMD "Use SIMD optimization" ON)
 option(WITH_HALIDE "Use Halide optimization" ON)
 
-option(USE_CONAN "Use conan package manager" OFF)
+option(WITH_XMF "Build Media Foundation library (XMF)" ON)
+option(USE_CONAN "Use conan package manager" ${WITH_XMF})
+
 option(XPP_INSTALL "Generate cmake installation script" ON)
 
 include(ConanHelper)
@@ -25,6 +27,9 @@ string(REGEX REPLACE "[0-9]+.([0-9]+).[0-9]+.[0-9]+" "\\1" XPP_VERSION_MINOR ${V
 string(REGEX REPLACE "[0-9]+.[0-9]+.([0-9]+).[0-9]+" "\\1" XPP_VERSION_PATCH ${VERSION_STRING})
 string(REGEX REPLACE "[0-9]+.[0-9]+.[0-9]+.([0-9]+)" "\\1" XPP_VERSION_BUILD ${VERSION_STRING})
 set(XPP_VERSION "${XPP_VERSION_MAJOR}.${XPP_VERSION_MINOR}.${XPP_VERSION_PATCH}.${XPP_VERSION_BUILD}")
+
+set(XPP_VENDOR "Devolutions Inc.")
+set(XPP_COPYRIGHT "Copyright 2022, ${XPP_VENDOR}")
 
 if(NOT DEFINED MSVC_RUNTIME)
     set(MSVC_RUNTIME "static")
@@ -43,6 +48,12 @@ if(WIN32)
 	set(C_FLAGS "${C_FLAGS} -DWINVER=0x0601 -D_WIN32_WINNT=0x0601")
 	set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} ${C_FLAGS}")
 	set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${C_FLAGS}")
+endif()
+
+if(CMAKE_GENERATOR MATCHES "Ninja")
+    set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/lib)
+    set(CMAKE_LIBRARY_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/lib)
+    set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/lib)
 endif()
 
 set(CMAKE_EXPORT_DIR "lib/cmake/xpp")
@@ -69,11 +80,26 @@ if(WITH_HALIDE)
     include_directories("${HALIDE_INCLUDE_DIR}")
 endif()
 
+# Performance Primitives (XPP)
+
 add_definitions(-DXPP_EXPORTS)
 
 include_directories(include)
 
 add_subdirectory(libxpp)
+
+# Media Foundation (XMF)
+
+if(WITH_XMF)
+    add_definitions(-DXMF_EXPORTS)
+
+    include_directories(include)
+
+    add_definitions(-DWITH_LIBVPX)
+    add_definitions(-DWITH_LIBWEBM)
+
+    add_subdirectory(libxmf)
+endif()
 
 # installation
 
@@ -91,6 +117,10 @@ if(XPP_INSTALL)
 		COMPATIBILITY SameMajorVersion)
 
 	install(DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}/include/xpp"
+		DESTINATION include
+		FILES_MATCHING PATTERN "*.h")
+
+	install(DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}/include/xmf"
 		DESTINATION include
 		FILES_MATCHING PATTERN "*.h")
 
