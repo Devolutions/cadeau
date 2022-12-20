@@ -8,3 +8,7 @@ obj/
 *.nupkg
 runtimes/
 package/
+*.webm
+*.rgb
+*.yuv
+

@@ -1,5 +1,5 @@
 
-#ifdef HAVE_UNISTD_H
+#ifndef _WIN32
 #include <unistd.h>
 #endif
 
@@ -9,14 +9,7 @@
 #include <sys/types.h>
 #include <sys/stat.h>
 
-#ifdef _WIN32
-#include <shlwapi.h>
-#include <shlobj.h>
-#pragma comment(lib, "shlwapi.lib")
-#endif
-
-#include <winpr/file.h>
-#include <winpr/path.h>
+#include "XmfString.h"
 
 #include "XmfFile.h"
 
@@ -106,7 +99,7 @@ char* XmfFile_Dir(const char* filename)
     if (!dir)
         return NULL;
 
-    CopyMemory(dir, filename, length);
+    memcpy(dir, filename, length);
     dir[length] = '\0';
 
     return dir;
@@ -148,10 +141,10 @@ FILE* XmfFile_Open(const char* path, const char* mode)
     if (!path || !mode)
         return NULL;
 
-    if (ConvertToUnicode(CP_UTF8, 0, path, -1, &lpPathW, 0) < 1)
+    if (XmfConvertToUnicode(CP_UTF8, 0, path, -1, &lpPathW, 0) < 1)
         goto cleanup;
 
-    if (ConvertToUnicode(CP_UTF8, 0, mode, -1, &lpModeW, 0) < 1)
+    if (XmfConvertToUnicode(CP_UTF8, 0, mode, -1, &lpModeW, 0) < 1)
         goto cleanup;
 
     result = _wfopen(lpPathW, lpModeW);
@@ -161,6 +154,13 @@ cleanup:
     free(lpModeW);
     return result;
 #endif
+}
+
+void XmfFile_Close(FILE* fp)
+{
+    if (fp) {
+        fclose(fp);
+    }
 }
 
 uint8_t* XmfFile_Load(const char* filename, size_t* size, uint32_t flags)
@@ -224,6 +224,28 @@ bool XmfFile_Save(const char* filename, uint8_t* data, size_t size, int mode)
 
     fclose(fp);
     return success;
+}
+
+bool XmfFile_Delete(const char* filename)
+{
+    bool result = false;
+#ifdef _WIN32
+    LPWSTR filenameW = NULL;
+
+    if (filename)
+    {
+        if (XmfConvertToUnicode(CP_UTF8, 0, filename, -1, &filenameW, 0) < 1)
+            goto cleanup;
+    }
+
+    result = DeleteFileW(filenameW) ? true : false;
+
+cleanup:
+    free(filenameW);
+#else
+    result = (unlink(filename) != -1) ? true : false;
+#endif
+    return result;
 }
 
 /**
@@ -290,143 +312,10 @@ char* XmfFile_SanitizeName(const char* name, char defaultChar, uint32_t flags)
     return sane;
 }
 
-static BOOL MoveFileX(LPCSTR lpExistingFileName, LPCSTR lpNewFileName, DWORD flags)
-{
-#ifndef _WIN32
-    return MoveFileExA(lpExistingFileName, lpNewFileName, flags);
-#else
-    BOOL result = FALSE;
-    LPWSTR lpExistingFileNameW = NULL;
-    LPWSTR lpNewFileNameW = NULL;
-
-    if (!lpExistingFileName)
-        goto cleanup;
-
-    if (ConvertToUnicode(CP_UTF8, 0, lpExistingFileName, -1, &lpExistingFileNameW, 0) < 1)
-        goto cleanup;
-
-    if (lpNewFileName)
-    {
-        if (ConvertToUnicode(CP_UTF8, 0, lpNewFileName, -1, &lpNewFileNameW, 0) < 1)
-            goto cleanup;
-    }
-
-    result = MoveFileExW(lpExistingFileNameW, lpNewFileNameW, flags);
-
-cleanup:
-    free(lpExistingFileNameW);
-    free(lpNewFileNameW);
-    return result;
-#endif
-}
-
-bool XmfFile_Move(const char* filename, const char* newFilename, bool overwrite)
-{
-    return MoveFileX(filename, newFilename, overwrite ? MOVEFILE_REPLACE_EXISTING : 0);
-}
-
-static BOOL DeleteFileX(const char* lpFileName)
-{
-#ifndef _WIN32
-    return DeleteFileA(lpFileName);
-#else
-    LPWSTR lpFileNameW = NULL;
-    BOOL result = FALSE;
-
-    if (lpFileName)
-    {
-        if (ConvertToUnicode(CP_UTF8, 0, lpFileName, -1, &lpFileNameW, 0) < 1)
-            goto cleanup;
-    }
-
-    result = DeleteFileW(lpFileNameW);
-
-cleanup:
-    free(lpFileNameW);
-    return result;
-#endif
-}
-
-bool XmfFile_Delete(const char* filename)
-{
-    return DeleteFileX(filename);
-}
-
-static BOOL RemoveDirectoryX(LPCSTR lpPathName)
-{
-#ifndef _WIN32
-    return RemoveDirectoryA(lpPathName);
-#else
-    LPWSTR lpPathNameW = NULL;
-    BOOL result = FALSE;
-
-    if (lpPathName)
-    {
-        if (ConvertToUnicode(CP_UTF8, 0, lpPathName, -1, &lpPathNameW, 0) < 1)
-            goto cleanup;
-    }
-
-    result = RemoveDirectoryW(lpPathNameW);
-
-cleanup:
-    free(lpPathNameW);
-    return result;
-#endif
-}
-
-static BOOL PathFileExistsX(const char* pszPath)
-{
-#ifndef _WIN32
-    return PathFileExistsA(pszPath);
-#else
-    WCHAR* pszPathW = NULL;
-    BOOL result = FALSE;
-
-    if (ConvertToUnicode(CP_UTF8, 0, pszPath, -1, &pszPathW, 0) < 1)
-        return FALSE;
-
-    result = PathFileExistsW(pszPathW);
-    free(pszPathW);
-
-    return result;
-#endif
-}
-
-bool XmfFile_Exists(const char* filename)
-{
-    return PathFileExistsX(filename);
-}
-
-static BOOL PathMakePathX(const char* path, LPSECURITY_ATTRIBUTES lpAttributes)
-{
-#ifndef _WIN32
-    return PathMakePathA(path, lpAttributes);
-#else
-    WCHAR* pathW = NULL;
-    BOOL result = FALSE;
-    
-    if (ConvertToUnicode(CP_UTF8, 0, path, -1, &pathW, 0) < 1)
-        return FALSE;
-
-    result = SHCreateDirectoryExW(NULL, pathW, lpAttributes) == ERROR_SUCCESS;
-    free(pathW);
-
-    return result;
-#endif
-}
-
-bool XmfFile_MakePath(const char* path, int mode, bool check)
-{
-    if (check && XmfFile_Exists(path))
-        return true;
-
-    return PathMakePathX(path, NULL);
-}
-
 bool XmfPath_Append(char* pszPath, size_t cchPath, const char* pszMore)
 {
-    BOOL pathBackslash;
-    BOOL moreBackslash;
+    bool pathBackslash;
+    bool moreBackslash;
     size_t pszMoreLength;
     size_t pszPathLength;
 
@@ -439,8 +328,8 @@ bool XmfPath_Append(char* pszPath, size_t cchPath, const char* pszMore)
     pszMoreLength = strlen(pszMore);
     pszPathLength = strlen(pszPath);
 
-    pathBackslash = (pszPath[pszPathLength - 1] == XMF_PATH_SEPARATOR_CHR) ? TRUE : FALSE;
-    moreBackslash = (pszMore[0] == XMF_PATH_SEPARATOR_CHR) ? TRUE : FALSE;
+    pathBackslash = (pszPath[pszPathLength - 1] == XMF_PATH_SEPARATOR_CHR) ? true : false;
+    moreBackslash = (pszMore[0] == XMF_PATH_SEPARATOR_CHR) ? true : false;
 
     if (pathBackslash && moreBackslash)
     {

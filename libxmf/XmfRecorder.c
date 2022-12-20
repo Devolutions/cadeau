@@ -7,20 +7,19 @@
 #include "XmfTime.h"
 #include "XmfRecorder.h"
 #include "XmfWebM.h"
-#include "XmfCom.h"
 
 #define BIT_RATE_MIN 32
 #define BIT_RATE_MAX 2048
 
-struct now_recorder
+struct xmf_recorder
 {
-    void* vtbl;
-    uint32_t refCount;
-
     bool initialized;
     bool enabled;
     XmfWebM* webm;
-    int fileNumber;
+    XmfBipBuffer* bb;
+    XmfTimeSource ts;
+    bool manualTime;
+    uint64_t currentTime;
     uint32_t frameRateMin;
     uint32_t frameRate;
     uint32_t frameWidth;
@@ -30,8 +29,6 @@ struct now_recorder
     char filename[XMF_MAX_PATH];
     char directory[XMF_MAX_PATH];
 };
-
-#define TAG "XmfRecorder"
 
 uint32_t XMF_API XmfRecorder_CalculateBitRate(uint32_t frameWidth, uint32_t frameHeight, uint32_t frameRate, 
     uint32_t quality)
@@ -54,7 +51,7 @@ uint32_t XMF_API XmfRecorder_GetTimeout(XmfRecorder* ctx)
 
     if (ctx && ctx->enabled && ctx->lastUpdateTime > 0)
     {
-        timeout = (1000 / ctx->frameRateMin) - (XmfTime_Get() - ctx->lastUpdateTime);
+        timeout = (1000 / ctx->frameRateMin) - (XmfTimeSource_Get(&ctx->ts) - ctx->lastUpdateTime);
 
         if (timeout < 0)
             timeout = 0;
@@ -71,7 +68,7 @@ void XMF_API XmfRecorder_Timeout(XmfRecorder* ctx)
     if (ctx->webm)
     {
         XmfWebM_Encode(ctx->webm, NULL, 0, 0, 0, 0);
-        ctx->lastUpdateTime = XmfTime_Get();
+        ctx->lastUpdateTime = XmfTimeSource_Get(&ctx->ts);
     }
 }
 
@@ -103,7 +100,7 @@ int XMF_API XmfRecorder_Update(XmfRecorder* ctx, uint8_t* frameData, uint32_t fr
     if (ctx->webm)
     {
         XmfWebM_Encode(ctx->webm, frameData, 0, 0, frameWidth, frameHeight);
-        ctx->lastUpdateTime = XmfTime_Get();
+        ctx->lastUpdateTime = XmfTimeSource_Get(&ctx->ts);
     }
 
     return 1;
@@ -143,7 +140,23 @@ void XMF_API XmfRecorder_SetVideoQuality(XmfRecorder* ctx, uint32_t videoQuality
     ctx->videoQuality = clamp(videoQuality, XMF_RECORDER_QUALITY_MIN, XMF_RECORDER_QUALITY_MAX);
 }
 
-void XMF_API XmfRecorder_SetFilename(XmfRecorder* ctx, const char* filename)
+void XMF_API XmfRecorder_SetCurrentTime(XmfRecorder* ctx, uint64_t currentTime)
+{
+    ctx->currentTime = currentTime;
+
+    if (!ctx->initialized) {
+        ctx->ts.func = XmfTimeSource_Manual;
+        ctx->ts.param = (void*) &ctx->currentTime;
+        ctx->manualTime = true;
+    }
+}
+
+uint64_t XMF_API XmfRecorder_GetCurrentTime(XmfRecorder* ctx)
+{
+    return XmfTimeSource_Get(&ctx->ts);
+}
+
+void XMF_API XmfRecorder_SetFileName(XmfRecorder* ctx, const char* filename)
 {
     strncpy(ctx->filename, filename, sizeof(ctx->filename) - 1);
 }
@@ -154,6 +167,11 @@ void XMF_API XmfRecorder_SetDirectory(XmfRecorder* ctx, const char* directory)
         return;
 
     strncpy(ctx->directory, directory, sizeof(ctx->directory) - 1);
+}
+
+void XMF_API XmfRecorder_SetBipBuffer(XmfRecorder* ctx, XmfBipBuffer* bb)
+{
+    ctx->bb = bb;
 }
 
 bool XMF_API XmfRecorder_IsEnabled(XmfRecorder* ctx)
@@ -184,8 +202,11 @@ bool XMF_API XmfRecorder_Init(XmfRecorder* ctx)
 
     targetBitRate = XmfRecorder_CalculateBitRate(ctx->frameWidth, ctx->frameHeight, ctx->frameRate, ctx->videoQuality);
 
-    if (!XmfWebM_Init(ctx->webm, ctx->frameWidth, ctx->frameHeight, ctx->frameRate, targetBitRate, ctx->filename))
+    if (!XmfWebM_Init(ctx->webm, ctx->frameWidth, ctx->frameHeight, ctx->frameRate,
+        targetBitRate, ctx->filename, ctx->bb, &ctx->ts))
+    {
         goto error;
+    }
 
     ctx->initialized = true;
 
@@ -217,10 +238,7 @@ void XMF_API XmfRecorder_Uninit(XmfRecorder* ctx)
 
     ctx->initialized = false;
     ctx->lastUpdateTime = 0;
-    ctx->fileNumber++;
 }
-
-static IXmfRecorderVtbl g_IXmfRecorderVtbl;
 
 XmfRecorder* XMF_API XmfRecorder_New()
 {
@@ -231,14 +249,13 @@ XmfRecorder* XMF_API XmfRecorder_New()
     if (!ctx)
         return NULL;
 
-    ctx->vtbl = (void*) & g_IXmfRecorderVtbl;
-    ctx->refCount = 1;
-
     ctx->frameRateMin = 5;
     ctx->frameRate = 24;
-    ctx->fileNumber = 1;
     ctx->videoQuality = 5;
     ctx->enabled = true;
+
+    ctx->ts.func = XmfTimeSource_System;
+    ctx->ts.param = NULL;
 
     return ctx;
 }
@@ -252,56 +269,3 @@ void XMF_API XmfRecorder_Free(XmfRecorder* ctx)
 
     free(ctx);
 }
-
-HRESULT STDCALL XmfRecorder_QueryInterface(IXmfRecorder* This, REFIID riid, void** ppvObject)
-{
-    HRESULT hr = E_NOINTERFACE;
-
-    if (XmfGuid_IsEqual(riid, &IID_IUnknown))
-    {
-        *ppvObject = (void*)((IUnknown*)This);
-        This->refCount++;
-        hr = S_OK;
-    }
-    else if (XmfGuid_IsEqual(riid, &IID_IXmfRecorder))
-    {
-        *ppvObject = (void*)((IXmfRecorder*)This);
-        This->refCount++;
-        hr = S_OK;
-    }
-
-    return hr;
-}
-
-uint32_t STDCALL XmfRecorder_AddRef(IXmfRecorder* This)
-{
-    uint32_t refCount = This->refCount++;
-    return refCount;
-}
-
-uint32_t STDCALL XmfRecorder_Release(IXmfRecorder* This)
-{
-    uint32_t refCount = This->refCount--;
-
-    if (refCount == 0) {
-        XmfRecorder_Free((XmfRecorder*) This);
-    }
-
-    return refCount;
-}
-
-static IXmfRecorderVtbl g_IXmfRecorderVtbl = {
-    XmfRecorder_QueryInterface,
-    XmfRecorder_AddRef,
-    XmfRecorder_Release,
-    XmfRecorder_Init,
-    XmfRecorder_Uninit,
-    XmfRecorder_SetFilename,
-    XmfRecorder_SetFrameSize,
-    XmfRecorder_GetFrameRate,
-    XmfRecorder_SetFrameRate,
-    XmfRecorder_SetVideoQuality,
-    XmfRecorder_GetTimeout,
-    XmfRecorder_Timeout,
-    XmfRecorder_UpdateFrame
-};

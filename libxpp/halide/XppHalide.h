@@ -6,9 +6,9 @@
 #include <HalideRuntime.h>
 
 #define HALIDE_BUFFER_DEFINE(_x) \
-	halide_buffer_t _x; \
-	halide_dimension_t _x ## _dim[4]; \
-	_x.dim = (halide_dimension_t*) & _x ## _dim
+    halide_buffer_t _x; \
+    halide_dimension_t _x ## _dim[4]; \
+    _x.dim = (halide_dimension_t*) & _x ## _dim
 
 void halide_setup_rgb_buffer_t(halide_buffer_t* buffer, uint8_t* data, int32_t width, int32_t height, int32_t stride);
 void halide_setup_16s_buffer_t(halide_buffer_t* buffer, uint8_t* data, int32_t width, int32_t height, int32_t stride);

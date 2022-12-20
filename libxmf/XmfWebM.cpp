@@ -1,8 +1,6 @@
 
 #include "XmfWebM.h"
 
-#define TAG "XmfWebm"
-
 #include <xpp/color.h>
 
 #include <time.h>
@@ -14,11 +12,11 @@
 #include <mkvmuxer/mkvmuxerutil.h>
 #include <mkvmuxer/mkvwriter.h>
 
-#include <winpr/string.h>
-
 #include "XmfFile.h"
 #include "XmfMath.h"
 #include "XmfTime.h"
+#include "XmfString.h"
+#include "XmfMkvWriter.h"
 
 typedef enum stereo_format
 {
@@ -29,19 +27,21 @@ typedef enum stereo_format
     STEREO_FORMAT_RIGHT_LEFT = 11
 } stereo_format_t;
 
-struct now_webm
+struct xmf_webm
 {
     char filename[XMF_MAX_PATH];
     uint32_t frame_rate;
     uint64_t frame_count;
-    now_webm_time frame_time;
-    now_webm_time first_encode_time;
-    now_webm_time last_encode_time;
+    uint64_t frame_time;
+    uint64_t first_encode_time;
+    uint64_t last_encode_time;
     vpx_codec_pts_t pts;
     vpx_image_t* img;
     vpx_codec_ctx_t codec;
     vpx_codec_enc_cfg_t cfg;
     FILE* fp;
+    XmfBipBuffer* bb;
+    XmfTimeSource ts;
     int64_t last_pts_ns;
     bool pending_frame;
     void* mkv_writer;
@@ -172,7 +172,7 @@ void XmfWebM_WriteFileFooter(XmfWebM* ctx)
     ctx->segment = NULL;
 }
 
-int XmfWebM_EncodeImage(XmfWebM* ctx, vpx_image_t* img, vpx_codec_pts_t start, now_webm_time duration)
+int XmfWebM_EncodeImage(XmfWebM* ctx, vpx_image_t* img, vpx_codec_pts_t start, uint64_t duration)
 {
     vpx_codec_pts_t keyframe_every;
     vpx_codec_err_t res;
@@ -186,7 +186,7 @@ int XmfWebM_EncodeImage(XmfWebM* ctx, vpx_image_t* img, vpx_codec_pts_t start, n
     if (ctx->frame_count % keyframe_every == 0)
         flags |= VPX_EFLAG_FORCE_KF;
 
-    ctx->last_encode_time = XmfTime_Get();
+    ctx->last_encode_time = XmfTimeSource_Get(&ctx->ts);
 
     res = vpx_codec_encode(&ctx->codec, img, start, duration, flags, VPX_DL_REALTIME);
 
@@ -210,16 +210,16 @@ int XmfWebM_EncodeImage(XmfWebM* ctx, vpx_image_t* img, vpx_codec_pts_t start, n
 int XmfWebM_EncodeInternal(XmfWebM* ctx, bool force)
 {
     uint32_t ms_per_frame;
-    now_webm_time ms_since_last_encode;
+    uint64_t ms_since_last_encode;
 
     ms_per_frame = 1000 / ctx->frame_rate;
-    ms_since_last_encode = XmfTime_Get() - ctx->last_encode_time;
+    ms_since_last_encode = XmfTimeSource_Get(&ctx->ts) - ctx->last_encode_time;
 
     if (!force && ms_since_last_encode < ms_per_frame)
         return 0;
 
     if (ctx->pts == 0)
-        ms_since_last_encode = XmfTime_Get() - ctx->frame_time;
+        ms_since_last_encode = XmfTimeSource_Get(&ctx->ts) - ctx->frame_time;
 
     XmfWebM_EncodeImage(ctx, ctx->img, ctx->pts, ms_since_last_encode);
 
@@ -232,7 +232,7 @@ int XMF_API XmfWebM_Encode(XmfWebM* ctx, uint8_t* srcData, uint16_t x, uint16_t 
 
     if (!ctx->pending_frame)
     {
-        ctx->first_encode_time = XmfTime_Get();
+        ctx->first_encode_time = XmfTimeSource_Get(&ctx->ts);
         goto convert_frame;
     }
 
@@ -247,7 +247,7 @@ convert_frame:
     step[2] = (uint32_t) ctx->img->stride[2];
 
     Xpp_RGBToYCbCr420_8u_P3AC4R(srcData, width * 4, ctx->img->planes, step, width, height);
-    ctx->frame_time = XmfTime_Get();
+    ctx->frame_time = XmfTimeSource_Get(&ctx->ts);
     ctx->pending_frame = true;
 
     return 1;
@@ -272,7 +272,7 @@ void XMF_API XmfWebM_Finalize(XmfWebM* ctx)
 }
 
 bool XMF_API XmfWebM_Init(XmfWebM* ctx, uint32_t frameWidth, uint32_t frameHeight, uint32_t frameRate,
-               uint32_t targetBitRate, const char* filename)
+               uint32_t targetBitRate, const char* filename, XmfBipBuffer* bb, XmfTimeSource* ts)
 {
     vpx_codec_err_t res;
     vpx_rational_t par = { 1, 1 };
@@ -295,15 +295,31 @@ bool XMF_API XmfWebM_Init(XmfWebM* ctx, uint32_t frameWidth, uint32_t frameHeigh
     ctx->cfg.g_timebase.den = 1000;
     ctx->cfg.rc_target_bitrate = targetBitRate;
     ctx->cfg.g_error_resilient = (vpx_codec_er_flags_t) VPX_ERROR_RESILIENT_DEFAULT;
-
-    snprintf(ctx->filename, sizeof(ctx->filename), "%s", filename);
-
-    ctx->fp = XmfFile_Open(ctx->filename, "wb");
-
-    if (!ctx->fp)
-        goto error;
     
-    ctx->mkv_writer = new mkvmuxer::MkvWriter(ctx->fp);
+    ctx->bb = bb;
+
+    if (filename) {
+        sprintf_s(ctx->filename, sizeof(ctx->filename) - 1, "%s", filename);
+    }
+
+    if (ts) {
+        ctx->ts.func = ts->func;
+        ctx->ts.param = ts->param;
+    }
+
+    ctx->mkv_writer = XmfMkvWriter_New();
+
+    if (ctx->bb) {
+        XmfMkvWriter_SetBipBuffer((XmfMkvWriter*) ctx->mkv_writer, ctx->bb);
+    } else {
+        ctx->fp = XmfFile_Open(ctx->filename, "wb");
+
+        if (!ctx->fp)
+            goto error;
+
+        XmfMkvWriter_SetFilePointer((XmfMkvWriter*) ctx->mkv_writer, ctx->fp);
+    }
+
     ctx->segment = new mkvmuxer::Segment();
 
     if (!ctx->mkv_writer || !ctx->segment)
@@ -329,7 +345,7 @@ uint64_t XMF_API XmfWebM_FrameCount(XmfWebM* ctx)
     return ctx->frame_count;
 }
 
-now_webm_time XMF_API XmfWebM_Duration(XmfWebM* ctx)
+uint64_t XMF_API XmfWebM_Duration(XmfWebM* ctx)
 {
     if (!ctx)
         return 0;
@@ -350,11 +366,11 @@ void XMF_API XmfWebM_Uninit(XmfWebM* ctx)
 
     vpx_codec_destroy(&ctx->codec);
 
+    if (ctx->pts > 0)
+        XmfWebM_WriteFileFooter(ctx);
+
     if (ctx->fp)
     {
-        if (ctx->pts > 0)
-            XmfWebM_WriteFileFooter(ctx);
-
         fclose(ctx->fp);
         ctx->fp = NULL;
 
@@ -368,6 +384,12 @@ XmfWebM* XMF_API XmfWebM_New()
     XmfWebM* ctx;
 
     ctx = (XmfWebM*) calloc(1, sizeof(XmfWebM));
+
+    if (!ctx)
+        return NULL;
+
+    ctx->ts.func = XmfTimeSource_System;
+    ctx->ts.param = NULL;
 
     return ctx;
 }

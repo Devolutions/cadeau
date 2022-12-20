@@ -22,7 +22,7 @@ extern "C" {
 #endif
 
 #ifndef clamp
-#define clamp(_x, _lo, _hi)	(((_x) > (_hi)) ? (_hi) : (((_x) < (_lo)) ? (_lo) : (_x)))
+#define clamp(_x, _lo, _hi) (((_x) > (_hi)) ? (_hi) : (((_x) < (_lo)) ? (_lo) : (_x)))
 #endif
 
 XPP_EXPORT XppStatus Xpp_MulC_16s_I(int16_t val, int16_t* pSrcDst, int32_t len);

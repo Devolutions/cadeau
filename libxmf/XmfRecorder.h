@@ -9,7 +9,9 @@
 #define XMF_RECORDER_FRAME_RATE_MIN 1
 #define XMF_RECORDER_FRAME_RATE_MAX 30
 
-typedef struct now_recorder XmfRecorder;
+typedef struct xmf_recorder XmfRecorder;
+
+#include "XmfBipBuffer.h"
 
 #ifdef __cplusplus
 extern "C" {
@@ -23,11 +25,17 @@ XMF_EXPORT uint32_t XmfRecorder_GetTimeout(XmfRecorder* ctx);
 XMF_EXPORT void XmfRecorder_Timeout(XmfRecorder* ctx);
 
 XMF_EXPORT void XmfRecorder_SetMinimumFrameRate(XmfRecorder* ctx, uint32_t frameRate);
+XMF_EXPORT uint32_t XmfRecorder_GetFrameRate(XmfRecorder* ctx);
 XMF_EXPORT void XmfRecorder_SetFrameRate(XmfRecorder* ctx, uint32_t frameRate);
 XMF_EXPORT void XmfRecorder_SetFrameSize(XmfRecorder* ctx, uint32_t frameWidth, uint32_t frameHeight);
 XMF_EXPORT void XmfRecorder_SetVideoQuality(XmfRecorder* ctx, uint32_t videoQuality);
 
-XMF_EXPORT void XmfRecorder_SetFilename(XmfRecorder* ctx, const char* filename);
+XMF_EXPORT void XmfRecorder_SetCurrentTime(XmfRecorder* ctx, uint64_t currentTime);
+XMF_EXPORT uint64_t XmfRecorder_GetCurrentTime(XmfRecorder* ctx);
+
+XMF_EXPORT void XmfRecorder_SetFileName(XmfRecorder* ctx, const char* filename);
+
+XMF_EXPORT void XmfRecorder_SetBipBuffer(XmfRecorder* ctx, XmfBipBuffer* bb);
 
 XMF_EXPORT bool XmfRecorder_Init(XmfRecorder* ctx);
 XMF_EXPORT void XmfRecorder_Uninit(XmfRecorder* ctx);
