@@ -40,7 +40,7 @@ typedef XppStatus (*fnXpp_YCoCgR420ToRGB_8u_P3AC4R)(const uint8_t* pSrc[3], uint
 typedef XppStatus (*fnXpp_RGBToYCoCgR420_8u_P3AC4R)(const uint8_t* pSrc, uint32_t srcStep, uint8_t* pDst[3],
                     uint32_t dstStep[3], uint32_t width, uint32_t height);
 
-typedef struct now_primitives
+typedef struct xmf_primitives
 {
     fnXpp_Compare32 Compare32;
     fnXpp_Compare8 Compare8;

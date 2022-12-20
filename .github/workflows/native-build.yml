@@ -176,5 +176,5 @@ jobs:
       - name: Upload xpp (${{matrix.os}}-${{matrix.arch}})
         uses: actions/upload-artifact@v3
         with:
-          name: xpp-${{matrix.os}}-${{matrix.arch}}
-          path: runtimes/${{matrix.os}}-${{matrix.arch}}/native
+          name: xpp-runtimes
+          path: runtimes

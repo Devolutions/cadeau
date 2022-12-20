@@ -44,14 +44,14 @@ if(MSVC AND (MSVC_RUNTIME STREQUAL "static"))
 endif()
 
 if(WIN32)
-	set(C_FLAGS "")
-	set(C_FLAGS "${C_FLAGS} -D_UNICODE")
-	set(C_FLAGS "${C_FLAGS} -D_CRT_SECURE_NO_WARNINGS")
-	set(C_FLAGS "${C_FLAGS} -DWIN32_LEAN_AND_MEAN")
-	set(C_FLAGS "${C_FLAGS} -D_WINSOCK_DEPRECATED_NO_WARNINGS")
-	set(C_FLAGS "${C_FLAGS} -DWINVER=0x0601 -D_WIN32_WINNT=0x0601")
-	set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} ${C_FLAGS}")
-	set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${C_FLAGS}")
+    set(C_FLAGS "")
+    set(C_FLAGS "${C_FLAGS} -D_UNICODE")
+    set(C_FLAGS "${C_FLAGS} -D_CRT_SECURE_NO_WARNINGS")
+    set(C_FLAGS "${C_FLAGS} -DWIN32_LEAN_AND_MEAN")
+    set(C_FLAGS "${C_FLAGS} -D_WINSOCK_DEPRECATED_NO_WARNINGS")
+    set(C_FLAGS "${C_FLAGS} -DWINVER=0x0601 -D_WIN32_WINNT=0x0601")
+    set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} ${C_FLAGS}")
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${C_FLAGS}")
 endif()
 
 if(CMAKE_GENERATOR MATCHES "Ninja")
@@ -108,28 +108,28 @@ endif()
 # installation
 
 if(XPP_INSTALL)
-	export(PACKAGE xpp)
+    export(PACKAGE xpp)
 
-	configure_package_config_file(
-		"${CMAKE_CURRENT_SOURCE_DIR}/xpp-config.cmake.in"
-		"${CMAKE_CURRENT_BINARY_DIR}/xpp-config.cmake"
-		INSTALL_DESTINATION "${CMAKE_EXPORT_DIR}")
+    configure_package_config_file(
+        "${CMAKE_CURRENT_SOURCE_DIR}/xpp-config.cmake.in"
+        "${CMAKE_CURRENT_BINARY_DIR}/xpp-config.cmake"
+        INSTALL_DESTINATION "${CMAKE_EXPORT_DIR}")
 
-	write_basic_package_version_file(
-		"${CMAKE_CURRENT_BINARY_DIR}/xpp-config-version.cmake"
-		VERSION ${XPP_VERSION}
-		COMPATIBILITY SameMajorVersion)
+    write_basic_package_version_file(
+        "${CMAKE_CURRENT_BINARY_DIR}/xpp-config-version.cmake"
+        VERSION ${XPP_VERSION}
+        COMPATIBILITY SameMajorVersion)
 
-	install(DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}/include/xpp"
-		DESTINATION include
-		FILES_MATCHING PATTERN "*.h")
+    install(DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}/include/xpp"
+        DESTINATION include
+        FILES_MATCHING PATTERN "*.h")
 
-	install(DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}/include/xmf"
-		DESTINATION include
-		FILES_MATCHING PATTERN "*.h")
+    install(DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}/include/xmf"
+        DESTINATION include
+        FILES_MATCHING PATTERN "*.h")
 
-	install(FILES
-		${PROJECT_BINARY_DIR}/xpp-config.cmake
-		${PROJECT_BINARY_DIR}/xpp-config-version.cmake
-		DESTINATION "${CMAKE_EXPORT_DIR}")
+    install(FILES
+        ${PROJECT_BINARY_DIR}/xpp-config.cmake
+        ${PROJECT_BINARY_DIR}/xpp-config-version.cmake
+        DESTINATION "${CMAKE_EXPORT_DIR}")
 endif()

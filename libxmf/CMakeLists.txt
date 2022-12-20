@@ -2,18 +2,22 @@ set(MODULE_NAME "xmf")
 set(MODULE_PREFIX "XMF")
 
 set(${MODULE_PREFIX}_SOURCES
-    XmfCom.c
     XmfFile.c
+    XmfString.c
     XmfTime.c
     XmfWebM.cpp
+    XmfBipBuffer.c
+    XmfMkvWriter.c
     XmfRecorder.c)
 
 set(${MODULE_PREFIX}_HEADERS
-    XmfCom.h
     XmfMath.h
+    XmfString.h
     XmfFile.h
     XmfTime.h
     XmfWebM.h
+    XmfBipBuffer.h
+    XmfMkvWriter.h
     XmfRecorder.h)
 
 set(${MODULE_PREFIX}_RESOURCES "")
@@ -41,16 +45,25 @@ add_library(${MODULE_NAME} SHARED
 
 target_link_libraries(${MODULE_NAME} xpp ${CONAN_TARGETS})
 
+if(XMF_COPY_PATH)
+    add_custom_command(
+        TARGET xmf
+        POST_BUILD
+        COMMAND ${CMAKE_COMMAND} -E copy
+            $<TARGET_FILE:xmf>
+            ${XMF_COPY_PATH}/$<TARGET_FILE_NAME:xmf>)
+endif()
+
 if(XPP_INSTALL)
-	install(TARGETS ${MODULE_NAME}
-		EXPORT xpp-targets
-		ARCHIVE DESTINATION lib
-		LIBRARY DESTINATION lib)
+    install(TARGETS ${MODULE_NAME}
+        EXPORT xpp-targets
+        ARCHIVE DESTINATION lib
+        LIBRARY DESTINATION lib)
 
-	export(TARGETS ${MODULE_NAME}
-		APPEND FILE ${PROJECT_BINARY_DIR}/xpp-targets.cmake)
+    export(TARGETS ${MODULE_NAME}
+        APPEND FILE ${PROJECT_BINARY_DIR}/xpp-targets.cmake)
 
-	install(EXPORT xpp-targets
-	        FILE xpp-targets.cmake
-	        DESTINATION "${CMAKE_EXPORT_DIR}")
+    install(EXPORT xpp-targets
+            FILE xpp-targets.cmake
+            DESTINATION "${CMAKE_EXPORT_DIR}")
 endif()
