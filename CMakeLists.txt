@@ -1,8 +1,6 @@
 cmake_minimum_required(VERSION 3.15)
 
-project(xpp C CXX)
-
-include(CTest)
+project(Cadeau C CXX)
 
 set(CMAKE_POSITION_INDEPENDENT_CODE ON)
 
@@ -14,7 +12,7 @@ option(WITH_HALIDE "Use Halide optimization" ON)
 option(WITH_XMF "Build Media Foundation library (XMF)" ON)
 option(USE_CONAN "Use conan package manager" ${WITH_XMF})
 
-option(XPP_INSTALL "Generate cmake installation script" ON)
+option(CADEAU_INSTALL "Generate cmake installation script" ON)
 
 include(ConanHelper)
 include(CMakePackageConfigHelpers)
@@ -26,14 +24,14 @@ endif()
 file(STRINGS "${CMAKE_SOURCE_DIR}/VERSION" VERSION_STRINGS)
 list(GET VERSION_STRINGS 0 VERSION_STRING)
 
-string(REGEX REPLACE "([0-9]+).[0-9]+.[0-9]+.[0-9]+" "\\1" XPP_VERSION_MAJOR ${VERSION_STRING})
-string(REGEX REPLACE "[0-9]+.([0-9]+).[0-9]+.[0-9]+" "\\1" XPP_VERSION_MINOR ${VERSION_STRING})
-string(REGEX REPLACE "[0-9]+.[0-9]+.([0-9]+).[0-9]+" "\\1" XPP_VERSION_PATCH ${VERSION_STRING})
-string(REGEX REPLACE "[0-9]+.[0-9]+.[0-9]+.([0-9]+)" "\\1" XPP_VERSION_BUILD ${VERSION_STRING})
-set(XPP_VERSION "${XPP_VERSION_MAJOR}.${XPP_VERSION_MINOR}.${XPP_VERSION_PATCH}.${XPP_VERSION_BUILD}")
+string(REGEX REPLACE "([0-9]+).[0-9]+.[0-9]+.[0-9]+" "\\1" CADEAU_VERSION_MAJOR ${VERSION_STRING})
+string(REGEX REPLACE "[0-9]+.([0-9]+).[0-9]+.[0-9]+" "\\1" CADEAU_VERSION_MINOR ${VERSION_STRING})
+string(REGEX REPLACE "[0-9]+.[0-9]+.([0-9]+).[0-9]+" "\\1" CADEAU_VERSION_PATCH ${VERSION_STRING})
+string(REGEX REPLACE "[0-9]+.[0-9]+.[0-9]+.([0-9]+)" "\\1" CADEAU_VERSION_BUILD ${VERSION_STRING})
+set(CADEAU_VERSION "${CADEAU_VERSION_MAJOR}.${CADEAU_VERSION_MINOR}.${CADEAU_VERSION_PATCH}.${CADEAU_VERSION_BUILD}")
 
-set(XPP_VENDOR "Devolutions Inc.")
-set(XPP_COPYRIGHT "Copyright 2022, ${XPP_VENDOR}")
+set(CADEAU_VENDOR "Devolutions Inc.")
+set(CADEAU_COPYRIGHT "Copyright 2022, ${CADEAU_VENDOR}")
 
 if(NOT DEFINED MSVC_RUNTIME)
     set(MSVC_RUNTIME "static")
@@ -62,7 +60,7 @@ endif()
 
 set(CMAKE_EXPORT_DIR "lib/cmake/xpp")
 
-# halide
+# Halide
 
 if(WITH_HALIDE)
     find_path(HALIDE_ROOT_DIR
@@ -84,7 +82,7 @@ if(WITH_HALIDE)
     include_directories("${HALIDE_INCLUDE_DIR}")
 endif()
 
-# Performance Primitives (XPP)
+# XPP: eXtreme Performance Primitives
 
 add_definitions(-DXPP_EXPORTS)
 
@@ -92,7 +90,7 @@ include_directories(include)
 
 add_subdirectory(libxpp)
 
-# Media Foundation (XMF)
+# XMF: eXtreme Media Foundation
 
 if(WITH_XMF)
     add_definitions(-DXMF_EXPORTS)
@@ -107,17 +105,17 @@ endif()
 
 # installation
 
-if(XPP_INSTALL)
+if(CADEAU_INSTALL)
     export(PACKAGE xpp)
 
     configure_package_config_file(
-        "${CMAKE_CURRENT_SOURCE_DIR}/xpp-config.cmake.in"
-        "${CMAKE_CURRENT_BINARY_DIR}/xpp-config.cmake"
+        "${CMAKE_CURRENT_SOURCE_DIR}/cadeau-config.cmake.in"
+        "${CMAKE_CURRENT_BINARY_DIR}/cadeau-config.cmake"
         INSTALL_DESTINATION "${CMAKE_EXPORT_DIR}")
 
     write_basic_package_version_file(
-        "${CMAKE_CURRENT_BINARY_DIR}/xpp-config-version.cmake"
-        VERSION ${XPP_VERSION}
+        "${CMAKE_CURRENT_BINARY_DIR}/cadeau-config-version.cmake"
+        VERSION ${CADEAU_VERSION}
         COMPATIBILITY SameMajorVersion)
 
     install(DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}/include/xpp"
@@ -129,7 +127,7 @@ if(XPP_INSTALL)
         FILES_MATCHING PATTERN "*.h")
 
     install(FILES
-        ${PROJECT_BINARY_DIR}/xpp-config.cmake
-        ${PROJECT_BINARY_DIR}/xpp-config-version.cmake
+        ${PROJECT_BINARY_DIR}/cadeau-config.cmake
+        ${PROJECT_BINARY_DIR}/cadeau-config-version.cmake
         DESTINATION "${CMAKE_EXPORT_DIR}")
 endif()

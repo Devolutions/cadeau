@@ -7,10 +7,6 @@
 
 #include <xpp/color.h>
 
-#define CLAMP(_val, _min, _max) \
-    if (_val < _min) _val = _min; \
-    else if (_val > _max) _val = _max;
-
 /* 16-bit signed YCoCg-R */
 
 XppStatus Xpp_RGBToYCoCgR_16s_P3AC4R_generic(const uint8_t* pSrc, uint32_t srcStep,

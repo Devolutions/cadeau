@@ -1,4 +1,4 @@
-name: native build
+name: build
 on:
   workflow_dispatch:
     inputs:
@@ -9,9 +9,30 @@ on:
 env:
   conan-version: 1.43.4
 jobs:
+  preflight:
+    name: Preflight
+    runs-on: ubuntu-20.04
+    outputs:
+      version: ${{ steps.get-version.outputs.version }}
+
+    steps:
+      - name: Checkout ${{ github.repository }}
+        uses: actions/checkout@v3
+
+      - name: Get version
+        id: get-version
+        shell: pwsh
+        run: |
+          $Version = '${{ github.event.inputs.version }}'
+          if ($Version -eq 'latest') {
+            $Version = (Get-Date -Format "yyyy.MM.dd") + ".0"
+          }
+          echo "version=$Version" >> $Env:GITHUB_OUTPUT
+
   build-native:
-    name: native xpp build
+    name: Native build
     runs-on: ${{ matrix.runner }}
+    needs: [preflight]
     env:
       CONAN_LOGIN_USERNAME: ${{ secrets.ARTIFACTORY_USERNAME }}
       CONAN_PASSWORD: ${{ secrets.ARTIFACTORY_READ_TOKEN }}
@@ -35,10 +56,8 @@ jobs:
       - name: Prepare environment
         shell: pwsh
         run: |
-          $Version = '${{ github.event.inputs.version }}'
-          if ($Version -eq 'latest') {
-            $Version = (Get-Date -Format "yyyy.MM.dd") + ".0"
-          }
+          $Version = '${{ needs.preflight.outputs.version }}'
+          Write-Host "Version: $Version"
           Set-Content -Path .\VERSION -Value $Version -NoNewLine -Force
 
       - name: Configure Windows runner
@@ -128,16 +147,17 @@ jobs:
           conan remote clean
           conan remote add artifactory https://devolutions.jfrog.io/devolutions/api/conan/conan-local
 
-      - name: Build xpp (${{matrix.os}}-${{matrix.arch}})
+      - name: Build cadeau (${{matrix.os}}-${{matrix.arch}})
         shell: pwsh
         run: |
           $DotNetOs = '${{matrix.os}}'
           $DotNetArch = '${{matrix.arch}}'
           $DotNetRid = '${{matrix.os}}-${{matrix.arch}}'
           $BuildDir = "build-$DotNetRid"
+          $NativeDir = ".\runtimes\${DotNetRid}\native"
           Remove-Item -Path $BuildDir -Recurse -ErrorAction SilentlyContinue | Out-Null
           New-Item -Path $BuildDir -ItemType Directory -ErrorAction SilentlyContinue | Out-Null
-          New-Item -Path ".\runtimes\${DotNetRid}\native" -ItemType Directory -ErrorAction SilentlyContinue | Out-Null
+          New-Item -Path $NativeDir -ItemType Directory -ErrorAction SilentlyContinue | Out-Null
 
           $InstallPath = ".\install-${DotNetRid}"
           New-Item -Path $InstallPath -ItemType Directory -ErrorAction SilentlyContinue | Out-Null
@@ -152,7 +172,7 @@ jobs:
             cmake -G Ninja . -B $BuildDir $CMakeArgs
             cmake --build $BuildDir --config Release
             cmake --install $BuildDir --config Release
-            Copy-Item "$BuildDir\lib\xmf.dll" ".\runtimes\${DotNetRid}\native\xmf.dll" -Force
+            Copy-Item "$BuildDir\lib\xmf.dll" "$NativeDir\xmf.dll" -Force
           }
           elseif ($DotNetOs -eq 'osx') {
             $AppleArch = @{'x64'='x86_64';'arm64'='arm64'}[$DotNetArch]
@@ -160,7 +180,7 @@ jobs:
             cmake . -G Ninja -B $BuildDir $CMakeArgs
             cmake --build $BuildDir
             cmake --install $BuildDir
-            Copy-Item "$BuildDir\lib\libxmf.dylib" ".\runtimes\${DotNetRid}\native\libxmf.dylib" -Force
+            Copy-Item "$BuildDir\lib\libxmf.dylib" "$NativeDir\libxmf.dylib" -Force
           }
           elseif ($DotNetOs -eq 'linux') {
             $LinuxArch = @{'x64'='amd64';'arm64'='arm64'}[$DotNetArch]
@@ -170,11 +190,75 @@ jobs:
             cmake . -G Ninja -B $BuildDir $CMakeArgs
             cmake --build $BuildDir
             cmake --install $BuildDir
-            Copy-Item "$BuildDir\lib\libxmf.so" ".\runtimes\${DotNetRid}\native\libxmf.so" -Force
+            Copy-Item "$BuildDir\lib\libxmf.so" "$NativeDir\libxmf.so" -Force
           }
 
-      - name: Upload xpp (${{matrix.os}}-${{matrix.arch}})
+      - name: Upload native components (${{matrix.os}}-${{matrix.arch}})
         uses: actions/upload-artifact@v3
         with:
-          name: xpp-runtimes
+          name: runtimes
           path: runtimes
+
+  build-universal:
+    name: Universal Build
+    runs-on: ubuntu-20.04
+    needs: [preflight, build-native]
+
+    steps:
+      - name: Checkout ${{ github.repository }}
+        uses: actions/checkout@v3
+
+      - name: Configure runner
+        run: |
+          wget -q https://github.com/awakecoding/llvm-prebuilt/releases/download/v2022.2.0/cctools-x86_64-ubuntu-20.04.tar.xz
+          tar -xf cctools-x86_64-ubuntu-20.04.tar.xz -C /tmp
+          sudo mv /tmp/cctools-x86_64-ubuntu-20.04/bin/lipo /usr/local/bin
+          sudo mv /tmp/cctools-x86_64-ubuntu-20.04/bin/install_name_tool /usr/local/bin
+
+      - name: Download native components
+        uses: actions/download-artifact@v3
+        with:
+          name: runtimes
+          path: runtimes
+
+      - name: merge thin libraries
+        shell: pwsh
+        run: |
+          $LibraryName = "libxmf"
+          $OutputPath = "./runtimes/osx-universal/native"
+          New-Item -ItemType Directory -Path $OutputPath -ErrorAction SilentlyContinue | Out-Null
+          $ThinLibraries = Get-ChildItem "./runtimes/osx-*/native/$LibraryName.dylib" -Exclude "*-universal*" | Select-Object -ExpandProperty FullName
+          & 'lipo' '-create' @ThinLibraries '-output' "$OutputPath/$LibraryName.dylib"
+
+      - name: Upload native components
+        uses: actions/upload-artifact@v3
+        with:
+          name: runtimes
+          path: runtimes
+
+  build-managed:
+    name: Managed build
+    runs-on: windows-2022
+    needs: [preflight, build-native, build-universal]
+
+    steps:
+      - name: Check out ${{ github.repository }}
+        uses: actions/checkout@v3
+
+      - name: Download native components
+        uses: actions/download-artifact@v3
+        with:
+          name: runtimes
+          path: runtimes
+
+      - name: Build nuget package
+        shell: pwsh
+        run: |
+          $Version = '${{ needs.preflight.outputs.version }}'
+          & dotnet pack .\dotnet\Devolutions.Cadeau -o package /p:Version=$Version
+
+      - name: Upload managed components
+        uses: actions/upload-artifact@v3
+        with:
+          name: cadeau-nupkg
+          path: package/*.nupkg

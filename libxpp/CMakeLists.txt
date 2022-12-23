@@ -79,16 +79,16 @@ target_include_directories(${MODULE_NAME}
 
 target_link_libraries(${MODULE_NAME} ${${MODULE_PREFIX}_LIBS})
 
-if(XPP_INSTALL)
+if(CADEAU_INSTALL)
     install(TARGETS ${MODULE_NAME}
-        EXPORT xpp-targets
+        EXPORT cadeau-targets
         ARCHIVE DESTINATION lib
         LIBRARY DESTINATION lib)
 
     export(TARGETS ${MODULE_NAME}
-        APPEND FILE ${PROJECT_BINARY_DIR}/xpp-targets.cmake)
+        APPEND FILE ${PROJECT_BINARY_DIR}/cadeau-targets.cmake)
 
-    install(EXPORT xpp-targets
-            FILE xpp-targets.cmake
+    install(EXPORT cadeau-targets
+            FILE cadeau-targets.cmake
             DESTINATION "${CMAKE_EXPORT_DIR}")
 endif()

@@ -21,9 +21,17 @@ extern "C" {
 #define abs(_a)         (((_a) < 0) ? -(_a) : (_a))
 #endif
 
+// clamp return value
+
 #ifndef clamp
-#define clamp(_x, _lo, _hi) (((_x) > (_hi)) ? (_hi) : (((_x) < (_lo)) ? (_lo) : (_x)))
+#define clamp(_val, _min, _max) (((_val) > (_max)) ? (_max) : (((_val) < (_min)) ? (_min) : (_val)))
 #endif
+
+// clamp value in-place
+
+#define CLAMP(_val, _min, _max) \
+    if (_val < _min) _val = _min; \
+    else if (_val > _max) _val = _max;
 
 XPP_EXPORT XppStatus Xpp_MulC_16s_I(int16_t val, int16_t* pSrcDst, int32_t len);
 
