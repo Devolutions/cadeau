@@ -97,10 +97,6 @@
     _mm_storeu_si128((__m128i *)(pRGB + 48), xmm7);  \
 }
 
-#define CLAMP(_val, _min, _max) \
-    if (_val < _min) _val = _min; \
-    else if (_val > _max) _val = _max;
-
 XppStatus Xpp_YCoCgR420ToRGB_8u_P3AC4R_simd(const uint8_t* pSrc[3],
     uint32_t srcStep[3], uint8_t* pDst, uint32_t dstStep, uint32_t width, uint32_t height)
 {

@@ -27,10 +27,10 @@ if(WIN32)
 
     windows_rc_generate_version_info(
             NAME "XMF" TYPE "DLL"
-            VERSION "${XPP_VERSION}"
+            VERSION "${CADEAU_VERSION}"
             FILENAME "xmf.dll"
-            VENDOR "${XPP_VENDOR}"
-            COPYRIGHT "${XPP_COPYRIGHT}"
+            VENDOR "${CADEAU_VENDOR}"
+            COPYRIGHT "${CADEAU_COPYRIGHT}"
             OUTPUT ${CMAKE_CURRENT_BINARY_DIR}/version.rc)
 
     include_directories("${CMAKE_CURRENT_BINARY_DIR}")
@@ -54,16 +54,16 @@ if(XMF_COPY_PATH)
             ${XMF_COPY_PATH}/$<TARGET_FILE_NAME:xmf>)
 endif()
 
-if(XPP_INSTALL)
+if(CADEAU_INSTALL)
     install(TARGETS ${MODULE_NAME}
-        EXPORT xpp-targets
+        EXPORT cadeau-targets
         ARCHIVE DESTINATION lib
         LIBRARY DESTINATION lib)
 
     export(TARGETS ${MODULE_NAME}
-        APPEND FILE ${PROJECT_BINARY_DIR}/xpp-targets.cmake)
+        APPEND FILE ${PROJECT_BINARY_DIR}/cadeau-targets.cmake)
 
-    install(EXPORT xpp-targets
-            FILE xpp-targets.cmake
+    install(EXPORT cadeau-targets
+            FILE cadeau-targets.cmake
             DESTINATION "${CMAKE_EXPORT_DIR}")
 endif()
