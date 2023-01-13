@@ -5,6 +5,7 @@
 
 #include "XmfFile.h"
 #include "XmfBipBuffer.h"
+#include "XmfNamedPipe.h"
 
 #ifdef __cplusplus
 extern "C" {
@@ -53,6 +54,7 @@ void XmfMkvWriter_Close(XmfMkvWriter* This);
 
 void XmfMkvWriter_SetFilePointer(XmfMkvWriter* This, FILE* fp);
 void XmfMkvWriter_SetBipBuffer(XmfMkvWriter* This, XmfBipBuffer* bb);
+void XmfMkvWriter_SetNamedPipe(XmfMkvWriter* This, XmfNamedPipe* np);
 
 XmfMkvWriter* XmfMkvWriter_New();
 
