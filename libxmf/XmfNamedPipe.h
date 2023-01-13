@@ -13,7 +13,10 @@ int XmfNamedPipe_Read(XmfNamedPipe* np_handle, uint8_t* data, size_t size);
 int XmfNamedPipe_Write(XmfNamedPipe* np_handle, const uint8_t* data, size_t size);
 
 XmfNamedPipe* XmfNamedPipe_Open(const char* np_name);
-XmfNamedPipe* XmfNamedPipe_Create(const char* np_name);
+
+XmfNamedPipe* XmfNamedPipe_Create(const char* np_name, int max_clients);
+
+XmfNamedPipe* XmfNamedPipe_Accept(XmfNamedPipe* np_handle);
 
 void XmfNamedPipe_Close(XmfNamedPipe* np_handle);
 
