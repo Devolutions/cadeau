@@ -57,7 +57,7 @@ int64_t XmfMkvWriter_GetPosition(XmfMkvWriter* This)
         return This->position;
     }
 
-    return -1;
+    return 0;
 }
 
 int32_t XmfMkvWriter_SetPosition(XmfMkvWriter* This, int64_t position)
