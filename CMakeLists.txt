@@ -1,5 +1,10 @@
 cmake_minimum_required(VERSION 3.15)
 
+set(CMAKE_C_STANDARD 99)
+set(CMAKE_CXX_STANDARD 11)
+set(CMAKE_CXX_STANDARD_REQUIRED ON)
+set(CMAKE_CXX_EXTENSIONS OFF)
+
 project(Cadeau C CXX)
 
 set(CMAKE_POSITION_INDEPENDENT_CODE ON)
@@ -99,6 +104,9 @@ if(WITH_XMF)
 
     add_definitions(-DWITH_LIBVPX)
     add_definitions(-DWITH_LIBWEBM)
+
+    add_subdirectory(libwebm)
+    include_directories(libwebm)
 
     add_subdirectory(libxmf)
 endif()

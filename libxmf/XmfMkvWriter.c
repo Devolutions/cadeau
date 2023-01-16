@@ -29,14 +29,14 @@ int32_t XmfMkvWriter_Write(XmfMkvWriter* This, const void* buffer, uint32_t leng
             safeSize += 4096 - (safeSize % 4096);
         }
         XmfBipBuffer_Grow(This->bb, safeSize);
-        int status = XmfBipBuffer_Write(This->bb, buffer, (size_t) length);
+        int status = XmfBipBuffer_Write(This->bb, (const uint8_t*) buffer, (size_t) length);
         if (status == length) {
             This->position += length;
             return 0;
         }
         return -1;
     } else if (This->np) {
-        int status = XmfNamedPipe_Write(This->np, buffer, length);
+        int status = XmfNamedPipe_Write(This->np, (const uint8_t*) buffer, length);
         if (status == length) {
             This->position += length;
             return 0;
@@ -50,27 +50,28 @@ int32_t XmfMkvWriter_Write(XmfMkvWriter* This, const void* buffer, uint32_t leng
 int64_t XmfMkvWriter_GetPosition(XmfMkvWriter* This)
 {
     if (This->fp) {
-        return (int64_t) XmfFile_Tell(This->fp);
+        This->position = (int64_t) XmfFile_Tell(This->fp);
     } else if (This->bb) {
-        return This->position;
+
     } else if (This->np) {
-        return This->position;
+
     }
 
-    return 0;
+    return This->position;
 }
 
 int32_t XmfMkvWriter_SetPosition(XmfMkvWriter* This, int64_t position)
 {
     if (This->fp) {
-        return (int32_t) XmfFile_Seek(This->fp, (uint64_t) position, SEEK_SET);
+        XmfFile_Seek(This->fp, (uint64_t) position, SEEK_SET);
+        This->position = position;
     } else if (This->bb) {
-        return This->position;
+        This->position = position;
     } else if (This->np) {
-        return This->position;
+        This->position = position;
     }
 
-    return -1;
+    return 0;
 }
 
 bool XmfMkvWriter_Seekable(XmfMkvWriter* This)
@@ -88,7 +89,7 @@ bool XmfMkvWriter_Seekable(XmfMkvWriter* This)
 
 void XmfMkvWriter_ElementStartNotify(XmfMkvWriter* This, uint64_t element_id, int64_t position)
 {
-    
+
 }
 
 void* XmfMkvWriter_Dispose(XmfMkvWriter* This, bool freeMem)
@@ -141,12 +142,12 @@ void XmfMkvWriter_SetNamedPipe(XmfMkvWriter* This, XmfNamedPipe* np)
 }
 
 static IXmfMkvWriterVtbl g_IXmfMkvWriterVtbl = {
-    (void*) XmfMkvWriter_Write,
-    (void*) XmfMkvWriter_GetPosition,
-    (void*) XmfMkvWriter_SetPosition,
-    (void*) XmfMkvWriter_Seekable,
-    (void*) XmfMkvWriter_ElementStartNotify,
-    (void*) XmfMkvWriter_Dispose
+    (int32_t(*)(IXmfMkvWriter*, const void*, uint32_t)) XmfMkvWriter_Write,
+    (int64_t(*)(IXmfMkvWriter*)) XmfMkvWriter_GetPosition,
+    (int32_t(*)(IXmfMkvWriter*, int64_t)) XmfMkvWriter_SetPosition,
+    (bool(*)(IXmfMkvWriter*)) XmfMkvWriter_Seekable,
+    (void(*)(IXmfMkvWriter*, uint64_t, int64_t)) XmfMkvWriter_ElementStartNotify,
+    (void*(*)(IXmfMkvWriter*, bool)) XmfMkvWriter_Dispose
 };
 
 XmfMkvWriter* XmfMkvWriter_New()
