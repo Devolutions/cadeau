@@ -100,6 +100,9 @@ if(WITH_XMF)
     add_definitions(-DWITH_LIBVPX)
     add_definitions(-DWITH_LIBWEBM)
 
+    add_subdirectory(libwebm)
+    include_directories(libwebm)
+
     add_subdirectory(libxmf)
 endif()
 

@@ -43,7 +43,8 @@ endif()
 add_library(${MODULE_NAME} SHARED
         ${${MODULE_PREFIX}_SOURCES}
         ${${MODULE_PREFIX}_HEADERS}
-        ${${MODULE_PREFIX}_RESOURCES})
+        ${${MODULE_PREFIX}_RESOURCES}
+        $<TARGET_OBJECTS:webm>)
 
 target_link_libraries(${MODULE_NAME} xpp ${CONAN_TARGETS})
 
