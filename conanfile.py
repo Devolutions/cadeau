@@ -11,4 +11,3 @@ class Importer(ConanFile):
         self.requires('libpng/1.6.36@devolutions/stable')
         self.requires('zlib/1.2.11@devolutions/stable')
         self.requires('libvpx/1.10.0@devolutions/stable')
-        self.requires('libwebm/bc32e3c@devolutions/stable')
