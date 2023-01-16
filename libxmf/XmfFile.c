@@ -9,6 +9,10 @@
 #include <sys/types.h>
 #include <sys/stat.h>
 
+#ifdef _WIN32
+#include <share.h>
+#endif
+
 #include "XmfString.h"
 
 #include "XmfFile.h"
@@ -147,7 +151,7 @@ FILE* XmfFile_Open(const char* path, const char* mode)
     if (XmfConvertToUnicode(CP_UTF8, 0, mode, -1, &lpModeW, 0) < 1)
         goto cleanup;
 
-    result = _wfopen(lpPathW, lpModeW);
+    result = _wfsopen(lpPathW, lpModeW, _SH_DENYWR);
 
 cleanup:
     free(lpPathW);

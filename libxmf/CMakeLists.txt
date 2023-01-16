@@ -8,6 +8,7 @@ set(${MODULE_PREFIX}_SOURCES
     XmfWebM.cpp
     XmfBipBuffer.c
     XmfMkvWriter.c
+    XmfNamedPipe.c
     XmfRecorder.c)
 
 set(${MODULE_PREFIX}_HEADERS
@@ -18,6 +19,7 @@ set(${MODULE_PREFIX}_HEADERS
     XmfWebM.h
     XmfBipBuffer.h
     XmfMkvWriter.h
+    XmfNamedPipe.h
     XmfRecorder.h)
 
 set(${MODULE_PREFIX}_RESOURCES "")
