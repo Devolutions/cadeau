@@ -44,7 +44,7 @@ class IMkvWriter {
   virtual int64 GetPosition() const = 0;
 
   // Set the current File position. Returns 0 on success.
-  virtual int32 Position(int64 position) = 0;
+  virtual int32 SetPosition(int64 position) = 0;
 
   // Returns true if the writer is seekable.
   virtual bool Seekable() const = 0;

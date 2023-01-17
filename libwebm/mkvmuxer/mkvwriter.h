@@ -25,7 +25,7 @@ class MkvWriter : public IMkvWriter {
 
   // IMkvWriter interface
   virtual int64 GetPosition() const;
-  virtual int32 Position(int64 position);
+  virtual int32 SetPosition(int64 position);
   virtual bool Seekable() const;
   virtual int32 Write(const void* buffer, uint32 length);
   virtual void ElementStartNotify(uint64 element_id, int64 position);

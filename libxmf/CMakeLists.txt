@@ -7,7 +7,7 @@ set(${MODULE_PREFIX}_SOURCES
     XmfTime.c
     XmfWebM.cpp
     XmfBipBuffer.c
-    XmfMkvWriter.cpp
+    XmfMkvWriter.c
     XmfNamedPipe.c
     XmfRecorder.c)
 

@@ -2605,13 +2605,13 @@ bool Cluster::Finalize(bool set_last_frame_duration, uint64_t duration) {
   if (writer_->Seekable()) {
     const int64_t pos = writer_->GetPosition();
 
-    if (writer_->Position(size_position_))
+    if (writer_->SetPosition(size_position_))
       return false;
 
     if (WriteUIntSize(writer_, payload_size(), 8))
       return false;
 
-    if (writer_->Position(pos))
+    if (writer_->SetPosition(pos))
       return false;
   }
 
@@ -2791,7 +2791,7 @@ bool SeekHead::Finalize(IMkvWriter* writer) const {
       return true;
 
     const int64_t pos = writer->GetPosition();
-    if (writer->Position(start_pos_))
+    if (writer->SetPosition(start_pos_))
       return false;
 
     if (!WriteEbmlMasterElement(writer, libwebm::kMkvSeekHead, payload_size))
@@ -2822,7 +2822,7 @@ bool SeekHead::Finalize(IMkvWriter* writer) const {
     if (!bytes_written)
       return false;
 
-    if (writer->Position(pos))
+    if (writer->SetPosition(pos))
       return false;
   }
 
@@ -2950,14 +2950,14 @@ bool SegmentInfo::Finalize(IMkvWriter* writer) const {
 
       const int64_t pos = writer->GetPosition();
 
-      if (writer->Position(duration_pos_))
+      if (writer->SetPosition(duration_pos_))
         return false;
 
       if (!WriteEbmlElement(writer, libwebm::kMkvDuration,
                             static_cast<float>(duration_)))
         return false;
 
-      if (writer->Position(pos))
+      if (writer->SetPosition(pos))
         return false;
     }
   }
@@ -3230,8 +3230,8 @@ bool Segment::CopyAndMoveCuesBeforeClusters(mkvparser::IMkvReader* reader,
   // Update the Segment size in case the Cues size has changed.
   const int64_t pos = writer->GetPosition();
   const int64_t segment_size = writer->GetPosition() - payload_pos_;
-  if (writer->Position(size_position_) ||
-      WriteUIntSize(writer, segment_size, 8) || writer->Position(pos))
+  if (writer->SetPosition(size_position_) ||
+      WriteUIntSize(writer, segment_size, 8) || writer->SetPosition(pos))
     return false;
   return true;
 }
@@ -3326,7 +3326,7 @@ bool Segment::Finalize() {
       const int64_t pos = writer_header_->GetPosition();
       UpdateDocTypeVersion();
       if (doc_type_version_ != doc_type_version_written_) {
-        if (writer_header_->Position(0))
+        if (writer_header_->SetPosition(0))
           return false;
 
         const char* const doc_type =
@@ -3339,13 +3339,13 @@ bool Segment::Finalize() {
         doc_type_version_written_ = doc_type_version_;
       }
 
-      if (writer_header_->Position(size_position_))
+      if (writer_header_->SetPosition(size_position_))
         return false;
 
       if (WriteUIntSize(writer_header_, segment_size, 8))
         return false;
 
-      if (writer_header_->Position(pos))
+      if (writer_header_->SetPosition(pos))
         return false;
     }
 

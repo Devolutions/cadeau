@@ -72,7 +72,7 @@ int64 MkvWriter::GetPosition() const {
 #endif
 }
 
-int32 MkvWriter::Position(int64 position) {
+int32 MkvWriter::SetPosition(int64 position) {
   if (!file_)
     return -1;
 
