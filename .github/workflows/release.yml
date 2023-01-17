@@ -1,4 +1,4 @@
-name: Release Package
+name: Release
 on:
   workflow_dispatch:
     inputs:
@@ -16,7 +16,7 @@ jobs:
   package:
     name: Build Packages
     runs-on: windows-2022
-    environment: publish
+    environment: build-and-publish
     
     steps:
       - name: Clone project
@@ -57,7 +57,7 @@ jobs:
           
           $Version = $NugetName -Replace 'Devolutions.Cadeau.', ''
           if ($Version.Split('.').Count -eq 3) { $Version += ".0" }
-          Set-Content -Path .\package\VERSION -Value $Version -NoNewLine -Force
+          Set-Content -Path .\VERSION -Value $Version -NoNewLine -Force
 
           Expand-Archive -Path $NupkgFile -Destination ".\$NugetName"
           Remove-Item $NupkgFile -ErrorAction SilentlyContinue | Out-Null
@@ -80,7 +80,7 @@ jobs:
   publish:
     name: Publish packages
     runs-on: ubuntu-20.04
-    environment: publish
+    environment: build-and-publish
     needs: package
     if: ${{ github.event.inputs.dry-run == 'false' }} 
 
