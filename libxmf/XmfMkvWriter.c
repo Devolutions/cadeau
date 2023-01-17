@@ -63,14 +63,14 @@ int64_t XmfMkvWriter_GetPosition(XmfMkvWriter* This)
 int32_t XmfMkvWriter_SetPosition(XmfMkvWriter* This, int64_t position)
 {
     if (This->fp) {
-        return (int32_t) XmfFile_Seek(This->fp, (uint64_t) position, SEEK_SET);
+        XmfFile_Seek(This->fp, (uint64_t) position, SEEK_SET);
     } else if (This->bb) {
-        return This->position;
+        This->position = position;
     } else if (This->np) {
-        return This->position;
+        This->position = position;
     }
 
-    return -1;
+    return 0;
 }
 
 bool XmfMkvWriter_Seekable(XmfMkvWriter* This)

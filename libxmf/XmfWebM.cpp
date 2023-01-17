@@ -96,8 +96,8 @@ void XmfWebM_WriteFileHeader(XmfWebM* ctx,
     int64_t date_utc;
     char writing_app[64];
 
-    mkvmuxer::MkvWriter* const mkv_writer =
-        reinterpret_cast<mkvmuxer::MkvWriter*>(ctx->mkv_writer);
+    mkvmuxer::IMkvWriter* const mkv_writer =
+        reinterpret_cast<mkvmuxer::IMkvWriter*>(ctx->mkv_writer);
     mkvmuxer::Segment* const segment =
         reinterpret_cast<mkvmuxer::Segment*>(ctx->segment);
 
@@ -307,6 +307,14 @@ bool XMF_API XmfWebM_Init(XmfWebM* ctx, uint32_t frameWidth, uint32_t frameHeigh
         ctx->ts.param = ts->param;
     }
 
+#if 0
+    ctx->fp = XmfFile_Open(ctx->filename, "wb");
+
+    if (!ctx->fp)
+        goto error;
+
+    ctx->mkv_writer = new mkvmuxer::MkvWriter(ctx->fp);
+#else
     ctx->mkv_writer = XmfMkvWriter_New();
 
     if (ctx->bb) {
@@ -319,6 +327,7 @@ bool XMF_API XmfWebM_Init(XmfWebM* ctx, uint32_t frameWidth, uint32_t frameHeigh
 
         XmfMkvWriter_SetFilePointer((XmfMkvWriter*) ctx->mkv_writer, ctx->fp);
     }
+#endif
 
     ctx->segment = new mkvmuxer::Segment();
 
