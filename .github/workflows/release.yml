@@ -57,7 +57,7 @@ jobs:
           
           $Version = $NugetName -Replace 'Devolutions.Cadeau.', ''
           if ($Version.Split('.').Count -eq 3) { $Version += ".0" }
-          Set-Content -Path .\package\VERSION -Value $Version -NoNewLine -Force
+          Set-Content -Path .\VERSION -Value $Version -NoNewLine -Force
 
           Expand-Archive -Path $NupkgFile -Destination ".\$NugetName"
           Remove-Item $NupkgFile -ErrorAction SilentlyContinue | Out-Null
