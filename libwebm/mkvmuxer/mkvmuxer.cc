@@ -310,7 +310,7 @@ bool CuePoint::Write(IMkvWriter* writer) const {
   if (!WriteEbmlMasterElement(writer, libwebm::kMkvCuePoint, payload_size))
     return false;
 
-  const int64_t payload_position = writer->Position();
+  const int64_t payload_position = writer->GetPosition();
   if (payload_position < 0)
     return false;
 
@@ -336,7 +336,7 @@ bool CuePoint::Write(IMkvWriter* writer) const {
     }
   }
 
-  const int64_t stop_position = writer->Position();
+  const int64_t stop_position = writer->GetPosition();
   if (stop_position < 0)
     return false;
 
@@ -455,7 +455,7 @@ bool Cues::Write(IMkvWriter* writer) const {
   if (!WriteEbmlMasterElement(writer, libwebm::kMkvCues, size))
     return false;
 
-  const int64_t payload_position = writer->Position();
+  const int64_t payload_position = writer->GetPosition();
   if (payload_position < 0)
     return false;
 
@@ -466,7 +466,7 @@ bool Cues::Write(IMkvWriter* writer) const {
       return false;
   }
 
-  const int64_t stop_position = writer->Position();
+  const int64_t stop_position = writer->GetPosition();
   if (stop_position < 0)
     return false;
 
@@ -497,7 +497,7 @@ bool ContentEncAESSettings::Write(IMkvWriter* writer) const {
                               payload))
     return false;
 
-  const int64_t payload_position = writer->Position();
+  const int64_t payload_position = writer->GetPosition();
   if (payload_position < 0)
     return false;
 
@@ -506,7 +506,7 @@ bool ContentEncAESSettings::Write(IMkvWriter* writer) const {
     return false;
   }
 
-  const int64_t stop_position = writer->Position();
+  const int64_t stop_position = writer->GetPosition();
   if (stop_position < 0 ||
       stop_position - payload_position != static_cast<int64_t>(payload))
     return false;
@@ -568,7 +568,7 @@ bool ContentEncoding::Write(IMkvWriter* writer) const {
       EbmlMasterElementSize(libwebm::kMkvContentEncoding, encoding_size) +
       encoding_size;
 
-  const int64_t payload_position = writer->Position();
+  const int64_t payload_position = writer->GetPosition();
   if (payload_position < 0)
     return false;
 
@@ -599,7 +599,7 @@ bool ContentEncoding::Write(IMkvWriter* writer) const {
   if (!enc_aes_settings_.Write(writer))
     return false;
 
-  const int64_t stop_position = writer->Position();
+  const int64_t stop_position = writer->GetPosition();
   if (stop_position < 0 ||
       stop_position - payload_position != static_cast<int64_t>(size))
     return false;
@@ -814,7 +814,7 @@ bool Track::Write(IMkvWriter* writer) const {
     size += EbmlElementSize(libwebm::kMkvDefaultDuration,
                             static_cast<uint64>(default_duration_));
 
-  const int64_t payload_position = writer->Position();
+  const int64_t payload_position = writer->GetPosition();
   if (payload_position < 0)
     return false;
 
@@ -866,7 +866,7 @@ bool Track::Write(IMkvWriter* writer) const {
       return false;
   }
 
-  int64_t stop_position = writer->Position();
+  int64_t stop_position = writer->GetPosition();
   if (stop_position < 0 ||
       stop_position - payload_position != static_cast<int64_t>(size))
     return false;
@@ -889,7 +889,7 @@ bool Track::Write(IMkvWriter* writer) const {
     }
   }
 
-  stop_position = writer->Position();
+  stop_position = writer->GetPosition();
   if (stop_position < 0)
     return false;
   return true;
@@ -1472,7 +1472,7 @@ bool VideoTrack::Write(IMkvWriter* writer) const {
   if (!WriteEbmlMasterElement(writer, libwebm::kMkvVideo, size))
     return false;
 
-  const int64_t payload_position = writer->Position();
+  const int64_t payload_position = writer->GetPosition();
   if (payload_position < 0)
     return false;
 
@@ -1543,7 +1543,7 @@ bool VideoTrack::Write(IMkvWriter* writer) const {
       return false;
   }
 
-  const int64_t stop_position = writer->Position();
+  const int64_t stop_position = writer->GetPosition();
   if (stop_position < 0 ||
       stop_position - payload_position != static_cast<int64_t>(size)) {
     return false;
@@ -1701,7 +1701,7 @@ bool AudioTrack::Write(IMkvWriter* writer) const {
   if (!WriteEbmlMasterElement(writer, libwebm::kMkvAudio, size))
     return false;
 
-  const int64_t payload_position = writer->Position();
+  const int64_t payload_position = writer->GetPosition();
   if (payload_position < 0)
     return false;
 
@@ -1716,7 +1716,7 @@ bool AudioTrack::Write(IMkvWriter* writer) const {
                           static_cast<uint64>(bit_depth_)))
       return false;
 
-  const int64_t stop_position = writer->Position();
+  const int64_t stop_position = writer->GetPosition();
   if (stop_position < 0 ||
       stop_position - payload_position != static_cast<int64_t>(size))
     return false;
@@ -1863,7 +1863,7 @@ bool Tracks::Write(IMkvWriter* writer) const {
   if (!WriteEbmlMasterElement(writer, libwebm::kMkvTracks, size))
     return false;
 
-  const int64_t payload_position = writer->Position();
+  const int64_t payload_position = writer->GetPosition();
   if (payload_position < 0)
     return false;
 
@@ -1873,7 +1873,7 @@ bool Tracks::Write(IMkvWriter* writer) const {
       return false;
   }
 
-  const int64_t stop_position = writer->Position();
+  const int64_t stop_position = writer->GetPosition();
   if (stop_position < 0 ||
       stop_position - payload_position != static_cast<int64_t>(size))
     return false;
@@ -2007,7 +2007,7 @@ uint64_t Chapter::WriteAtom(IMkvWriter* writer) const {
   if (writer == NULL)
     return atom_size;
 
-  const int64_t start = writer->Position();
+  const int64_t start = writer->GetPosition();
 
   if (!WriteEbmlMasterElement(writer, libwebm::kMkvChapterAtom, payload_size))
     return 0;
@@ -2034,7 +2034,7 @@ uint64_t Chapter::WriteAtom(IMkvWriter* writer) const {
       return 0;
   }
 
-  const int64_t stop = writer->Position();
+  const int64_t stop = writer->GetPosition();
 
   if (stop >= start && uint64_t(stop - start) != atom_size)
     return 0;
@@ -2082,7 +2082,7 @@ uint64_t Chapter::Display::WriteDisplay(IMkvWriter* writer) const {
   if (writer == NULL)
     return display_size;
 
-  const int64_t start = writer->Position();
+  const int64_t start = writer->GetPosition();
 
   if (!WriteEbmlMasterElement(writer, libwebm::kMkvChapterDisplay,
                               payload_size))
@@ -2101,7 +2101,7 @@ uint64_t Chapter::Display::WriteDisplay(IMkvWriter* writer) const {
       return 0;
   }
 
-  const int64_t stop = writer->Position();
+  const int64_t stop = writer->GetPosition();
 
   if (stop >= start && uint64_t(stop - start) != display_size)
     return 0;
@@ -2146,12 +2146,12 @@ bool Chapters::Write(IMkvWriter* writer) const {
   if (!WriteEbmlMasterElement(writer, libwebm::kMkvChapters, payload_size))
     return false;
 
-  const int64_t start = writer->Position();
+  const int64_t start = writer->GetPosition();
 
   if (WriteEdition(writer) == 0)  // error
     return false;
 
-  const int64_t stop = writer->Position();
+  const int64_t stop = writer->GetPosition();
 
   if (stop >= start && uint64_t(stop - start) != payload_size)
     return false;
@@ -2198,7 +2198,7 @@ uint64_t Chapters::WriteEdition(IMkvWriter* writer) const {
   if (writer == NULL)  // return size only
     return edition_size;
 
-  const int64_t start = writer->Position();
+  const int64_t start = writer->GetPosition();
 
   if (!WriteEbmlMasterElement(writer, libwebm::kMkvEditionEntry, payload_size))
     return 0;  // error
@@ -2211,7 +2211,7 @@ uint64_t Chapters::WriteEdition(IMkvWriter* writer) const {
       return 0;
   }
 
-  const int64_t stop = writer->Position();
+  const int64_t stop = writer->GetPosition();
 
   if (stop >= start && uint64_t(stop - start) != edition_size)
     return 0;
@@ -2299,7 +2299,7 @@ uint64_t Tag::Write(IMkvWriter* writer) const {
   if (writer == NULL)
     return tag_size;
 
-  const int64_t start = writer->Position();
+  const int64_t start = writer->GetPosition();
 
   if (!WriteEbmlMasterElement(writer, libwebm::kMkvTag, payload_size))
     return 0;
@@ -2311,7 +2311,7 @@ uint64_t Tag::Write(IMkvWriter* writer) const {
       return 0;
   }
 
-  const int64_t stop = writer->Position();
+  const int64_t stop = writer->GetPosition();
 
   if (stop >= start && uint64_t(stop - start) != tag_size)
     return 0;
@@ -2351,7 +2351,7 @@ uint64_t Tag::SimpleTag::Write(IMkvWriter* writer) const {
   if (writer == NULL)
     return simple_tag_size;
 
-  const int64_t start = writer->Position();
+  const int64_t start = writer->GetPosition();
 
   if (!WriteEbmlMasterElement(writer, libwebm::kMkvSimpleTag, payload_size))
     return 0;
@@ -2362,7 +2362,7 @@ uint64_t Tag::SimpleTag::Write(IMkvWriter* writer) const {
   if (!WriteEbmlElement(writer, libwebm::kMkvTagString, tag_string_))
     return 0;
 
-  const int64_t stop = writer->Position();
+  const int64_t stop = writer->GetPosition();
 
   if (stop >= start && uint64_t(stop - start) != simple_tag_size)
     return 0;
@@ -2409,7 +2409,7 @@ bool Tags::Write(IMkvWriter* writer) const {
   if (!WriteEbmlMasterElement(writer, libwebm::kMkvTags, payload_size))
     return false;
 
-  const int64_t start = writer->Position();
+  const int64_t start = writer->GetPosition();
 
   for (int idx = 0; idx < tags_count_; ++idx) {
     const Tag& tag = tags_[idx];
@@ -2419,7 +2419,7 @@ bool Tags::Write(IMkvWriter* writer) const {
       return 0;
   }
 
-  const int64_t stop = writer->Position();
+  const int64_t stop = writer->GetPosition();
 
   if (stop >= start && uint64_t(stop - start) != payload_size)
     return false;
@@ -2603,7 +2603,7 @@ bool Cluster::Finalize(bool set_last_frame_duration, uint64_t duration) {
     return false;
 
   if (writer_->Seekable()) {
-    const int64_t pos = writer_->Position();
+    const int64_t pos = writer_->GetPosition();
 
     if (writer_->Position(size_position_))
       return false;
@@ -2734,7 +2734,7 @@ bool Cluster::WriteClusterHeader() {
     return false;
 
   // Save for later.
-  size_position_ = writer_->Position();
+  size_position_ = writer_->GetPosition();
 
   // Write "unknown" (EBML coded -1) as cluster size value. We need to write 8
   // bytes because we do not know how big our cluster will be.
@@ -2790,7 +2790,7 @@ bool SeekHead::Finalize(IMkvWriter* writer) const {
     if (payload_size == 0)
       return true;
 
-    const int64_t pos = writer->Position();
+    const int64_t pos = writer->GetPosition();
     if (writer->Position(start_pos_))
       return false;
 
@@ -2816,7 +2816,7 @@ bool SeekHead::Finalize(IMkvWriter* writer) const {
     const uint64_t total_size =
         EbmlMasterElementSize(libwebm::kMkvSeekHead, total_entry_size) +
         total_entry_size;
-    const int64_t size_left = total_size - (writer->Position() - start_pos_);
+    const int64_t size_left = total_size - (writer->GetPosition() - start_pos_);
 
     const uint64_t bytes_written = WriteVoidElement(writer, size_left);
     if (!bytes_written)
@@ -2834,7 +2834,7 @@ bool SeekHead::Write(IMkvWriter* writer) {
   const uint64_t size =
       EbmlMasterElementSize(libwebm::kMkvSeekHead, entry_size);
 
-  start_pos_ = writer->Position();
+  start_pos_ = writer->GetPosition();
 
   const uint64_t bytes_written = WriteVoidElement(writer, size + entry_size);
   if (!bytes_written)
@@ -2948,7 +2948,7 @@ bool SegmentInfo::Finalize(IMkvWriter* writer) const {
       if (duration_pos_ == -1)
         return false;
 
-      const int64_t pos = writer->Position();
+      const int64_t pos = writer->GetPosition();
 
       if (writer->Position(duration_pos_))
         return false;
@@ -2982,7 +2982,7 @@ bool SegmentInfo::Write(IMkvWriter* writer) {
   if (!WriteEbmlMasterElement(writer, libwebm::kMkvInfo, size))
     return false;
 
-  const int64_t payload_position = writer->Position();
+  const int64_t payload_position = writer->GetPosition();
   if (payload_position < 0)
     return false;
 
@@ -2992,7 +2992,7 @@ bool SegmentInfo::Write(IMkvWriter* writer) {
 
   if (duration_ > 0.0) {
     // Save for later
-    duration_pos_ = writer->Position();
+    duration_pos_ = writer->GetPosition();
 
     if (!WriteEbmlElement(writer, libwebm::kMkvDuration,
                           static_cast<float>(duration_)))
@@ -3007,7 +3007,7 @@ bool SegmentInfo::Write(IMkvWriter* writer) {
   if (!WriteEbmlElement(writer, libwebm::kMkvWritingApp, writing_app_))
     return false;
 
-  const int64_t stop_position = writer->Position();
+  const int64_t stop_position = writer->GetPosition();
   if (stop_position < 0 ||
       stop_position - payload_position != static_cast<int64_t>(size))
     return false;
@@ -3228,8 +3228,8 @@ bool Segment::CopyAndMoveCuesBeforeClusters(mkvparser::IMkvReader* reader,
     return false;
 
   // Update the Segment size in case the Cues size has changed.
-  const int64_t pos = writer->Position();
-  const int64_t segment_size = writer->Position() - payload_pos_;
+  const int64_t pos = writer->GetPosition();
+  const int64_t segment_size = writer->GetPosition() - payload_pos_;
   if (writer->Position(size_position_) ||
       WriteUIntSize(writer, segment_size, 8) || writer->Position(pos))
     return false;
@@ -3305,7 +3305,7 @@ bool Segment::Finalize() {
         return false;
     }
 
-    cluster_end_offset_ = writer_cluster_->Position();
+    cluster_end_offset_ = writer_cluster_->GetPosition();
 
     // Write the seek headers and cues
     if (output_cues_)
@@ -3323,7 +3323,7 @@ bool Segment::Finalize() {
       if (segment_size < 1)
         return false;
 
-      const int64_t pos = writer_header_->Position();
+      const int64_t pos = writer_header_->GetPosition();
       UpdateDocTypeVersion();
       if (doc_type_version_ != doc_type_version_written_) {
         if (writer_header_->Position(0))
@@ -3333,7 +3333,7 @@ bool Segment::Finalize() {
             DocTypeIsWebm() ? kDocTypeWebm : kDocTypeMatroska;
         if (!WriteEbmlHeader(writer_header_, doc_type_version_, doc_type))
           return false;
-        if (writer_header_->Position() != ebml_header_size_)
+        if (writer_header_->GetPosition() != ebml_header_size_)
           return false;
 
         doc_type_version_written_ = doc_type_version_;
@@ -3717,7 +3717,7 @@ bool Segment::WriteSegmentHeader() {
   if (!WriteEbmlHeader(writer_header_, doc_type_version_, doc_type))
     return false;
   doc_type_version_written_ = doc_type_version_;
-  ebml_header_size_ = static_cast<int32_t>(writer_header_->Position());
+  ebml_header_size_ = static_cast<int32_t>(writer_header_->GetPosition());
 
   // Write "unknown" (-1) as segment size value. If mode is kFile, Segment
   // will write over duration when the file is finalized.
@@ -3725,7 +3725,7 @@ bool Segment::WriteSegmentHeader() {
     return false;
 
   // Save for later.
-  size_position_ = writer_header_->Position();
+  size_position_ = writer_header_->GetPosition();
 
   // Write "unknown" (EBML coded -1) as segment size value. We need to write 8
   // bytes because if we are going to overwrite the segment size later we do
@@ -3733,7 +3733,7 @@ bool Segment::WriteSegmentHeader() {
   if (SerializeInt(writer_header_, kEbmlUnknownValue, 8))
     return false;
 
-  payload_pos_ = writer_header_->Position();
+  payload_pos_ = writer_header_->GetPosition();
 
   if (mode_ == kFile && writer_header_->Seekable()) {
     // Set the duration > 0.0 so SegmentInfo will write out the duration. When
@@ -4044,7 +4044,7 @@ int64_t Segment::MaxOffset() {
   if (!writer_header_)
     return -1;
 
-  int64_t offset = writer_header_->Position() - payload_pos_;
+  int64_t offset = writer_header_->GetPosition() - payload_pos_;
 
   if (chunking_) {
     for (int32_t i = 0; i < cluster_list_size_; ++i) {
@@ -4053,7 +4053,7 @@ int64_t Segment::MaxOffset() {
     }
 
     if (writer_cues_)
-      offset += writer_cues_->Position();
+      offset += writer_cues_->GetPosition();
   }
 
   return offset;

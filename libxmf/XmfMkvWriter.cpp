@@ -143,13 +143,8 @@ void XmfMkvWriter_SetNamedPipe(XmfMkvWriter* This, XmfNamedPipe* np)
 
 static IXmfMkvWriterVtbl g_IXmfMkvWriterVtbl = {
     (int32_t(*)(IXmfMkvWriter*, const void*, uint32_t)) XmfMkvWriter_Write,
-#ifdef _WIN32
-    (int64_t(*)(IXmfMkvWriter*)) XmfMkvWriter_SetPosition,
-    (int32_t(*)(IXmfMkvWriter*, int64_t)) XmfMkvWriter_GetPosition,
-#else
     (int64_t(*)(IXmfMkvWriter*)) XmfMkvWriter_GetPosition,
     (int32_t(*)(IXmfMkvWriter*, int64_t)) XmfMkvWriter_SetPosition,
-#endif
     (bool(*)(IXmfMkvWriter*)) XmfMkvWriter_Seekable,
     (void(*)(IXmfMkvWriter*, uint64_t, int64_t)) XmfMkvWriter_ElementStartNotify,
     (void*(*)(IXmfMkvWriter*, bool)) XmfMkvWriter_Dispose

@@ -417,7 +417,7 @@ int32 WriteID(IMkvWriter* writer, uint64 type) {
   if (!writer)
     return -1;
 
-  writer->ElementStartNotify(type, writer->Position());
+  writer->ElementStartNotify(type, writer->GetPosition());
 
   const int32 size = GetUIntSize(type);
 
@@ -580,7 +580,7 @@ uint64 WriteVoidElement(IMkvWriter* writer, uint64 size) {
   if (void_size != size)
     return 0;
 
-  const int64 payload_position = writer->Position();
+  const int64 payload_position = writer->GetPosition();
   if (payload_position < 0)
     return 0;
 
@@ -596,7 +596,7 @@ uint64 WriteVoidElement(IMkvWriter* writer, uint64 size) {
       return 0;
   }
 
-  const int64 stop_position = writer->Position();
+  const int64 stop_position = writer->GetPosition();
   if (stop_position < 0 ||
       stop_position - payload_position != static_cast<int64>(void_size))
     return 0;

@@ -41,7 +41,7 @@ class IMkvWriter {
 
   // Returns the offset of the output position from the beginning of the
   // output.
-  virtual int64 Position() const = 0;
+  virtual int64 GetPosition() const = 0;
 
   // Set the current File position. Returns 0 on success.
   virtual int32 Position(int64 position) = 0;
