@@ -75,7 +75,7 @@ jobs:
         uses: actions/upload-artifact@v3
         with:
           name: cadeau-nupkg
-          path: package/*.nupkg
+          path: package/*
 
   publish:
     name: Publish packages
