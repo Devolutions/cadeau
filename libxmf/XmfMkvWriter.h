@@ -57,6 +57,7 @@ void XmfMkvWriter_SetBipBuffer(XmfMkvWriter* This, XmfBipBuffer* bb);
 void XmfMkvWriter_SetNamedPipe(XmfMkvWriter* This, XmfNamedPipe* np);
 
 XmfMkvWriter* XmfMkvWriter_New();
+void XmfMkvWriter_Free(XmfMkvWriter* This);
 
 #ifdef __cplusplus
 }

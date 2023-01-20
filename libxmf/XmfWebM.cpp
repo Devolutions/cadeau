@@ -10,7 +10,6 @@
 
 #include <mkvmuxer/mkvmuxer.h>
 #include <mkvmuxer/mkvmuxerutil.h>
-#include <mkvmuxer/mkvwriter.h>
 
 #include "XmfFile.h"
 #include "XmfMath.h"
@@ -161,15 +160,15 @@ void XmfWebM_WriteBlock(XmfWebM* ctx, const vpx_codec_enc_cfg_t* cfg, const vpx_
 
 void XmfWebM_WriteFileFooter(XmfWebM* ctx)
 {
-    mkvmuxer::MkvWriter* const writer =
-        reinterpret_cast<mkvmuxer::MkvWriter*>(ctx->mkv_writer);
-    mkvmuxer::Segment* const segment =
-        reinterpret_cast<mkvmuxer::Segment*>(ctx->segment);
+    mkvmuxer::Segment* const segment = reinterpret_cast<mkvmuxer::Segment*>(ctx->segment);
     segment->Finalize();
     delete segment;
-    delete writer;
-    ctx->mkv_writer = NULL;
     ctx->segment = NULL;
+
+    if (ctx->mkv_writer) {
+        XmfMkvWriter_Free((XmfMkvWriter*) ctx->mkv_writer);
+        ctx->mkv_writer = NULL;
+    }
 }
 
 int XmfWebM_EncodeImage(XmfWebM* ctx, vpx_image_t* img, vpx_codec_pts_t start, uint64_t duration)
@@ -307,14 +306,6 @@ bool XMF_API XmfWebM_Init(XmfWebM* ctx, uint32_t frameWidth, uint32_t frameHeigh
         ctx->ts.param = ts->param;
     }
 
-#if 0
-    ctx->fp = XmfFile_Open(ctx->filename, "wb");
-
-    if (!ctx->fp)
-        goto error;
-
-    ctx->mkv_writer = new mkvmuxer::MkvWriter(ctx->fp);
-#else
     ctx->mkv_writer = XmfMkvWriter_New();
 
     if (ctx->bb) {
@@ -327,7 +318,6 @@ bool XMF_API XmfWebM_Init(XmfWebM* ctx, uint32_t frameWidth, uint32_t frameHeigh
 
         XmfMkvWriter_SetFilePointer((XmfMkvWriter*) ctx->mkv_writer, ctx->fp);
     }
-#endif
 
     ctx->segment = new mkvmuxer::Segment();
 

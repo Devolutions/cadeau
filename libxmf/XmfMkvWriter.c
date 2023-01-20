@@ -161,3 +161,13 @@ XmfMkvWriter* XmfMkvWriter_New()
 
     return This;
 }
+
+void XmfMkvWriter_Free(XmfMkvWriter* This)
+{
+    if (!This)
+        return;
+
+    XmfMkvWriter_Close(This);
+
+    free(This);
+}
