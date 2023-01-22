@@ -106,7 +106,7 @@ jobs:
       - name: Install Halide
         shell: pwsh
         run: |
-          $HalideVersion='12.0.1'
+          $HalideVersion='14.0.0'
           $HalidePlatform=@{'win'='windows';'osx'='macos';'linux'='ubuntu-20.04'}['${{matrix.os}}']
           $HalideBaseUrl="https://github.com/awakecoding/llvm-prebuilt/releases/download/v2022.2.0"
           $HalideName="halide-${HalideVersion}-x86_64-${HalidePlatform}"
