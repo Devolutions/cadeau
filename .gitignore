@@ -9,6 +9,9 @@ obj/
 runtimes/
 package/
 *.webm
+*.bmp
 *.rgb
 *.yuv
+output.*
+
 

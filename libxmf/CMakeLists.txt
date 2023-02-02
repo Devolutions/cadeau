@@ -5,6 +5,9 @@ set(${MODULE_PREFIX}_SOURCES
     XmfFile.c
     XmfString.c
     XmfTime.c
+    XmfImage.c
+    XmfBmp.c
+    XmfPng.c
     XmfWebM.cpp
     XmfBipBuffer.c
     XmfMkvWriter.c
@@ -16,6 +19,9 @@ set(${MODULE_PREFIX}_HEADERS
     XmfString.h
     XmfFile.h
     XmfTime.h
+    XmfImage.h
+    XmfBmp.h
+    XmfPng.h
     XmfWebM.h
     XmfBipBuffer.h
     XmfMkvWriter.h
@@ -28,7 +34,7 @@ if(WIN32)
     set(${MODULE_PREFIX}_RESOURCES xmf.rc)
 
     windows_rc_generate_version_info(
-            NAME "XMF" TYPE "DLL"
+            NAME "Cadeau eXtreme Media Foundation" TYPE "DLL"
             VERSION "${CADEAU_VERSION}"
             FILENAME "xmf.dll"
             VENDOR "${CADEAU_VENDOR}"

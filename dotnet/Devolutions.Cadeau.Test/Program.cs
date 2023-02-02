@@ -188,11 +188,37 @@ namespace Devolutions.Cadeau.Test
             fs.Flush();
         }
 
+        static void TestImageFile()
+        {
+            string currentDir = Directory.GetCurrentDirectory();
+            string rootDir = Directory.GetParent(currentDir).Parent.ToString();
+            string mediaDir = Path.Join(rootDir, "media");
+            string inputFile = Path.Join(mediaDir, "winlogon_unlock.png");
+            string outputFile = Path.Join(mediaDir, "output.bmp");
+
+            unsafe {
+                IntPtr data = IntPtr.Zero;
+                uint width = 0;
+                uint height = 0;
+                uint step = 0;
+
+                if (XmfImage.LoadFile(inputFile, ref data, ref width, ref height, ref step))
+                {
+                    Console.WriteLine("image: {0}x{1}, step: {2}", width, height, step);
+                    if (!XmfImage.SaveFile(outputFile, data, width, height, step)) {
+                        Console.WriteLine("failed to save file {0}", outputFile);
+                    }
+                    XmfImage.FreeData(data);
+                }
+            }
+        }
+
         static void Main(string[] args)
         {
             //TestRecorder();
             //TestBipBuffer();
-            TestMkvStream();
+            //TestMkvStream();
+            TestImageFile();
         }
     }
 }
