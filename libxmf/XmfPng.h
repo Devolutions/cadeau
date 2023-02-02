@@ -7,9 +7,9 @@
 extern "C" {
 #endif
 
-XMF_EXPORT bool XmfPng_WriteFile(const char* filename, const uint8_t* data, uint32_t width, uint32_t height, uint32_t step);
+XMF_EXPORT bool XmfPng_SaveFile(const char* filename, const uint8_t* data, uint32_t width, uint32_t height, uint32_t step);
 
-XMF_EXPORT bool XmfPng_ReadFile(const char* filename, uint8_t** data, uint32_t* width, uint32_t* height, uint32_t* step);
+XMF_EXPORT bool XmfPng_LoadFile(const char* filename, uint8_t** data, uint32_t* width, uint32_t* height, uint32_t* step);
 
 #ifdef __cplusplus
 }

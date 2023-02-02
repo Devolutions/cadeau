@@ -32,7 +32,7 @@ typedef struct _XMF_BITMAP_INFO_HEADER XMF_BITMAP_INFO_HEADER;
 
 #pragma pack(pop)
 
-bool XmfBmp_WriteFile(const char* filename, const uint8_t* data, uint32_t width, uint32_t height, uint32_t step)
+bool XmfBmp_SaveFile(const char* filename, const uint8_t* data, uint32_t width, uint32_t height, uint32_t step)
 {
     FILE* fp;
     bool success = true;
@@ -75,7 +75,7 @@ bool XmfBmp_WriteFile(const char* filename, const uint8_t* data, uint32_t width,
     return success;
 }
 
-bool XmfBmp_ReadFile(const char* filename, uint8_t** data, uint32_t* width, uint32_t* height, uint32_t* step)
+bool XmfBmp_LoadFile(const char* filename, uint8_t** data, uint32_t* width, uint32_t* height, uint32_t* step)
 {
     FILE* fp;
     size_t size = 0;
@@ -119,7 +119,7 @@ bool XmfBmp_ReadFile(const char* filename, uint8_t** data, uint32_t* width, uint
     *data = buffer;
     *width = (uint32_t) bi.biWidth;
     *height = (uint32_t) (-1 * bi.biHeight);
-    *step = (uint32_t) (bi.biSizeImage / bi.biHeight);
+    *step = (uint32_t) (bi.biSizeImage / *height);
 
     success = true;
 exit:

@@ -4,7 +4,7 @@
 
 #include <libpng16/png.h>
 
-bool XmfPng_WriteFile(const char* filename, const uint8_t* data, uint32_t width, uint32_t height, uint32_t step)
+bool XmfPng_SaveFile(const char* filename, const uint8_t* data, uint32_t width, uint32_t height, uint32_t step)
 {
     int png_status;
     png_image image;
@@ -28,7 +28,7 @@ exit:
     return success;
 }
 
-bool XmfPng_ReadData(const uint8_t* fileData, size_t fileSize, uint8_t** data, uint32_t* width, uint32_t* height, uint32_t* step)
+bool XmfPng_LoadData(const uint8_t* fileData, size_t fileSize, uint8_t** data, uint32_t* width, uint32_t* height, uint32_t* step)
 {
     int png_status;
     int row_stride;
@@ -73,7 +73,7 @@ exit:
     return success;
 }
 
-bool XmfPng_ReadFile(const char* filename, uint8_t** data, uint32_t* width, uint32_t* height, uint32_t* step)
+bool XmfPng_LoadFile(const char* filename, uint8_t** data, uint32_t* width, uint32_t* height, uint32_t* step)
 {
     bool success = false;
     uint8_t* fileData = NULL;
@@ -84,7 +84,7 @@ bool XmfPng_ReadFile(const char* filename, uint8_t** data, uint32_t* width, uint
     if (!fileData)
         return false;
 
-    if (!XmfPng_ReadData(fileData, fileSize, data, width, height, step))
+    if (!XmfPng_LoadData(fileData, fileSize, data, width, height, step))
     {
         goto exit;
     }
