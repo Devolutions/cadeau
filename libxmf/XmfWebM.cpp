@@ -93,7 +93,7 @@ void XmfWebM_WriteFileHeader(XmfWebM* ctx,
                  const vpx_rational_t* par)
 {
     int64_t date_utc;
-    char writing_app[64];
+    const char* app_name = "xmf";
 
     mkvmuxer::IMkvWriter* const mkv_writer =
         reinterpret_cast<mkvmuxer::IMkvWriter*>(ctx->mkv_writer);
@@ -101,8 +101,10 @@ void XmfWebM_WriteFileHeader(XmfWebM* ctx,
         reinterpret_cast<mkvmuxer::Segment*>(ctx->segment);
 
     segment->Init(mkv_writer);
-    segment->set_mode(mkvmuxer::Segment::kFile);
+
     segment->OutputCues(true);
+    
+    segment->set_mode(mkvmuxer::Segment::kLive);
 
     mkvmuxer::SegmentInfo* const info = segment->GetSegmentInfo();
 
@@ -110,9 +112,7 @@ void XmfWebM_WriteFileHeader(XmfWebM* ctx,
     const uint64_t kTimecodeScale = 1000000;
     info->set_timecode_scale(kTimecodeScale);
 
-    sprintf_s(writing_app, sizeof(writing_app), "%s %s", "vpxenc", vpx_codec_version_str());
-
-    info->set_writing_app(writing_app);
+    info->set_writing_app(app_name);
 
     date_utc = XmfWebM_GetEbmlDate();
     info->set_date_utc(date_utc);

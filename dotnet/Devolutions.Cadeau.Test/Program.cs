@@ -250,7 +250,7 @@ namespace Devolutions.Cadeau.Test
 
             uint frameWidth = 1920;
             uint frameHeight = 1080;
-            uint frameRate = 1;
+            uint frameRate = 10;
 
             ulong baseTime = GetTickCount();
             XmfRecorder recorder = new XmfRecorder();
