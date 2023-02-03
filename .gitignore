@@ -1,5 +1,6 @@
 .idea/
 .vscode/
+.vs/
 build*/
 cmake-build*/
 CMakeFiles/
@@ -14,4 +15,4 @@ package/
 *.yuv
 output.*
 capture_sample*
-
+launchSettings.json

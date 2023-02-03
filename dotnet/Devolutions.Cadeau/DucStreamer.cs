@@ -304,7 +304,14 @@ namespace Devolutions.Cadeau
 
                 var clientStream = client.GetStream();
 
-                SslStream sslStream = new SslStream(clientStream, false, this.ValidateServerCertificate);
+                RemoteCertificateValidationCallback certificateValidationCallback = null;
+
+                if (this.OnValidateCertificate != null)
+                {
+                    certificateValidationCallback = this.ValidateServerCertificate;
+                }
+
+                SslStream sslStream = new SslStream(clientStream, false, certificateValidationCallback);
                 sslStream.AuthenticateAsClient(host);
                 this.stream = sslStream;
             }
@@ -343,7 +350,6 @@ namespace Devolutions.Cadeau
         private void WriteStringOnStream(string source)
         {
             var bytes = Encoding.UTF8.GetBytes(source);
-
             this.stream.Write(BitConverter.GetBytes(bytes.Length), 0, 4);
             this.stream.Write(bytes, 0, bytes.Length);
         }
