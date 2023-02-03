@@ -290,13 +290,104 @@ namespace Devolutions.Cadeau.Test
             recorder.Uninit();
         }
 
+        static void TestStreaming()
+        {
+            string currentDir = Directory.GetCurrentDirectory();
+            string rootDir = Directory.GetParent(currentDir).Parent.ToString();
+            string mediaDir = Path.Join(rootDir, "media");
+            string capturePath = Path.Join(mediaDir, "capture_sample");
+            string captureFile = Path.Join(capturePath, "frame_meta.psv");
+
+            (string[] headers, List<string[]> records) = ParsePsvFile(captureFile);
+
+            uint frameWidth = 1920;
+            uint frameHeight = 1080;
+            uint frameRate = 5;
+
+            ulong baseTime = GetTickCount();
+            DateTime baseDate = DateTime.Now;
+
+            string serverHost = "dvls.ad.it-help.ninja";
+            int serverPort = 8383;
+            DucStreamer streamer = new DucStreamer();
+
+            if (!streamer.Connect(serverHost, serverPort))
+            {
+                Console.WriteLine("failed to connect to {0}:{1}", serverHost, serverPort);
+                return;
+            }
+
+            string streamTargetHost = "IT-HELP-WAC";
+            string streamAuthToken = "4e6d8428-a6ca-4c98-9693-c6eea58fa551";
+            var streamType = DucStreamType.BitmapFrame;
+
+            if (!streamer.SendClientInfo(streamTargetHost, streamType, streamAuthToken))
+            {
+                Console.WriteLine("failed to send client info");
+                return;
+            }
+
+            int status = streamer.ReceiveServerStatus();
+
+            if (status != 1) {
+                Console.WriteLine("unexpected server status: {0}", status);
+            }
+
+            string connectionId = Guid.NewGuid().ToString();
+            string repositoryId = "00000000-0000-0000-0000-000000000000";
+            string connectionLogId = Guid.NewGuid().ToString();
+
+            Dictionary<string, string> metadata = new Dictionary<string, string>();
+            metadata.Add("ConnectionID", connectionId);
+            metadata.Add("RepositoryID", repositoryId);
+            metadata.Add("ConnectionLogID", connectionLogId);
+            metadata.Add("ConnectionType", "1");
+            metadata.Add("Width", frameWidth.ToString());
+            metadata.Add("Height", frameHeight.ToString());
+            metadata.Add("FPS", frameRate.ToString());
+
+            foreach(KeyValuePair<string, string> elem in metadata) {
+                Console.WriteLine("{0} = {1}", elem.Key, elem.Value);
+                streamer.SendMetadata(elem.Key, elem.Value);
+            }
+
+            foreach (string[] record in records)
+            {
+                ulong frameTime = ulong.Parse(record[0]);
+                ulong currentTime = baseTime + frameTime;
+                string frameSize = record[1];
+                string frameFile = record[2];
+                string inputFile = Path.Join(capturePath, frameFile);
+
+                unsafe {
+                    IntPtr data = IntPtr.Zero;
+                    uint width = 0;
+                    uint height = 0;
+                    uint step = 0;
+
+                    if (XmfImage.LoadFile(inputFile, ref data, ref width, ref height, ref step))
+                    {
+                        Console.WriteLine("image: {0}x{1}, time: {2}", width, height, frameTime);
+
+                        uint dataSize = height * step;
+                        DateTime timestamp = baseDate.AddMilliseconds(frameTime);
+
+                        streamer.SendPayload(timestamp, data, (int) dataSize);
+
+                        XmfImage.FreeData(data);
+                    }
+                }
+            }
+        }
+
         static void Main(string[] args)
         {
             //TestRecorder();
             //TestBipBuffer();
             //TestMkvStream();
             //TestImageFile();
-            TestTranscode();
+            //TestTranscode();
+            TestStreaming();
         }
     }
 }
