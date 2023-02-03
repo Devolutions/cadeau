@@ -1,6 +1,7 @@
 ﻿using System;
 using System.IO;
 using System.Threading;
+using System.Collections.Generic;
 using System.Runtime.InteropServices;
 
 using Devolutions.Cadeau;
@@ -213,12 +214,89 @@ namespace Devolutions.Cadeau.Test
             }
         }
 
+        static (string[], List<string[]>) ParsePsvFile(string filePath)
+        {
+            string[] headers = null;
+            List<string[]> records = new List<string[]>();
+            using (StreamReader reader = new StreamReader(filePath))
+            {
+                while (!reader.EndOfStream)
+                {
+                    string line = reader.ReadLine();
+                    string[] fields = line.Split('|');
+
+                    if (headers == null) {
+                        headers = fields;
+                    } else {
+                        records.Add(fields);
+                    }
+                }
+            }
+            return (headers, records);
+        }
+
+        static void TestTranscode()
+        {
+            string currentDir = Directory.GetCurrentDirectory();
+            string rootDir = Directory.GetParent(currentDir).Parent.ToString();
+            string mediaDir = Path.Join(rootDir, "media");
+            string capturePath = Path.Join(mediaDir, "capture_sample");
+            string captureFile = Path.Join(capturePath, "frame_meta.psv");
+            string videoFile = Path.Join(capturePath, "video.webm");
+
+            (string[] headers, List<string[]> records) = ParsePsvFile(captureFile);
+
+            Console.WriteLine(string.Join("|", headers));
+
+            uint frameWidth = 1920;
+            uint frameHeight = 1080;
+            uint frameRate = 10;
+
+            ulong baseTime = GetTickCount();
+            XmfRecorder recorder = new XmfRecorder();
+            recorder.SetFileName(videoFile);
+            recorder.SetFrameSize(frameWidth, frameHeight);
+            recorder.SetFrameRate(frameRate);
+            recorder.SetCurrentTime(baseTime);
+            recorder.Init();
+
+            foreach (string[] record in records)
+            {
+                ulong frameTime = ulong.Parse(record[0]);
+                ulong currentTime = baseTime + frameTime;
+                string frameSize = record[1];
+                string frameFile = record[2];
+                string inputFile = Path.Join(capturePath, frameFile);
+
+                unsafe {
+                    IntPtr data = IntPtr.Zero;
+                    uint width = 0;
+                    uint height = 0;
+                    uint step = 0;
+
+                    if (XmfImage.LoadFile(inputFile, ref data, ref width, ref height, ref step))
+                    {
+                        Console.WriteLine("image: {0}x{1}, time: {2}", width, height, frameTime);
+
+                        recorder.SetCurrentTime(currentTime);
+                        recorder.UpdateFrame(data, 0, 0, width, height, step);
+                        recorder.Timeout();
+
+                        XmfImage.FreeData(data);
+                    }
+                }
+            }
+
+            recorder.Uninit();
+        }
+
         static void Main(string[] args)
         {
             //TestRecorder();
             //TestBipBuffer();
             //TestMkvStream();
-            TestImageFile();
+            //TestImageFile();
+            TestTranscode();
         }
     }
 }

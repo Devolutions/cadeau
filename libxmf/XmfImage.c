@@ -32,7 +32,7 @@ bool XmfImage_SaveFile(const char* filename, const uint8_t* data, uint32_t width
 	return false;
 }
 
-bool XmfImage_FreeData(uint8_t* data)
+void XmfImage_FreeData(uint8_t* data)
 {
 	if (data) {
 		free(data);

@@ -2905,21 +2905,8 @@ SegmentInfo::~SegmentInfo() {
 }
 
 bool SegmentInfo::Init() {
-  int32_t major;
-  int32_t minor;
-  int32_t build;
-  int32_t revision;
-  GetVersion(&major, &minor, &build, &revision);
-  char temp[256];
-#ifdef _MSC_VER
-  sprintf_s(temp, sizeof(temp) / sizeof(temp[0]), "libwebm-%d.%d.%d.%d", major,
-            minor, build, revision);
-#else
-  snprintf(temp, sizeof(temp) / sizeof(temp[0]), "libwebm-%d.%d.%d.%d", major,
-           minor, build, revision);
-#endif
-
-  const size_t app_len = strlen(temp) + 1;
+  const char* app_name = "xmf";
+  const size_t app_len = strlen(app_name) + 1;
 
   delete[] muxing_app_;
 
@@ -2928,12 +2915,12 @@ bool SegmentInfo::Init() {
     return false;
 
 #ifdef _MSC_VER
-  strcpy_s(muxing_app_, app_len, temp);
+  strcpy_s(muxing_app_, app_len, app_name);
 #else
   strcpy(muxing_app_, temp);
 #endif
 
-  set_writing_app(temp);
+  set_writing_app(app_name);
   if (!writing_app_)
     return false;
   return true;

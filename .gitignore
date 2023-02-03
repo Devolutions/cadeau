@@ -13,5 +13,5 @@ package/
 *.rgb
 *.yuv
 output.*
-
+capture_sample*
 
