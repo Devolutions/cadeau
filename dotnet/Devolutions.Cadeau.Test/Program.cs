@@ -18,9 +18,9 @@ namespace Devolutions.Cadeau.Test
 
             XmfRecorder recorder = new XmfRecorder();
             string currentDir = Directory.GetCurrentDirectory();
-            string rootDir = Directory.GetParent(currentDir).Parent.ToString();
-            string mediaDir = Path.Join(rootDir, "media");
-            string mediaFile = Path.Join(mediaDir, "window_dragging.rgb");
+            string rootDir = Directory.GetParent(currentDir).Parent.FullName;
+            string mediaDir = Path.Combine(rootDir, "media");
+            string mediaFile = Path.Combine(mediaDir, "window_dragging.rgb");
             Console.WriteLine("media dir: {0}", mediaDir);
             string outputFile = mediaFile.Replace(".rgb", ".webm");
             recorder.SetFileName(outputFile);
@@ -66,9 +66,9 @@ namespace Devolutions.Cadeau.Test
 
             XmfRecorder recorder = new XmfRecorder();
             string currentDir = Directory.GetCurrentDirectory();
-            string rootDir = Directory.GetParent(currentDir).Parent.ToString();
-            string mediaDir = Path.Join(rootDir, "media");
-            string mediaFile = Path.Join(mediaDir, "window_dragging.rgb");
+            string rootDir = Directory.GetParent(currentDir).Parent.FullName;
+            string mediaDir = Path.Combine(rootDir, "media");
+            string mediaFile = Path.Combine(mediaDir, "window_dragging.rgb");
             Console.WriteLine("media dir: {0}", mediaDir);
             string outputFile = mediaFile.Replace(".rgb", ".webm");
             recorder.SetFileName(outputFile);
@@ -131,9 +131,9 @@ namespace Devolutions.Cadeau.Test
 
             XmfRecorder recorder = new XmfRecorder();
             string currentDir = Directory.GetCurrentDirectory();
-            string rootDir = Directory.GetParent(currentDir).Parent.ToString();
-            string mediaDir = Path.Join(rootDir, "media");
-            string mediaFile = Path.Join(mediaDir, "window_dragging.rgb");
+            string rootDir = Directory.GetParent(currentDir).Parent.FullName;
+            string mediaDir = Path.Combine(rootDir, "media");
+            string mediaFile = Path.Combine(mediaDir, "window_dragging.rgb");
             Console.WriteLine("media dir: {0}", mediaDir);
             string outputFile = mediaFile.Replace(".rgb", ".webm");
             recorder.SetBipBuffer(mkvStream.bb.Handle);
@@ -185,17 +185,17 @@ namespace Devolutions.Cadeau.Test
             Console.WriteLine("MKV bytes: {0}", mkvBytes.Length);
 
             FileStream fs = new FileStream(outputFile, FileMode.Create, FileAccess.Write);
-            fs.Write(mkvBytes);
+            fs.Write(mkvBytes, 0, mkvBytes.Length);
             fs.Flush();
         }
 
         static void TestImageFile()
         {
             string currentDir = Directory.GetCurrentDirectory();
-            string rootDir = Directory.GetParent(currentDir).Parent.ToString();
-            string mediaDir = Path.Join(rootDir, "media");
-            string inputFile = Path.Join(mediaDir, "winlogon_unlock.png");
-            string outputFile = Path.Join(mediaDir, "output.bmp");
+            string rootDir = Directory.GetParent(currentDir).Parent.FullName;
+            string mediaDir = Path.Combine(rootDir, "media");
+            string inputFile = Path.Combine(mediaDir, "winlogon_unlock.png");
+            string outputFile = Path.Combine(mediaDir, "output.bmp");
 
             unsafe {
                 IntPtr data = IntPtr.Zero;
@@ -238,11 +238,11 @@ namespace Devolutions.Cadeau.Test
         static void TestTranscode()
         {
             string currentDir = Directory.GetCurrentDirectory();
-            string rootDir = Directory.GetParent(currentDir).Parent.ToString();
-            string mediaDir = Path.Join(rootDir, "media");
-            string capturePath = Path.Join(mediaDir, "capture_sample");
-            string captureFile = Path.Join(capturePath, "frame_meta.psv");
-            string videoFile = Path.Join(capturePath, "video.webm");
+            string rootDir = Directory.GetParent(currentDir).Parent.FullName;
+            string mediaDir = Path.Combine(rootDir, "media");
+            string capturePath = Path.Combine(mediaDir, "capture_sample");
+            string captureFile = Path.Combine(capturePath, "frame_meta.psv");
+            string videoFile = Path.Combine(capturePath, "video.webm");
 
             (string[] headers, List<string[]> records) = ParsePsvFile(captureFile);
 
@@ -266,7 +266,7 @@ namespace Devolutions.Cadeau.Test
                 ulong currentTime = baseTime + frameTime;
                 string frameSize = record[1];
                 string frameFile = record[2];
-                string inputFile = Path.Join(capturePath, frameFile);
+                string inputFile = Path.Combine(capturePath, frameFile);
 
                 unsafe {
                     IntPtr data = IntPtr.Zero;
@@ -293,10 +293,10 @@ namespace Devolutions.Cadeau.Test
         static void TestStreaming()
         {
             string currentDir = Directory.GetCurrentDirectory();
-            string rootDir = Directory.GetParent(currentDir).Parent.ToString();
-            string mediaDir = Path.Join(rootDir, "media");
-            string capturePath = Path.Join(mediaDir, "capture_sample");
-            string captureFile = Path.Join(capturePath, "frame_meta.psv");
+            string rootDir = Directory.GetParent(currentDir).Parent.FullName;
+            string mediaDir = Path.Combine(rootDir, "media");
+            string capturePath = Path.Combine(mediaDir, "capture_sample");
+            string captureFile = Path.Combine(capturePath, "frame_meta.psv");
 
             (string[] headers, List<string[]> records) = ParsePsvFile(captureFile);
 
@@ -357,7 +357,7 @@ namespace Devolutions.Cadeau.Test
                 ulong currentTime = baseTime + frameTime;
                 string frameSize = record[1];
                 string frameFile = record[2];
-                string inputFile = Path.Join(capturePath, frameFile);
+                string inputFile = Path.Combine(capturePath, frameFile);
 
                 unsafe {
                     IntPtr data = IntPtr.Zero;
