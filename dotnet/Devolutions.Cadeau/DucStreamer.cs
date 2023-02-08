@@ -1,8 +1,11 @@
 ﻿using System;
+using System.Collections.Generic;
+using System.Drawing;
 using System.IO;
 using System.IO.Compression;
 using System.Net.Security;
 using System.Net.Sockets;
+using System.Runtime.InteropServices;
 using System.Security.Cryptography.X509Certificates;
 using System.Text;
 using System.Xml.Linq;
@@ -15,11 +18,13 @@ namespace Devolutions.Cadeau
 
         BitmapFrame = 147,
 
-        BitmapUpdate = 148,
+        BitmapUpdate = 148, // deprecated
 
         Ssh = 149,
 
-        Wayk = 150
+        Wayk = 150, // deprecated
+
+        Raw = 175 // raw file bytes
     }
 
     internal static class Extensions
@@ -83,20 +88,99 @@ namespace Devolutions.Cadeau
 
         public OnValidateCertificate OnValidateCertificate { get; set; }
 
-        public bool Connect(string host, int port)
+        public DucStreamType streamType;
+
+        public string FileType = "webm";
+
+        public string TargetHost;
+
+        public string AuthToken;
+
+        public Dictionary<string, string> metadata = new Dictionary<string, string>();
+
+        private uint DucVersion = 2;
+
+        public bool IsRawData { get { return this.DucVersion >= 2; } }
+
+        public uint FrameWidth = 1024;
+
+        public uint FrameHeight = 768;
+
+        public uint FrameRate = 5;
+
+        public bool Connect(string scheme, string host, int port)
         {
-            var result = this.ConnectSSL(host, port);
+            bool result = false;
+            
+            if (scheme == "tcp")
+            {
+                result = this.ConnectTcp(host, port);
+            }
+            else
+            {
+                result = this.ConnectTls(host, port);
+            }
+
             if (!result)
             {
                 this.Disconnect();
                 return false;
             }
 
-            result = this.validateServerVersion();
+            result = this.Handshake();
+
             if (!result)
             {
                 this.Disconnect();
                 return false;
+            }
+
+            return result;
+        }
+
+        public bool ConnectUrl(string destination)
+        {
+            if (destination.IndexOf("://") < 0)
+            {
+                destination = "tls://" + destination;
+            }
+
+            Uri url = new Uri(destination);
+            return this.Connect(url.Scheme, url.Host, url.Port);
+        }
+
+        public bool Handshake()
+        {
+            if (!this.RecvServerHello())
+            {
+                return false;
+            }
+
+            if (this.DucVersion == 2)
+            {
+                if (!this.SendClientHelloV2())
+                {
+                    return false;
+                }
+            }
+            else
+            {
+                if (!this.SendClientHelloV1())
+                {
+                    return false;
+                }
+
+                int status = this.ReceiveServerStatus();
+
+                if (status != 1)
+                {
+                    return false;
+                }
+
+                foreach (KeyValuePair<string, string> elem in this.metadata)
+                {
+                    this.SendMetadata(elem.Key, elem.Value);
+                }
             }
 
             return true;
@@ -109,7 +193,7 @@ namespace Devolutions.Cadeau
                 return;
             }
 
-            if (this.Connected)
+            if (this.Connected && !this.IsRawData)
             {
                 var type = new[] { ENDOFSTREAM_MESSAGE_ID };
                 this.stream.Write(type, 0, 1);
@@ -118,32 +202,37 @@ namespace Devolutions.Cadeau
             this.stream.Dispose();
         }
 
-        public byte ReceiveServerStatus()
+        public bool SendClientHelloV2()
         {
-            byte[] status = new byte[1];
-
-            var read = this.stream.Read(status, 0, status.Length);
-            return read != status.Length ? (byte)0 : status[0];
-        }
-
-        public bool SendClientInfo(string host, DucStreamType type, string authToken)
-        {
-            const int VERSION_LENGTH = 8;
-
             if (!this.Connected)
             {
                 return false;
             }
 
-            var version = new byte[VERSION_LENGTH];
+            StringBuilder sb = new StringBuilder();
+
+            sb.Append("TargetHost: " + this.TargetHost + "\n");
+            sb.Append("AuthToken: " + this.AuthToken + "\n");
+
+            sb.Append("FileType: " + this.FileType + "\n");
+            sb.Append("FrameWidth: " + this.FrameWidth.ToString() + "\n");
+            sb.Append("FrameHeight: " + this.FrameHeight.ToString() + "\n");
+            sb.Append("FrameRate: " + this.FrameRate.ToString() + "\n");
+
+            foreach (KeyValuePair<string, string> elem in this.metadata)
+            {
+                sb.Append(elem.Key + ": " + elem.Value + "\n");
+            }
+
+            string clientInfo = sb.ToString();
+
+            byte[] data = Encoding.UTF8.GetBytes(clientInfo);
 
             try
             {
-                this.stream.Write(version, 0, VERSION_LENGTH);
-                this.stream.Write(BitConverter.GetBytes((ushort)type), 0, 2);
-
-                this.WriteStringOnStream(host);
-                this.WriteStringOnStream(authToken);
+                this.stream.Write(BitConverter.GetBytes(this.DucVersion), 0, 4);
+                this.stream.Write(BitConverter.GetBytes(data.Length), 0, 4);
+                this.stream.Write(data, 0, data.Length);
             }
             catch (Exception e)
             {
@@ -154,6 +243,42 @@ namespace Devolutions.Cadeau
             return true;
         }
 
+        public bool SendClientHelloV1()
+        {
+            if (!this.Connected)
+            {
+                return false;
+            }
+
+            this.metadata.Add("Width", this.FrameWidth.ToString());
+            this.metadata.Add("Height", this.FrameHeight.ToString());
+            this.metadata.Add("FPS", this.FrameRate.ToString());
+
+            try
+            {
+                this.stream.Write(BitConverter.GetBytes(this.DucVersion), 0, 4);
+                this.stream.Write(BitConverter.GetBytes((uint) 0), 0, 4);
+
+                this.stream.Write(BitConverter.GetBytes((ushort)this.streamType), 0, 2);
+                this.WriteStringOnStream(this.TargetHost);
+                this.WriteStringOnStream(this.AuthToken);
+            }
+            catch (Exception e)
+            {
+                this.OnError?.Invoke(e);
+                return false;
+            }
+
+            return true;
+        }
+
+        public byte ReceiveServerStatus()
+        {
+            byte[] status = new byte[1];
+            var read = this.stream.Read(status, 0, status.Length);
+            return read != status.Length ? (byte)0 : status[0];
+        }
+
         public bool SendKeepAlive()
         {
             if (!this.Connected)
@@ -161,16 +286,19 @@ namespace Devolutions.Cadeau
                 return false;
             }
 
-            var type = new[] { KEEPALIVE_MESSAGE_ID };
+            if (!this.IsRawData)
+            {
+                var type = new[] { KEEPALIVE_MESSAGE_ID };
 
-            try
-            {
-                this.stream.Write(type, 0, 1);
-            }
-            catch (Exception e)
-            {
-                this.OnError?.Invoke(e);
-                return false;
+                try
+                {
+                    this.stream.Write(type, 0, 1);
+                }
+                catch (Exception e)
+                {
+                    this.OnError?.Invoke(e);
+                    return false;
+                }
             }
 
             return true;
@@ -201,6 +329,40 @@ namespace Devolutions.Cadeau
             return true;
         }
 
+        public unsafe bool SendRawData(byte[] buffer, int offset, int count)
+        {
+            if (!this.Connected)
+            {
+                return false;
+            }
+
+            if (!this.IsRawData)
+            {
+                return false;
+            }
+
+            try
+            {
+                this.stream.Write(buffer, offset, count);
+            }
+            catch (Exception e)
+            {
+                this.OnError?.Invoke(e);
+                return false;
+            }
+
+            return true;
+        }
+
+        (uint ts_sec, uint ts_usec) GetPcapTimestamp(DateTime timestamp)
+        {
+            var unixEpoch = new DateTime(1970, 1, 1, 0, 0, 0, DateTimeKind.Utc);
+            uint ts_sec = (uint)timestamp.Subtract(unixEpoch).TotalSeconds;
+            uint ts_usec = (uint)(timestamp.Subtract(unixEpoch).TotalMilliseconds -
+                (uint)(timestamp.Subtract(unixEpoch).TotalSeconds * 1000)) * 1000;
+            return (ts_sec, ts_usec);
+        }
+
         public unsafe bool SendPayload(DateTime timestamp, IntPtr payload, int length)
         {
             if (!this.Connected)
@@ -213,8 +375,7 @@ namespace Devolutions.Cadeau
 
             try
             {
-                uint ts_sec = (uint)timestamp.Subtract(new DateTime(1970, 1, 1)).TotalSeconds;
-                uint ts_usec = (uint)(timestamp.Subtract(new DateTime(1970, 1, 1)).TotalMilliseconds - (uint)(timestamp.Subtract(new DateTime(1970, 1, 1)).TotalSeconds * 1000)) * 1000;
+                (uint ts_sec, uint ts_usec) = this.GetPcapTimestamp(timestamp);
 
                 this.stream.Write(type, 0, 1);
 
@@ -261,9 +422,7 @@ namespace Devolutions.Cadeau
 
             try
             {
-                uint ts_sec = (uint)timestamp.Subtract(new DateTime(1970, 1, 1)).TotalSeconds;
-                uint ts_usec = (uint)(timestamp.Subtract(new DateTime(1970, 1, 1)).TotalMilliseconds - (uint)(timestamp.Subtract(new DateTime(1970, 1, 1)).TotalSeconds * 1000))
-                    * 1000;
+                (uint ts_sec, uint ts_usec) = this.GetPcapTimestamp(timestamp);
 
                 this.stream.Write(type, 0, 1);
 
@@ -295,7 +454,32 @@ namespace Devolutions.Cadeau
             return true;
         }
 
-        private bool ConnectSSL(string host, int port)
+        private void WriteStringOnStream(string source)
+        {
+            var bytes = Encoding.UTF8.GetBytes(source);
+            this.stream.Write(BitConverter.GetBytes(bytes.Length), 0, 4);
+            this.stream.Write(bytes, 0, bytes.Length);
+        }
+
+        private bool ConnectTcp(string host, int port)
+        {
+            try
+            {
+                var client = new TcpClient();
+                client.Connect(host, port);
+
+                this.stream = client.GetStream();
+            }
+            catch (Exception e)
+            {
+                this.OnError?.Invoke(e);
+                return false;
+            }
+
+            return true;
+        }
+
+        private bool ConnectTls(string host, int port)
         {
             try
             {
@@ -334,24 +518,36 @@ namespace Devolutions.Cadeau
             return this.OnValidateCertificate(certificate, chain, sslPolicyErrors);
         }
 
-        private bool validateServerVersion()
+        private bool RecvServerHello()
         {
-            byte[] version = new byte[8];
+            byte[] hello = new byte[8];
 
-            var read = this.stream.Read(version, 0, 8);
+            var read = this.stream.Read(hello, 0, 8);
+
             if (read != 8)
             {
                 return false;
             }
 
-            return true;
-        }
+            unsafe
+            {
+                fixed (byte* ptr = hello)
+                {
+                    uint ducVersion = *((uint*)&ptr[0]);
+                    //uint ducReserved = *((uint*)&ptr[4]);
 
-        private void WriteStringOnStream(string source)
-        {
-            var bytes = Encoding.UTF8.GetBytes(source);
-            this.stream.Write(BitConverter.GetBytes(bytes.Length), 0, 4);
-            this.stream.Write(bytes, 0, bytes.Length);
+                    if ((ducVersion >= 2) && (this.DucVersion >= 2))
+                    {
+                        this.DucVersion = 2;
+                    }
+                    else
+                    {
+                        this.DucVersion = 1;
+                    }    
+                }
+            }
+
+            return true;
         }
     }
 }
