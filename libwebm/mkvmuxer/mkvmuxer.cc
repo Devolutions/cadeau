@@ -2917,7 +2917,7 @@ bool SegmentInfo::Init() {
 #ifdef _MSC_VER
   strcpy_s(muxing_app_, app_len, app_name);
 #else
-  strcpy(muxing_app_, temp);
+  strcpy(muxing_app_, app_name);
 #endif
 
   set_writing_app(app_name);
