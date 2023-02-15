@@ -104,7 +104,7 @@ void XmfWebM_WriteFileHeader(XmfWebM* ctx,
 
     segment->OutputCues(true);
     
-    segment->set_mode(mkvmuxer::Segment::kLive);
+    segment->set_mode(mkvmuxer::Segment::kFile);
 
     mkvmuxer::SegmentInfo* const info = segment->GetSegmentInfo();
 
