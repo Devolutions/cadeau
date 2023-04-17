@@ -5,9 +5,11 @@ using System.IO;
 using System.IO.Compression;
 using System.Net.Security;
 using System.Net.Sockets;
+using System.Net.WebSockets;
 using System.Runtime.InteropServices;
 using System.Security.Cryptography.X509Certificates;
 using System.Text;
+using System.Threading;
 using System.Xml.Linq;
 
 namespace Devolutions.Cadeau
@@ -138,11 +140,27 @@ namespace Devolutions.Cadeau
             return result;
         }
 
+        public bool ConnectV3(string destination)
+        {
+            Uri url = new Uri(destination);
+            ClientWebSocket webSocket = new ClientWebSocket();
+            webSocket.Options.UseDefaultCredentials = false;
+            webSocket.ConnectAsync(url, CancellationToken.None).Wait();
+            this.stream = new XmfWsStream(webSocket);
+            return true;
+        }
+
         public bool ConnectUrl(string destination)
         {
             if (destination.IndexOf("://") < 0)
             {
                 destination = "tls://" + destination;
+            }
+
+            if (destination.StartsWith("ws"))
+            {
+                this.DucVersion = 3;
+                return this.ConnectV3(destination);
             }
 
             Uri url = new Uri(destination);
