@@ -102,6 +102,8 @@ namespace Devolutions.Cadeau
 
         private uint DucVersion = 2;
 
+        private int connectTimeout = 5000;
+
         public bool IsRawData { get { return this.DucVersion >= 2; } }
 
         public uint FrameWidth = 1024;
@@ -110,7 +112,7 @@ namespace Devolutions.Cadeau
 
         public uint FrameRate = 5;
 
-        public bool Connect(string scheme, string host, int port)
+        public bool ConnectOld(string scheme, string host, int port)
         {
             bool result = false;
             
@@ -140,31 +142,41 @@ namespace Devolutions.Cadeau
             return result;
         }
 
-        public bool ConnectV3(string destination)
+        public bool ConnectV3(string destinationUrl)
         {
-            Uri url = new Uri(destination);
-            ClientWebSocket webSocket = new ClientWebSocket();
-            webSocket.Options.UseDefaultCredentials = false;
-            webSocket.ConnectAsync(url, CancellationToken.None).Wait();
-            this.stream = new XmfWsStream(webSocket);
-            return true;
+            bool success = true;
+            Uri url = new Uri(destinationUrl);
+
+            try
+            {
+                ClientWebSocket webSocket = new ClientWebSocket();
+                webSocket.Options.UseDefaultCredentials = false;
+                webSocket.ConnectAsync(url, CancellationToken.None).Wait(this.connectTimeout);
+                this.stream = new XmfWsStream(webSocket);
+            }
+            catch
+            {
+                success = false;
+            }
+
+            return success;
         }
 
-        public bool ConnectUrl(string destination)
+        public bool ConnectUrl(string destinationUrl)
         {
-            if (destination.IndexOf("://") < 0)
+            if (destinationUrl.IndexOf("://") < 0)
             {
-                destination = "tls://" + destination;
+                destinationUrl = "tls://" + destinationUrl;
             }
 
-            if (destination.StartsWith("ws"))
+            if (destinationUrl.StartsWith("ws"))
             {
                 this.DucVersion = 3;
-                return this.ConnectV3(destination);
+                return this.ConnectV3(destinationUrl);
             }
 
-            Uri url = new Uri(destination);
-            return this.Connect(url.Scheme, url.Host, url.Port);
+            Uri url = new Uri(destinationUrl);
+            return this.ConnectOld(url.Scheme, url.Host, url.Port);
         }
 
         public bool Handshake()
