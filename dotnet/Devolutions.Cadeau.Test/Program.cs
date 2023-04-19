@@ -318,9 +318,11 @@ namespace Devolutions.Cadeau.Test
             recorder.SetCurrentTime(baseTime);
             recorder.Init();
 
+            string url = "ws://10.10.0.6:8384";
+
             // Connect to WebSocket server
             var webSocket = new ClientWebSocket();
-            webSocket.ConnectAsync(new Uri("ws://10.10.0.6:8384"), CancellationToken.None).Wait();
+            webSocket.ConnectAsync(new Uri(url), CancellationToken.None).Wait();
 
             foreach (string[] record in records)
             {
@@ -481,6 +483,85 @@ namespace Devolutions.Cadeau.Test
             streamer.Disconnect();
         }
 
+        static void TestStreamingV3()
+        {
+            string currentDir = Directory.GetCurrentDirectory();
+            string rootDir = Directory.GetParent(currentDir).Parent.FullName;
+            string mediaDir = Path.Combine(rootDir, "media");
+            string capturePath = Path.Combine(mediaDir, "capture_sample");
+            string captureFile = Path.Combine(capturePath, "frame_meta.psv");
+
+            (string[] headers, List<string[]> records) = ParsePsvFile(captureFile);
+
+            uint frameWidth = 1920;
+            uint frameHeight = 1080;
+            uint frameRate = 5;
+
+            ulong baseTime = GetTickCount();
+            DateTime baseDate = DateTime.Now;
+
+            string destination = "";
+            DucStreamer streamer = new DucStreamer();
+
+            if (!streamer.ConnectUrl(destination))
+            {
+                Console.WriteLine("failed to connect to {0}", destination);
+                return;
+            }
+
+            XmfMkvStream mkvStream = new XmfMkvStream();
+            XmfRecorder recorder = new XmfRecorder();
+
+            recorder.SetBipBuffer(mkvStream.bb.Handle);
+            recorder.SetFrameSize(frameWidth, frameHeight);
+            recorder.SetFrameRate(frameRate);
+            recorder.SetCurrentTime(baseTime);
+            recorder.Init();
+
+            foreach (string[] record in records)
+            {
+                ulong frameTime = ulong.Parse(record[0]);
+                ulong currentTime = baseTime + frameTime;
+                string frameSize = record[1];
+                string frameFile = record[2];
+                string inputFile = Path.Combine(capturePath, frameFile);
+
+                unsafe
+                {
+                    IntPtr data = IntPtr.Zero;
+                    uint width = 0;
+                    uint height = 0;
+                    uint step = 0;
+
+                    if (XmfImage.LoadFile(inputFile, ref data, ref width, ref height, ref step))
+                    {
+                        Console.WriteLine("image: {0}x{1}, time: {2}", width, height, frameTime);
+
+                        recorder.SetCurrentTime(currentTime);
+                        recorder.UpdateFrame(data, 0, 0, width, height, step);
+                        recorder.Timeout();
+
+                        int usedSize = (int)mkvStream.bb.GetUsedSize();
+
+                        if (usedSize > 0)
+                        {
+                            byte[] buffer = new byte[usedSize];
+                            int chunkSize = mkvStream.Read(buffer);
+
+                            if (chunkSize > 0)
+                            {
+                                streamer.SendRawData(buffer, 0, buffer.Length);
+                            }
+                        }
+
+                        XmfImage.FreeData(data);
+                    }
+                }
+            }
+
+            streamer.Disconnect();
+        }
+
         static void Main(string[] args)
         {
             //TestRecorder();
@@ -489,7 +570,8 @@ namespace Devolutions.Cadeau.Test
             //TestImageFile();
             //TestTranscode();
             //TestWebSocket();
-            TestStreaming();
+            //TestStreaming();
+            TestStreamingV3();
         }
     }
 }
