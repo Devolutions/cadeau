@@ -40,6 +40,8 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
+          Set-PSDebug -Trace 1
+
           $RunId = '${{ github.event.inputs.run_id }}'
           if ($RunId -eq 'latest') {
             $RunId = $(gh run list -w 'build' --json 'status,databaseId,conclusion') |
@@ -48,7 +50,7 @@ jobs:
           }
           
           New-Item -Path "package" -ItemType Directory -ErrorAction SilentlyContinue | Out-Null
-          Set-Location "package"
+          Push-Location "package"
 
           Write-Host "Downloading run $RunId"
           & gh run download $RunId -n 'cadeau-nupkg'
@@ -69,12 +71,35 @@ jobs:
           }
 
           Compress-Archive -Path ".\$NugetName\*" -DestinationPath $NupkgFile -CompressionLevel Optimal
+
+      - name: Package shared libraries as archives
+        shell: pwsh
+        working-directory: package
+        run: |
+          Set-PSDebug -Trace 1
+
+          $NupkgFile = Get-Item .\Devolutions.Cadeau.*.nupkg
+          $NugetName = $NupkgFile.BaseName
+
+          Get-Item -Path ".\$NugetName\runtimes\*" | ForEach-Object {
+            $LibFile = Get-Item -Path "$($_.FullName)\native\*xmf*"
+            $ArchiveName = "cadeau-$($_.Name).zip"
+            Compress-Archive -Path $LibFile -DestinationPath $ArchiveName -CompressionLevel Optimal
+          }
+
+      - name: Clean
+        shell: pwsh
+        working-directory: package
+        run: |
+          Set-PSDebug -Trace 1
+          $NupkgFile = Get-Item .\Devolutions.Cadeau.*.nupkg
+          $NugetName = $NupkgFile.BaseName
           Remove-Item ".\$NugetName" -Recurse
 
       - name: Upload package
         uses: actions/upload-artifact@v3
         with:
-          name: cadeau-nupkg
+          name: cadeau-libs
           path: package/*
 
   publish:
@@ -88,7 +113,7 @@ jobs:
       - name: Download packages
         uses: actions/download-artifact@v3
         with:
-          name: cadeau-nupkg
+          name: cadeau-libs
           path: package
 
       - name: Publish to nuget.org
