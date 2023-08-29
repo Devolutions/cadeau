@@ -7,7 +7,7 @@ on:
         default: "latest"
         required: true
 env:
-  conan-version: 1.43.4
+  conan-version: 1.60.0
 jobs:
   preflight:
     name: Preflight
