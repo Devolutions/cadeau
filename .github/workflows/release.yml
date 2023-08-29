@@ -92,6 +92,8 @@ jobs:
         working-directory: package
         run: |
           Set-PSDebug -Trace 1
+          $NupkgFile = Get-Item .\Devolutions.Cadeau.*.nupkg
+          $NugetName = $NupkgFile.BaseName
           Remove-Item ".\$NugetName" -Recurse
 
       - name: Upload package
