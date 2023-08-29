@@ -99,7 +99,7 @@ jobs:
       - name: Upload package
         uses: actions/upload-artifact@v3
         with:
-          name: cadeau-nupkg
+          name: cadeau-libs
           path: package/*
 
   publish:
@@ -113,7 +113,7 @@ jobs:
       - name: Download packages
         uses: actions/download-artifact@v3
         with:
-          name: cadeau-nupkg
+          name: cadeau-libs
           path: package
 
       - name: Publish to nuget.org
