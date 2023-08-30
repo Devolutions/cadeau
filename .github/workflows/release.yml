@@ -22,26 +22,15 @@ jobs:
       - name: Clone project
         uses: actions/checkout@v3
 
-      - name: Import code signing certificate
-        env:
-          CODE_SIGN_CERT: ${{ secrets.WINDOWS_CODE_SIGNING_CERTIFICATE }}
-          CODE_SIGN_CERT_PASSWORD: ${{ secrets.WINDOWS_CODE_SIGNING_PASSWORD }}
+      - name: Install AzureSignTool
         run: |
-          $CertificatePath = Join-Path -Path $Env:RUNNER_TEMP -ChildPath CodeSigningCertificate.pfx
-          [IO.File]::WriteAllBytes($CertificatePath, ([Convert]::FromBase64String($Env:CODE_SIGN_CERT)))
-          $SecurePassword = ConvertTo-SecureString "$Env:CODE_SIGN_CERT_PASSWORD" -AsPlainText -Force
-          Import-PfxCertificate -FilePath "$CertificatePath" -CertStoreLocation Cert:\CurrentUser\My -Password $SecurePassword
-          $CodesignThumbprint = Get-ChildItem cert:\CurrentUser\My -CodeSigning | Select-Object -First 1 -ExpandProperty Thumbprint
-          echo "CODESIGN_THUMBPRINT=$CodesignThumbprint" >> $Env:GITHUB_ENV
-          echo "TIMESTAMP_SERVER=http://timestamp.digicert.com" >> $Env:GITHUB_ENV
+          dotnet tool install --global AzureSignTool
 
       - name: Code sign packages
         shell: pwsh
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
-          Set-PSDebug -Trace 1
-
           $RunId = '${{ github.event.inputs.run_id }}'
           if ($RunId -eq 'latest') {
             $RunId = $(gh run list -w 'build' --json 'status,databaseId,conclusion') |
@@ -64,10 +53,17 @@ jobs:
           Expand-Archive -Path $NupkgFile -Destination ".\$NugetName"
           Remove-Item $NupkgFile -ErrorAction SilentlyContinue | Out-Null
 
-          $TimestampServer = $Env:TIMESTAMP_SERVER
-          $Certificate = Get-Item cert:\CurrentUser\My\$Env:CODESIGN_THUMBPRINT
+          $Params = @('sign',
+            '-kvt', '${{ secrets.AZURE_TENANT_ID }}',
+            '-kvu', '${{ secrets.CODE_SIGNING_KEYVAULT_URL }}',
+            '-kvi', '${{ secrets.CODE_SIGNING_CLIENT_ID }}',
+            '-kvs', '${{ secrets.CODE_SIGNING_CLIENT_SECRET }}',
+            '-kvc', '${{ secrets.CODE_SIGNING_CERTIFICATE_NAME }}',
+            '-tr', '${{ secrets.CODE_SIGNING_TIMESTAMP_SERVER }}',
+            '-v')
+
           Get-Item -Path ".\$NugetName\runtimes\win-*\native\*.dll" | ForEach-Object {
-            Set-AuthenticodeSignature -Certificate $Certificate -TimestampServer $TimestampServer -HashAlgorithm SHA256 $_
+            AzureSignTool @Params $_.FullName
           }
 
           Compress-Archive -Path ".\$NugetName\*" -DestinationPath $NupkgFile -CompressionLevel Optimal
@@ -76,8 +72,6 @@ jobs:
         shell: pwsh
         working-directory: package
         run: |
-          Set-PSDebug -Trace 1
-
           $NupkgFile = Get-Item .\Devolutions.Cadeau.*.nupkg
           $NugetName = $NupkgFile.BaseName
 
@@ -91,7 +85,6 @@ jobs:
         shell: pwsh
         working-directory: package
         run: |
-          Set-PSDebug -Trace 1
           $NupkgFile = Get-Item .\Devolutions.Cadeau.*.nupkg
           $NugetName = $NupkgFile.BaseName
           Remove-Item ".\$NugetName" -Recurse
