@@ -101,7 +101,7 @@ jobs:
   publish:
     name: Publish packages
     runs-on: ubuntu-20.04
-    environment: build-and-publish
+    environment: publish-prod
     needs: package
     if: ${{ github.event.inputs.dry-run == 'false' }} 
 
