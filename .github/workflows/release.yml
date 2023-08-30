@@ -31,6 +31,7 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
+          Set-PSDebug -Trace 1
           $RunId = '${{ github.event.inputs.run_id }}'
           if ($RunId -eq 'latest') {
             $RunId = $(gh run list -w 'build' --json 'status,databaseId,conclusion') |
@@ -59,7 +60,7 @@ jobs:
             '-kvi', '${{ secrets.CODE_SIGNING_CLIENT_ID }}',
             '-kvs', '${{ secrets.CODE_SIGNING_CLIENT_SECRET }}',
             '-kvc', '${{ secrets.CODE_SIGNING_CERTIFICATE_NAME }}',
-            '-tr', '${{ secrets.CODE_SIGNING_TIMESTAMP_SERVER }}',
+            '-tr', '${{ vars.CODE_SIGNING_TIMESTAMP_SERVER }}',
             '-v')
 
           Get-Item -Path ".\$NugetName\runtimes\win-*\native\*.dll" | ForEach-Object {
@@ -72,6 +73,7 @@ jobs:
         shell: pwsh
         working-directory: package
         run: |
+          Set-PSDebug -Trace 1
           $NupkgFile = Get-Item .\Devolutions.Cadeau.*.nupkg
           $NugetName = $NupkgFile.BaseName
 
@@ -85,6 +87,7 @@ jobs:
         shell: pwsh
         working-directory: package
         run: |
+          Set-PSDebug -Trace 1
           $NupkgFile = Get-Item .\Devolutions.Cadeau.*.nupkg
           $NugetName = $NupkgFile.BaseName
           Remove-Item ".\$NugetName" -Recurse
