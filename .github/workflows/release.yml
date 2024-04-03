@@ -20,7 +20,7 @@ jobs:
     
     steps:
       - name: Clone project
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
 
       - name: Install AzureSignTool
         run: |
@@ -93,7 +93,7 @@ jobs:
           Remove-Item ".\$NugetName" -Recurse
 
       - name: Upload package
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: cadeau-libs
           path: package/*
@@ -107,7 +107,7 @@ jobs:
 
     steps:
       - name: Download packages
-        uses: actions/download-artifact@v3
+        uses: actions/download-artifact@v4
         with:
           name: cadeau-libs
           path: package

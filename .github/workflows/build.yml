@@ -17,7 +17,7 @@ jobs:
 
     steps:
       - name: Checkout ${{ github.repository }}
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
 
       - name: Get version
         id: get-version
@@ -51,7 +51,7 @@ jobs:
 
     steps:
       - name: Check out ${{ github.repository }}
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
 
       - name: Prepare environment
         shell: pwsh
@@ -59,6 +59,11 @@ jobs:
           $Version = '${{ needs.preflight.outputs.version }}'
           Write-Host "Version: $Version"
           Set-Content -Path .\VERSION -Value $Version -NoNewLine -Force
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.10'
 
       - name: Configure Windows runner
         if: matrix.os == 'win'
@@ -72,7 +77,7 @@ jobs:
         shell: pwsh
         run: |
           brew install ninja
-          echo "MACOSX_DEPLOYMENT_TARGET=10.10" >> $Env:GITHUB_ENV
+          echo "MACOSX_DEPLOYMENT_TARGET=10.12" >> $Env:GITHUB_ENV
 
       - name: Configure Linux runner
         if: matrix.os == 'linux'
@@ -86,7 +91,7 @@ jobs:
         run: |
           $ClangLlvmVersion='14.0.6'
           $ClangLlvmPlatform=@{'win'='windows';'osx'='macos';'linux'='ubuntu-20.04'}['${{matrix.os}}']
-          $ClangLlvmBaseUrl="https://github.com/awakecoding/llvm-prebuilt/releases/download/v2022.2.0"
+          $ClangLlvmBaseUrl="https://github.com/awakecoding/llvm-prebuilt/releases/download/v2023.1.0"
           $ClangLlvmName="clang+llvm-${ClangLlvmVersion}-x86_64-${ClangLlvmPlatform}"
           wget -q "${ClangLlvmBaseUrl}/${ClangLlvmName}.tar.xz"
           if ($IsWindows) {
@@ -108,7 +113,7 @@ jobs:
         run: |
           $HalideVersion='14.0.0'
           $HalidePlatform=@{'win'='windows';'osx'='macos';'linux'='ubuntu-20.04'}['${{matrix.os}}']
-          $HalideBaseUrl="https://github.com/awakecoding/llvm-prebuilt/releases/download/v2022.2.0"
+          $HalideBaseUrl="https://github.com/awakecoding/llvm-prebuilt/releases/download/v2023.1.0"
           $HalideName="halide-${HalideVersion}-x86_64-${HalidePlatform}"
           wget -q "${HalideBaseUrl}/${HalideName}.tar.xz"
           if ($IsWindows) {
@@ -127,7 +132,7 @@ jobs:
         if: matrix.os == 'linux'
         shell: pwsh
         run: |
-          $CBakeVersion = "v2022.12.16.0"
+          $CBakeVersion = "v2023.11.08.0"
           $CBakeRepoUrl = "https://github.com/Devolutions/CBake"
           $CBakeDownloadUrl = "$CBakeRepoUrl/releases/download/$CBakeVersion"
           git clone -b $CBakeVersion "https://github.com/Devolutions/CBake" cbake
@@ -143,6 +148,7 @@ jobs:
         shell: pwsh
         run: |
           pip3 install conan==${{env.conan-version}} --upgrade
+          conan config init
           conan config install --type=git -sf settings https://github.com/Devolutions/conan-public
           conan remote clean
           conan remote add artifactory https://devolutions.jfrog.io/devolutions/api/conan/conan-local
@@ -162,8 +168,9 @@ jobs:
           $InstallPath = ".\install-${DotNetRid}"
           New-Item -Path $InstallPath -ItemType Directory -ErrorAction SilentlyContinue | Out-Null
           
-          $CMakeArgs = @("-DCMAKE_BUILD_TYPE=Release", "-DCMAKE_INSTALL_PREFIX=`"$InstallPath`"")
-          $CMakeArgs += @("-DHALIDE_ROOT_DIR=`"$($Env:HALIDE_ROOT_DIR)`"")
+          $CMakeArgs = @("-DCMAKE_BUILD_TYPE=Release")
+          $CMakeArgs += @("-DCMAKE_INSTALL_PREFIX=$InstallPath")
+          $CMakeArgs += @("-DHALIDE_ROOT_DIR=$($Env:HALIDE_ROOT_DIR)")
           $CMakeArgs += @("-DWITH_XMF=ON", "-DUSE_CONAN=ON")
 
           if ($DotNetOs -eq 'win') {
@@ -176,7 +183,7 @@ jobs:
           }
           elseif ($DotNetOs -eq 'osx') {
             $AppleArch = @{'x64'='x86_64';'arm64'='arm64'}[$DotNetArch]
-            $CMakeArgs += "-DCMAKE_OSX_ARCHITECTURES=`"$AppleArch`""
+            $CMakeArgs += "-DCMAKE_OSX_ARCHITECTURES=$AppleArch"
             cmake . -G Ninja -B $BuildDir $CMakeArgs
             cmake --build $BuildDir
             cmake --install $BuildDir
@@ -185,8 +192,8 @@ jobs:
           elseif ($DotNetOs -eq 'linux') {
             $LinuxArch = @{'x64'='amd64';'arm64'='arm64'}[$DotNetArch]
             $CMakeToolchainFile = Join-Path $Env:CBAKE_HOME "cmake/linux.toolchain.cmake"
-            $CMakeArgs += "-DSYSROOT_NAME=`"ubuntu-20.04-$LinuxArch`""
-            $CMakeArgs += "-DCMAKE_TOOLCHAIN_FILE=`"$CMakeToolchainFile`""
+            $CMakeArgs += "-DSYSROOT_NAME=ubuntu-20.04-$LinuxArch"
+            $CMakeArgs += "-DCMAKE_TOOLCHAIN_FILE=$CMakeToolchainFile"
             cmake . -G Ninja -B $BuildDir $CMakeArgs
             cmake --build $BuildDir
             cmake --install $BuildDir
@@ -194,9 +201,9 @@ jobs:
           }
 
       - name: Upload native components (${{matrix.os}}-${{matrix.arch}})
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
-          name: runtimes
+          name: runtimes-${{matrix.os}}-${{matrix.arch}}
           path: runtimes
 
   build-universal:
@@ -206,19 +213,20 @@ jobs:
 
     steps:
       - name: Checkout ${{ github.repository }}
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
 
       - name: Configure runner
         run: |
-          wget -q https://github.com/awakecoding/llvm-prebuilt/releases/download/v2022.2.0/cctools-x86_64-ubuntu-20.04.tar.xz
+          wget -q https://github.com/awakecoding/llvm-prebuilt/releases/download/v2023.3.0/cctools-x86_64-ubuntu-20.04.tar.xz
           tar -xf cctools-x86_64-ubuntu-20.04.tar.xz -C /tmp
           sudo mv /tmp/cctools-x86_64-ubuntu-20.04/bin/lipo /usr/local/bin
           sudo mv /tmp/cctools-x86_64-ubuntu-20.04/bin/install_name_tool /usr/local/bin
 
       - name: Download native components
-        uses: actions/download-artifact@v3
+        uses: actions/download-artifact@v4
         with:
-          name: runtimes
+          pattern: runtimes-*-*
+          merge-multiple: true
           path: runtimes
 
       - name: merge thin libraries
@@ -231,9 +239,9 @@ jobs:
           & 'lipo' '-create' @ThinLibraries '-output' "$OutputPath/$LibraryName.dylib"
 
       - name: Upload native components
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
-          name: runtimes
+          name: runtimes-all
           path: runtimes
 
   build-managed:
@@ -243,12 +251,12 @@ jobs:
 
     steps:
       - name: Check out ${{ github.repository }}
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
 
       - name: Download native components
-        uses: actions/download-artifact@v3
+        uses: actions/download-artifact@v4
         with:
-          name: runtimes
+          name: runtimes-all
           path: runtimes
 
       - name: Build nuget package
@@ -258,7 +266,7 @@ jobs:
           & dotnet pack .\dotnet\Devolutions.Cadeau -o package /p:Version=$Version
 
       - name: Upload managed components
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: cadeau-nupkg
           path: package/*.nupkg
