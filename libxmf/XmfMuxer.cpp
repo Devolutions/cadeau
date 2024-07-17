@@ -18,7 +18,7 @@ bool CopyVideoProjection(const mkvparser::Projection& parser_projection,
 	mkvmuxer::Projection* muxer_projection);
 
 XmfWebMMuxer* XmfWebMMuxer_New() {
-	auto muxer = new XmfWebMMuxer();
+	XmfWebMMuxer* muxer = new XmfWebMMuxer();
 	return muxer;
 }
 
@@ -465,7 +465,7 @@ int XmfWebMMuxer_Remux(XmfWebMMuxer* muxer, const char* inputPath, const char* o
 }
 
 // Clean up the muxer
-void XmfWebMMuxer_Cleanup(XmfWebMMuxer* muxer) {
+void XmfWebMMuxer_Free(XmfWebMMuxer* muxer) {
 }
 
 

@@ -567,12 +567,12 @@ namespace Devolutions.Cadeau.Test
             string currentDir = Directory.GetCurrentDirectory();
             string rootDir = Directory.GetParent(currentDir).Parent.FullName;
             string mediaDir = Path.Combine(rootDir, "media");
-            string mediaFile = Path.Combine(mediaDir, "non-seekable.webm");
+            string mediaFile = Path.Combine(mediaDir, "non-seekable-3.webm");
             string outputFile = mediaFile.Replace(".webm", "-muxed.webm");
             Console.WriteLine("media dir: {0}", mediaDir);
             Console.WriteLine("output file: {0}", outputFile);
             muxer.Remux(mediaFile, outputFile);
-            muxer.Cleanup();
+            muxer.Free();
         }
         static void Main(string[] args)
         {

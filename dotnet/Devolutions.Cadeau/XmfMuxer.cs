@@ -15,8 +15,8 @@ namespace Devolutions.Cadeau
             [DllImport("xmf", EntryPoint = "XmfWebMMuxer_Remux")]
             public static extern int Remux(IntPtr muxer, [MarshalAs(UnmanagedType.LPStr)] string inputPath, [MarshalAs(UnmanagedType.LPStr)] string outputPath);
 
-            [DllImport("xmf", EntryPoint = "XmfWebMMuxer_Cleanup")]
-            public static extern void Cleanup(IntPtr muxer);
+            [DllImport("xmf", EntryPoint = "XmfWebMMuxer_Free")]
+            public static extern void Free(IntPtr muxer);
         }
 
         public IntPtr Handle => muxerHandle;
@@ -28,7 +28,7 @@ namespace Devolutions.Cadeau
 
         ~XmfMuxer()
         {
-            ffi.Cleanup(muxerHandle);
+            ffi.Free(muxerHandle);
         }
 
         public int Remux(string inputPath, string outputPath)
@@ -38,7 +38,7 @@ namespace Devolutions.Cadeau
 
         public void Cleanup()
         {
-            ffi.Cleanup(muxerHandle);
+            ffi.Free(muxerHandle);
         }
     }
 }

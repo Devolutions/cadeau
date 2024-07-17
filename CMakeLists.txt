@@ -109,13 +109,6 @@ if(WITH_XMF)
     include_directories(libwebm)
 
     add_subdirectory(libxmf)
-
-    add_executable(
-        muxer_example 
-        muxer_example.cpp
-    )
-    target_link_libraries(muxer_example PRIVATE  xmf)
-    target_include_directories(muxer_example PRIVATE libxmf)
 endif()
 
 # installation
