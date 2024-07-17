@@ -11,6 +11,9 @@
 #include <common/file_util.h>
 #include <errno.h>
 
+#define FILE_OPEN_ERROR -1001
+#define PARSER_ERROR -1002
+#define MUXER_ERROR -1003
 // Muxer structure holding necessary components
 struct xmf_webm_muxer {};
 
@@ -43,8 +46,7 @@ int XmfWebMMuxer_Remux(XmfWebMMuxer* muxer, const char* inputPath, const char* o
 
 	// Open the file
 	if (reader.Open(inputPath)) {
-		printf("\n Filename is invalid or error while opening.\n");
-		return EXIT_FAILURE;
+		return FILE_OPEN_ERROR;
 	}
 
 	long long pos = 0;
@@ -52,47 +54,41 @@ int XmfWebMMuxer_Remux(XmfWebMMuxer* muxer, const char* inputPath, const char* o
 	// parse the header, increment the position
 	long long ret = ebml_header.Parse(&reader, pos);
 	if (ret) {
-		printf("\n EBMLHeader::Parse() failed.");
-		return EXIT_FAILURE;
+		return PARSER_ERROR;
 	}
 
 	mkvparser::Segment* parser_segment_;
 	ret = mkvparser::Segment::CreateInstance(&reader, pos, parser_segment_);
 	if (ret) {
-		printf("\n Segment::CreateInstance() failed.");
-		return EXIT_FAILURE;
+		return PARSER_ERROR;
 	}
 
 	const std::unique_ptr<mkvparser::Segment> parser_segment(parser_segment_);
 	ret = parser_segment->Load();
+	// Devolutions Comments:
+	// -3 is special, it means that we have a damaged cluster, which we will have for web based recordings
+	// hence we ignore it and continue
 	if (ret < 0 && ret != -3) {
-		printf("\n Segment::Load() failed.");
-		return EXIT_FAILURE;
-	}
-	else if (ret == -3) {
-		printf("\n Segment::Load() is reading incomplte input file");
+		return PARSER_ERROR;
 	}
 
 	const mkvparser::SegmentInfo* const segment_info = parser_segment->GetInfo();
 	if (segment_info == NULL) {
-		printf("\n Segment::GetInfo() failed.");
-		return EXIT_FAILURE;
+		return PARSER_ERROR;
 	}
 	const long long timeCodeScale = segment_info->GetTimeCodeScale();
 
 	mkvmuxer::MkvWriter writer;
 	const std::string temp_file = outputPath;
 	if (!writer.Open(temp_file.c_str())) {
-		printf("\n Filename is invalid or error while opening.\n");
-		return EXIT_FAILURE;
+		return FILE_OPEN_ERROR;
 	}
 
 	// Set Segment element attributes
 	mkvmuxer::Segment muxer_segment;
 
 	if (!muxer_segment.Init(&writer)) {
-		printf("\n Could not initialize muxer segment!\n");
-		return EXIT_FAILURE;
+		return MUXER_ERROR;
 	}
 
 	muxer_segment.AccurateClusterDuration(false);
@@ -155,23 +151,21 @@ int XmfWebMMuxer_Remux(XmfWebMMuxer* muxer, const char* inputPath, const char* o
 				static_cast<int>(height),
 				0); // video_track_number = 0
 			if (!vid_track) {
-				printf("\n Could not add video track.\n");
-				return EXIT_FAILURE;
+				return MUXER_ERROR;
 			}
 
 			mkvmuxer::VideoTrack* const video = static_cast<mkvmuxer::VideoTrack*>(
 				muxer_segment.GetTrackByNumber(vid_track));
 			if (!video) {
-				printf("\n Could not get video track.\n");
-				return EXIT_FAILURE;
+				return MUXER_ERROR;
 			}
 
 			if (pVideoTrack->GetColour()) {
 				mkvmuxer::Colour muxer_colour;
 				if (!libwebm::CopyColour(*pVideoTrack->GetColour(), &muxer_colour))
-					return EXIT_FAILURE;
+					return MUXER_ERROR;
 				if (!video->SetColour(muxer_colour))
-					return EXIT_FAILURE;
+					return MUXER_ERROR;
 			}
 
 			if (pVideoTrack->GetProjection() ||
@@ -182,8 +176,7 @@ int XmfWebMMuxer_Remux(XmfWebMMuxer* muxer, const char* inputPath, const char* o
 				typedef mkvmuxer::Projection::ProjectionType MuxerProjType;
 				if (parser_projection &&
 					!CopyVideoProjection(*parser_projection, &muxer_projection)) {
-					printf("\n Unable to copy video projection.\n");
-					return EXIT_FAILURE;
+					return MUXER_ERROR;
 				}
 				// Override the values that came from parser if set on command line.
 				if (projection_type != mkvparser::Projection::kTypeNotPresent) {
@@ -191,29 +184,23 @@ int XmfWebMMuxer_Remux(XmfWebMMuxer* muxer, const char* inputPath, const char* o
 						static_cast<MuxerProjType>(projection_type));
 					if (projection_type == mkvparser::Projection::kRectangular &&
 						projection_file != NULL) {
-						printf("\n Rectangular projection must not have private data.\n");
-						return EXIT_FAILURE;
+						return MUXER_ERROR;
 					}
 					else if ((projection_type == mkvparser::Projection::kCubeMap ||
 						projection_type == mkvparser::Projection::kMesh) &&
 						projection_file == NULL) {
-						printf("\n Mesh or CubeMap projection must have private data.\n");
-						return EXIT_FAILURE;
+						return MUXER_ERROR;
 					}
 					if (projection_file != NULL) {
 						std::string contents;
 						if (!libwebm::GetFileContents(projection_file, &contents) ||
 							contents.size() == 0) {
-							printf("\n Failed to read file \"%s\" or file is empty\n",
-								projection_file);
-							return EXIT_FAILURE;
+							return MUXER_ERROR;
 						}
 						if (!muxer_projection.SetProjectionPrivate(
 							reinterpret_cast<uint8_t*>(&contents[0]),
 							contents.size())) {
-							printf("\n Failed to SetProjectionPrivate of length %zu.\n",
-								contents.size());
-							return EXIT_FAILURE;
+							return MUXER_ERROR;
 						}
 					}
 				}
@@ -256,8 +243,7 @@ int XmfWebMMuxer_Remux(XmfWebMMuxer* muxer, const char* inputPath, const char* o
 
 			if (!strcmp(video->codec_id(), mkvmuxer::Tracks::kAv1CodecId)) {
 				if (parser_private_data == NULL || parser_private_size == 0) {
-					printf("AV1 input track has no CodecPrivate. %s is invalid.", inputPath);
-					return EXIT_FAILURE;
+					return MUXER_ERROR;
 				}
 			}
 
@@ -268,8 +254,7 @@ int XmfWebMMuxer_Remux(XmfWebMMuxer* muxer, const char* inputPath, const char* o
 				int vp9_private_size = 0;
 				if (vp9_profile >= 0) {
 					if (vp9_profile < 0 || vp9_profile > 3) {
-						printf("\n VP9 profile(%d) is not valid.\n", vp9_profile);
-						return EXIT_FAILURE;
+						return MUXER_ERROR;
 					}
 					const uint8_t kVp9ProfileId = 1;
 					const uint8_t kVp9ProfileIdLength = 1;
@@ -290,8 +275,7 @@ int XmfWebMMuxer_Remux(XmfWebMMuxer* muxer, const char* inputPath, const char* o
 						}
 					}
 					if (!level_is_valid) {
-						printf("\n VP9 level(%d) is not valid.\n", vp9_level);
-						return EXIT_FAILURE;
+						return MUXER_ERROR;
 					}
 					const uint8_t kVp9LevelId = 2;
 					const uint8_t kVp9LevelIdLength = 1;
@@ -300,14 +284,12 @@ int XmfWebMMuxer_Remux(XmfWebMMuxer* muxer, const char* inputPath, const char* o
 					vp9_private_data[vp9_private_size++] = vp9_level;
 				}
 				if (!video->SetCodecPrivate(vp9_private_data, vp9_private_size)) {
-					printf("\n Could not add video private data.\n");
-					return EXIT_FAILURE;
+					return MUXER_ERROR;
 				}
 			}
 			else if (parser_private_data && parser_private_size > 0) {
 				if (!video->SetCodecPrivate(parser_private_data, parser_private_size)) {
-					printf("\n Could not add video private data.\n");
-					return EXIT_FAILURE;
+					return MUXER_ERROR;
 				}
 			}
 		}
@@ -323,15 +305,13 @@ int XmfWebMMuxer_Remux(XmfWebMMuxer* muxer, const char* inputPath, const char* o
 				static_cast<int>(channels),
 				0);
 			if (!aud_track) {
-				printf("\n Could not add audio track.\n");
-				return EXIT_FAILURE;
+				return MUXER_ERROR;
 			}
 
 			mkvmuxer::AudioTrack* const audio = static_cast<mkvmuxer::AudioTrack*>(
 				muxer_segment.GetTrackByNumber(aud_track));
 			if (!audio) {
-				printf("\n Could not get audio track.\n");
-				return EXIT_FAILURE;
+				return MUXER_ERROR;
 			}
 
 			if (track_name)
@@ -344,8 +324,7 @@ int XmfWebMMuxer_Remux(XmfWebMMuxer* muxer, const char* inputPath, const char* o
 				pAudioTrack->GetCodecPrivate(private_size);
 			if (private_size > 0) {
 				if (!audio->SetCodecPrivate(private_data, private_size)) {
-					printf("\n Could not add audio private data.\n");
-					return EXIT_FAILURE;
+					return MUXER_ERROR;
 				}
 			}
 
@@ -380,8 +359,7 @@ int XmfWebMMuxer_Remux(XmfWebMMuxer* muxer, const char* inputPath, const char* o
 		long status = cluster->GetFirst(block_entry);
 
 		if (status) {
-			printf("\n Could not get first block of cluster.\n");
-			return EXIT_FAILURE;
+			return MUXER_ERROR;
 		}
 
 		while (block_entry != NULL && !block_entry->EOS()) {
@@ -394,7 +372,7 @@ int XmfWebMMuxer_Remux(XmfWebMMuxer* muxer, const char* inputPath, const char* o
 			// Block is invalid (i.e.) the was no TrackEntry corresponding to the
 			// track number. So we reject the file.
 			if (!parser_track) {
-				return EXIT_FAILURE;
+				return PARSER_ERROR;
 			}
 
 			const long long track_type = parser_track->GetType();
@@ -428,8 +406,7 @@ int XmfWebMMuxer_Remux(XmfWebMMuxer* muxer, const char* inputPath, const char* o
 					muxer_frame.set_timestamp(time_ns);
 					muxer_frame.set_is_key(block->IsKey());
 					if (!muxer_segment.AddGenericFrame(&muxer_frame)) {
-						printf("\n Could not add frame.\n");
-						return EXIT_FAILURE;
+						return MUXER_ERROR;
 					}
 				}
 			}
@@ -437,7 +414,9 @@ int XmfWebMMuxer_Remux(XmfWebMMuxer* muxer, const char* inputPath, const char* o
 			status = cluster->GetNext(block_entry, block_entry);
 
 			if (status) {
-				printf("\n Could not get next block of cluster.\n");
+				// Devolutions Comments:
+                // this is related to the damaged cluster above, 
+                // we break out when we cannot get the next block
 				break;
 			}
 		}
@@ -452,8 +431,7 @@ int XmfWebMMuxer_Remux(XmfWebMMuxer* muxer, const char* inputPath, const char* o
 		static_cast<double>(segment_info->GetDuration()) / timeCodeScale;
 	muxer_segment.set_duration(input_duration);
 	if (!muxer_segment.Finalize()) {
-		printf("Finalization of segment failed.\n");
-		return EXIT_FAILURE;
+		return MUXER_ERROR;
 	}
 
 	reader.Close();
