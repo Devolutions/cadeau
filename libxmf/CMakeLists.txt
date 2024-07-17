@@ -12,7 +12,9 @@ set(${MODULE_PREFIX}_SOURCES
     XmfBipBuffer.c
     XmfMkvWriter.c
     XmfNamedPipe.c
-    XmfRecorder.c)
+    XmfRecorder.c
+    XmfMuxer.cpp
+    )
 
 set(${MODULE_PREFIX}_HEADERS
     XmfMath.h
@@ -26,7 +28,9 @@ set(${MODULE_PREFIX}_HEADERS
     XmfBipBuffer.h
     XmfMkvWriter.h
     XmfNamedPipe.h
-    XmfRecorder.h)
+    XmfRecorder.h
+    XmfMuxer.h
+    )
 
 set(${MODULE_PREFIX}_RESOURCES "")
 
