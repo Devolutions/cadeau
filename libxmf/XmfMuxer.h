@@ -11,7 +11,7 @@ extern "C" {
 
 	XMF_EXPORT int XmfWebMMuxer_Remux(XmfWebMMuxer* muxer, const char* inputPath, const char* outputPath);
 
-	XMF_EXPORT void XmfWebMMuxer_Cleanup(XmfWebMMuxer *muxer);
+	XMF_EXPORT void XmfWebMMuxer_Free(XmfWebMMuxer *muxer);
 
 #ifdef __cplusplus
 }
