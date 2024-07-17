@@ -562,16 +562,29 @@ namespace Devolutions.Cadeau.Test
             streamer.Disconnect();
         }
 
+        static void TestMuxer() {
+            XmfMuxer muxer = new XmfMuxer();
+            string currentDir = Directory.GetCurrentDirectory();
+            string rootDir = Directory.GetParent(currentDir).Parent.FullName;
+            string mediaDir = Path.Combine(rootDir, "media");
+            string mediaFile = Path.Combine(mediaDir, "non-seekable.webm");
+            string outputFile = mediaFile.Replace(".webm", "-muxed.webm");
+            Console.WriteLine("media dir: {0}", mediaDir);
+            Console.WriteLine("output file: {0}", outputFile);
+            muxer.Remux(mediaFile, outputFile);
+            muxer.Cleanup();
+        }
         static void Main(string[] args)
         {
             //TestRecorder();
             //TestBipBuffer();
             //TestMkvStream();
             //TestImageFile();
-            //TestTranscode();
+            // TestTranscode();
             //TestWebSocket();
             //TestStreaming();
-            TestStreamingV3();
+            //TestStreamingV3();
+            TestMuxer();
         }
     }
 }
