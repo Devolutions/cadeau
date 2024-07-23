@@ -124,7 +124,7 @@ jobs:
       - name: Create GitHub Release
         shell: pwsh
         env:
-          GITHUB_TOKEN: ${{ secrets.DEVOLUTIONSBOT_TOKEN }}
+          GITHUB_TOKEN: ${{ secrets.DEVOLUTIONSBOT_WRITE_TOKEN }}
         working-directory: package
         run: |
           $Version = Get-Content -Path .\VERSION
