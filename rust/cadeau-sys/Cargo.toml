@@ -1,0 +1,27 @@
+[package]
+name = "cadeau-sys"
+version = "0.1.0"
+readme = "README.md"
+description = "FFI bindings to Cadeau library, performance primitives and media foundation functions"
+categories = ["external-ffi-bindings"]
+edition.workspace = true
+license.workspace = true
+homepage.workspace = true
+repository.workspace = true
+authors.workspace = true
+keywords.workspace = true
+
+[features]
+default = ["xmf"]
+xmf = []
+dlopen = [] # Use manual library loading at runtime by providing a path to the dynamic library file.
+
+[lints]
+workspace = true
+
+[dependencies]
+dlib = "0.5"
+
+[package.metadata.docs.rs]
+all-features = true
+rustdoc-args = ["--cfg", "docsrs"]

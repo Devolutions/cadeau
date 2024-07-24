@@ -19,7 +19,7 @@ extern "C" {
 
 XMF_EXPORT uint32_t XmfRecorder_CalculateBitRate(uint32_t frameWidth, uint32_t frameHeight, uint32_t frameRate, uint32_t quality);
 
-XMF_EXPORT void XMF_API XmfRecorder_UpdateFrame(XmfRecorder* ctx, uint8_t* buffer, uint32_t updateX, uint32_t updateY,
+XMF_EXPORT void XMF_API XmfRecorder_UpdateFrame(XmfRecorder* ctx, const uint8_t* buffer, uint32_t updateX, uint32_t updateY,
                                  uint32_t updateWidth, uint32_t updateHeight, uint32_t surfaceStep);
 XMF_EXPORT uint32_t XmfRecorder_GetTimeout(XmfRecorder* ctx);
 XMF_EXPORT void XmfRecorder_Timeout(XmfRecorder* ctx);

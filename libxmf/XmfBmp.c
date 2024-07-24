@@ -102,7 +102,7 @@ bool XmfBmp_LoadFile(const char* filename, uint8_t** data, uint32_t* width, uint
         goto exit; // bitmap non-XRGB images not supported
 
     if (bi.biHeight >= 0)
-        goto exit; // bitmap buttom-up images not supported
+        goto exit; // bitmap bottom-up images not supported
 
     size = (size_t) bi.biSizeImage;
     buffer = (uint8_t*) malloc(bi.biSizeImage);
