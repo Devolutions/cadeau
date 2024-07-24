@@ -142,4 +142,4 @@ jobs:
           $Repository = $Env:GITHUB_REPOSITORY
           $ReleaseTitle = "Devolutions Cadeau v${Version}"
 
-          & gh release create $ReleaseTag --repo $Repository --title $ReleaseTitle --draft ./*
+          & gh release create $ReleaseTag --repo $Repository --title $ReleaseTitle --latest --generate-notes ./*
