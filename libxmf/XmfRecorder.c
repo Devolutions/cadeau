@@ -72,7 +72,7 @@ void XMF_API XmfRecorder_Timeout(XmfRecorder* ctx)
     }
 }
 
-int XMF_API XmfRecorder_Update(XmfRecorder* ctx, uint8_t* frameData, uint32_t frameStep, uint32_t frameWidth,
+int XMF_API XmfRecorder_Update(XmfRecorder* ctx, const uint8_t* frameData, uint32_t frameStep, uint32_t frameWidth,
                 uint32_t frameHeight, uint32_t updateX, uint32_t updateY, uint32_t updateWidth,
                 uint32_t updateHeight)
 {
@@ -106,7 +106,7 @@ int XMF_API XmfRecorder_Update(XmfRecorder* ctx, uint8_t* frameData, uint32_t fr
     return 1;
 }
 
-void XMF_API XmfRecorder_UpdateFrame(XmfRecorder* ctx, uint8_t* buffer, uint32_t updateX, uint32_t updateY,
+void XMF_API XmfRecorder_UpdateFrame(XmfRecorder* ctx, const uint8_t* buffer, uint32_t updateX, uint32_t updateY,
                                  uint32_t updateWidth, uint32_t updateHeight, uint32_t surfaceStep)
 {
     XmfRecorder_Update(ctx, buffer, surfaceStep, ctx->frameWidth, ctx->frameHeight, updateX,
