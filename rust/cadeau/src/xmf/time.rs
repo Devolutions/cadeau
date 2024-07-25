@@ -7,6 +7,7 @@ pub struct TimeSource {
 }
 
 impl TimeSource {
+    #[inline]
     pub fn system() -> Self {
         Self {
             inner: XmfTimeSource {
@@ -16,6 +17,7 @@ impl TimeSource {
         }
     }
 
+    #[inline]
     pub fn get(&mut self) -> u64 {
         // SAFETY: FFI call with no outstanding precondition.
         unsafe { XmfTimeSource_Get(&mut self.inner) }

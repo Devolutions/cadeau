@@ -80,18 +80,22 @@ impl Image {
         })
     }
 
+    #[inline]
     pub fn width(&self) -> usize {
         self.width
     }
 
+    #[inline]
     pub fn height(&self) -> usize {
         self.height
     }
 
+    #[inline]
     pub fn step(&self) -> usize {
         self.step
     }
 
+    #[inline]
     pub fn data(&self) -> &[u8] {
         let len = self.height * self.step;
 
@@ -100,6 +104,7 @@ impl Image {
         unsafe { core::slice::from_raw_parts(self.data, len) }
     }
 
+    #[inline]
     pub fn data_mut(&mut self) -> &mut [u8] {
         let len = self.height * self.step;
 
@@ -108,6 +113,7 @@ impl Image {
         unsafe { core::slice::from_raw_parts_mut(self.data, len) }
     }
 
+    #[inline]
     /// Returns a raw pointer to the underlying FFI handle.
     pub const fn data_ptr(&self) -> *mut u8 {
         self.data
@@ -115,6 +121,7 @@ impl Image {
 }
 
 impl Drop for Image {
+    #[inline]
     fn drop(&mut self) {
         // SAFETY: The pointer is owned.
         unsafe { XmfImage_FreeData(self.data) };

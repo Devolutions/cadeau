@@ -35,6 +35,7 @@ pub struct WebMMuxer {
 }
 
 impl WebMMuxer {
+    #[inline]
     pub fn new() -> Self {
         // SAFETY: FFI call with no outstanding precondition.
         let inner = unsafe { XmfWebMMuxer_New() };
@@ -66,12 +67,14 @@ impl WebMMuxer {
     }
 
     /// Returns a raw pointer to the underlying FFI handle.
+    #[inline]
     pub const fn as_ptr(&self) -> *mut XmfWebMMuxer {
         self.ptr
     }
 }
 
 impl Drop for WebMMuxer {
+    #[inline]
     fn drop(&mut self) {
         // SAFETY: The pointer is owned.
         unsafe { XmfWebMMuxer_Free(self.ptr) };

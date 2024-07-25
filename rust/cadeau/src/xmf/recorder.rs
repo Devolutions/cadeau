@@ -145,37 +145,44 @@ impl Recorder {
         Ok(())
     }
 
+    #[inline]
     pub fn get_timeout(&mut self) -> u32 {
         // SAFETY: FFI call with no outstanding precondition.
         unsafe { XmfRecorder_GetTimeout(self.ptr) }
     }
 
+    #[inline]
     pub fn timeout(&mut self) {
         // SAFETY: FFI call with no outstanding precondition.
         unsafe { XmfRecorder_Timeout(self.ptr) }
     }
 
+    #[inline]
     pub fn get_frame_rate(&mut self) -> u32 {
         // SAFETY: FFI call with no outstanding precondition.
         unsafe { XmfRecorder_GetFrameRate(self.ptr) }
     }
 
+    #[inline]
     pub fn set_video_quality(&mut self, video_quality: u32) {
         // SAFETY: FFI call with no outstanding precondition.
         unsafe { XmfRecorder_SetVideoQuality(self.ptr, video_quality) }
     }
 
+    #[inline]
     pub fn set_current_time(&mut self, current_time: u64) {
         // SAFETY: FFI call with no outstanding precondition.
         unsafe { XmfRecorder_SetCurrentTime(self.ptr, current_time) }
     }
 
+    #[inline]
     pub fn get_current_time(&mut self) -> u64 {
         // SAFETY: FFI call with no outstanding precondition.
         unsafe { XmfRecorder_GetCurrentTime(self.ptr) }
     }
 
     /// Returns a raw pointer to the underlying FFI handle.
+    #[inline]
     pub const fn as_ptr(&self) -> *mut XmfRecorder {
         self.ptr
     }

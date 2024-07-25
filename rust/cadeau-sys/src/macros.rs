@@ -32,6 +32,7 @@ macro_rules! __global_wrapper {
         #[doc=""]
         #[doc="- The ABI of the function must be the one we expect"]
         #[doc="- See other preconditions in documentation of the C library"]
+        #[inline]
         pub unsafe extern "C" fn $fname($($fargn: $fargt),*) -> $fret {
             #[cfg(feature = $feature)]
             // SAFETY: Same preconditions as defined above.
