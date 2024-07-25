@@ -20,9 +20,10 @@ pub const XMF_MUXER_FILE_OPEN_ERROR: c_int = -1001;
 pub const XMF_MUXER_PARSER_ERROR: c_int = -1002;
 pub const XMF_MUXER_MUXER_ERROR: c_int = -1003;
 
-pub use __raw::global::*;
+#[doc(inline)]
+pub use raw::global::*;
 
-mod __raw {
+pub mod raw {
     use super::*;
 
     crate::macros::external_library!(feature = "dlopen", Api, "xmf",

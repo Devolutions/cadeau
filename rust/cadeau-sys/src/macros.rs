@@ -26,7 +26,8 @@ macro_rules! __global_wrapper {
         feature = $feature:expr, $link:expr,
         fn $fname:ident($($fargn:ident: $fargt:ty),*) -> $fret:ty
     ) => {
-        #[doc=::core::concat!("Performs a FFI call to ", ::core::stringify!($fname), " using the dynamic library ", $link, " loaded and installed globally")]
+        #[cfg_attr(not(feature = "dlopen"), doc=::core::concat!("Performs a FFI call to ", ::core::stringify!($fname), " from the library ", $link))]
+        #[cfg_attr(feature = "dlopen", doc=::core::concat!("Performs a FFI call to ", ::core::stringify!($fname), " from the globally loaded dynamic library ", $link))]
         #[doc=""]
         #[doc="# Safety"]
         #[doc=""]
@@ -52,6 +53,7 @@ macro_rules! __global_wrapper {
         $(functions: $(fn $fname:ident($($fargn:ident: $fargt:ty),*) -> $fret:ty),+,)|*
     ) => {
         #[allow(unreachable_pub)]
+        #[doc(hidden)]
         pub mod global {
             use super::*;
 
