@@ -4,6 +4,7 @@ version = "0.2.0"
 readme = "README.md"
 description = "FFI bindings to Cadeau library, performance primitives and media foundation functions"
 categories = ["external-ffi-bindings"]
+include = ["src/**/*", "README.md"]
 edition.workspace = true
 license.workspace = true
 homepage.workspace = true
