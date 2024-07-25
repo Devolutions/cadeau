@@ -86,10 +86,10 @@ impl RecorderBuilder {
     }
 
     pub fn init(self, filename: impl AsRef<Path>) -> Result<Recorder, RecorderError> {
-        self.start_impl(filename.as_ref())
+        self.init_impl(filename.as_ref())
     }
 
-    fn start_impl(self, filename: &Path) -> Result<Recorder, RecorderError> {
+    fn init_impl(self, filename: &Path) -> Result<Recorder, RecorderError> {
         let mut recorder = Recorder::new();
 
         recorder.set_filename(filename)?;
