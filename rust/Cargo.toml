@@ -15,8 +15,8 @@ keywords = ["multimedia", "codec", "decoder", "image", "bindings"]
 rust-version = "1.74.0"
 
 [workspace.dependencies]
-cadeau = { version = "0.1", path = "./cadeau" }
-cadeau-sys = { version = "0.1", path = "./cadeau-sys" }
+cadeau = { version = "0.2", path = "./cadeau" }
+cadeau-sys = { version = "0.2", path = "./cadeau-sys" }
 
 [workspace.lints.rust]
 

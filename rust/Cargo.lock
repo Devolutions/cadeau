@@ -4,14 +4,14 @@ version = 3
 
 [[package]]
 name = "cadeau"
-version = "0.1.0"
+version = "0.2.0"
 dependencies = [
  "cadeau-sys",
 ]
 
 [[package]]
 name = "cadeau-sys"
-version = "0.1.0"
+version = "0.2.0"
 dependencies = [
  "dlib",
 ]

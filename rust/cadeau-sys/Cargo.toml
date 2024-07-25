@@ -1,6 +1,6 @@
 [package]
 name = "cadeau-sys"
-version = "0.1.0"
+version = "0.2.0"
 readme = "README.md"
 description = "FFI bindings to Cadeau library, performance primitives and media foundation functions"
 categories = ["external-ffi-bindings"]
