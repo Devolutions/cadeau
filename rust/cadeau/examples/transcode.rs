@@ -39,16 +39,12 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
 
     let output_video_path = args.capture_path.join("video.webm");
 
-    let frame_width = 1920;
-    let frame_height = 1080;
-    let frame_rate = 10;
+    let base_time = TimeSource::system().get();
 
-    let mut time_source = TimeSource::system();
-    let base_time = time_source.get();
-
-    let mut recorder = Recorder::builder(frame_width, frame_height, frame_rate)
+    let mut recorder = Recorder::builder(1920, 1080)
+        .frame_rate(10)
         .current_time(base_time)
-        .start(&output_video_path)?;
+        .init(output_video_path)?;
 
     for record in records {
         let frame_time: u64 = record[0].parse()?;

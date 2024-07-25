@@ -43,16 +43,22 @@ pub struct Recorder {
 }
 
 impl RecorderBuilder {
-    pub fn new(frame_width: usize, frame_height: usize, frame_rate: u32) -> Self {
+    pub fn new(frame_width: usize, frame_height: usize) -> Self {
         Self {
             frame_width,
             frame_height,
-            frame_rate,
+            frame_rate: 10,
             video_quality: None,
             minimum_frame_rate: None,
             current_time: None,
             bip_buffer: None,
         }
+    }
+
+    #[must_use]
+    pub fn frame_rate(mut self, frame_rate: u32) -> Self {
+        self.frame_rate = frame_rate;
+        self
     }
 
     #[must_use]
@@ -79,7 +85,7 @@ impl RecorderBuilder {
         self
     }
 
-    pub fn start(self, filename: impl AsRef<Path>) -> Result<Recorder, RecorderError> {
+    pub fn init(self, filename: impl AsRef<Path>) -> Result<Recorder, RecorderError> {
         self.start_impl(filename.as_ref())
     }
 
@@ -113,8 +119,8 @@ impl RecorderBuilder {
 }
 
 impl Recorder {
-    pub fn builder(frame_width: usize, frame_height: usize, frame_rate: u32) -> RecorderBuilder {
-        RecorderBuilder::new(frame_width, frame_height, frame_rate)
+    pub fn builder(frame_width: usize, frame_height: usize) -> RecorderBuilder {
+        RecorderBuilder::new(frame_width, frame_height)
     }
 
     pub fn update_frame(

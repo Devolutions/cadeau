@@ -17,7 +17,9 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
 
   let frame = Image::load_file("frame.png")?;
 
-  let mut recorder = Recorder::builder(frame.width(), frame.height(), 10).start("output.webm")?;
+  let mut recorder = Recorder::builder(frame.width(), frame.height())
+    .frame_rate(10)
+    .init("output.webm")?;
 
   recorder.update_frame(frame.data(), 0, 0, frame.width(), frame.height(), frame.step())?;
   recorder.timeout();
