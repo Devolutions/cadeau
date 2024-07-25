@@ -31,9 +31,9 @@ impl fmt::Display for MuxerError {
 }
 
 /// Performs a remux operation on the WebM file found at `input_path` and writes the result into a new file at `output_path`
-pub fn webm_remux(input_path: &Path, output_path: &Path) -> Result<(), MuxerError> {
+pub fn webm_remux(input_path: impl AsRef<Path>, output_path: impl AsRef<Path>) -> Result<(), MuxerError> {
     let mut webm_muxer = WebMMuxer::new();
-    webm_muxer.remux(input_path, output_path)
+    webm_muxer.remux(input_path.as_ref(), output_path.as_ref())
 }
 
 struct WebMMuxer {

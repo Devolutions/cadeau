@@ -3,12 +3,12 @@ use std::ffi::CString;
 use std::mem::MaybeUninit;
 use std::path::Path;
 
-use cadeau_sys::xmf::{XmfImage_FreeData, XmfImage_LoadFile};
+use cadeau_sys::xmf::{XmfImage_FreeData, XmfImage_LoadFile, XmfImage_SaveFile};
 
 #[derive(Debug, Clone)]
 pub enum ImageError {
     BadArgument { name: &'static str },
-    Generic,
+    OperationFailed,
 }
 
 impl std::error::Error for ImageError {}
@@ -17,12 +17,13 @@ impl fmt::Display for ImageError {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
             ImageError::BadArgument { name } => write!(f, "bad argument: {name}"),
-            ImageError::Generic => write!(f, "generic failure"),
+            ImageError::OperationFailed => write!(f, "the operation failed"),
         }
     }
 }
 
 pub struct Image {
+    // INVARIANT: len(data) == height * step
     data: *mut u8,
     width: usize,
     height: usize,
@@ -30,7 +31,11 @@ pub struct Image {
 }
 
 impl Image {
-    pub fn load_file(path: &Path) -> Result<Self, ImageError> {
+    pub fn load_file(path: impl AsRef<Path>) -> Result<Self, ImageError> {
+        Self::load_file_impl(path.as_ref())
+    }
+
+    fn load_file_impl(path: &Path) -> Result<Self, ImageError> {
         let path = path
             .to_str()
             .and_then(|s| CString::new(s).ok())
@@ -53,7 +58,7 @@ impl Image {
         };
 
         if !ret {
-            return Err(ImageError::Generic);
+            return Err(ImageError::OperationFailed);
         }
 
         // SAFETY: XmfImage_LoadFile returned success status, and is supposed to initialize the values.
@@ -80,6 +85,30 @@ impl Image {
         })
     }
 
+    pub fn save_file(&self, path: impl AsRef<Path>) -> Result<(), ImageError> {
+        self.save_file_impl(path.as_ref())
+    }
+
+    fn save_file_impl(&self, path: &Path) -> Result<(), ImageError> {
+        let path = path
+            .to_str()
+            .and_then(|s| CString::new(s).ok())
+            .ok_or(ImageError::BadArgument { name: "path" })?;
+
+        let width = u32::try_from(self.width).map_err(|_| ImageError::BadArgument { name: "width" })?;
+        let height = u32::try_from(self.height).map_err(|_| ImageError::BadArgument { name: "height" })?;
+        let step = u32::try_from(self.step).map_err(|_| ImageError::BadArgument { name: "step" })?;
+
+        // SAFETY: Per invariants, len(data) == height * step
+        let ret = unsafe { XmfImage_SaveFile(path.as_ptr(), self.data, width, height, step) };
+
+        if ret {
+            Ok(())
+        } else {
+            Err(ImageError::OperationFailed)
+        }
+    }
+
     #[inline]
     pub fn width(&self) -> usize {
         self.width
@@ -100,7 +129,6 @@ impl Image {
         let len = self.height * self.step;
 
         // SAFETY: The buffer is expected to contain at least height * step elements.
-        // FIXME: Truth is that the C library is not checking for this property, and we may segfault if the file loaded in memory is maliciously crafted.
         unsafe { core::slice::from_raw_parts(self.data, len) }
     }
 
@@ -109,7 +137,6 @@ impl Image {
         let len = self.height * self.step;
 
         // SAFETY: The buffer is expected to contain at least height * step elements.
-        // FIXME: Truth is that the C library is not checking for this property, and we may segfault if the file loaded in memory is maliciously crafted.
         unsafe { core::slice::from_raw_parts_mut(self.data, len) }
     }
 
