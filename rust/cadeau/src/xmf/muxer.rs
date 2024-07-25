@@ -30,20 +30,25 @@ impl fmt::Display for MuxerError {
     }
 }
 
-pub struct WebMMuxer {
+/// Performs a remux operation on the WebM file found at `input_path` and writes the result into a new file at `output_path`
+pub fn webm_remux(input_path: &Path, output_path: &Path) -> Result<(), MuxerError> {
+    let mut webm_muxer = WebMMuxer::new();
+    webm_muxer.remux(input_path, output_path)
+}
+
+struct WebMMuxer {
     ptr: *mut XmfWebMMuxer,
 }
 
 impl WebMMuxer {
-    #[inline]
-    pub fn new() -> Self {
+    fn new() -> Self {
         // SAFETY: FFI call with no outstanding precondition.
         let inner = unsafe { XmfWebMMuxer_New() };
 
         Self { ptr: inner }
     }
 
-    pub fn remux(&mut self, input_path: &Path, output_path: &Path) -> Result<(), MuxerError> {
+    fn remux(&mut self, input_path: &Path, output_path: &Path) -> Result<(), MuxerError> {
         let input_path = input_path
             .to_str()
             .and_then(|s| CString::new(s).ok())
@@ -62,19 +67,12 @@ impl WebMMuxer {
             XMF_MUXER_PARSER_ERROR => Err(MuxerError::Parser),
             XMF_MUXER_MUXER_ERROR => Err(MuxerError::Muxer),
             0 => Ok(()),
-            _ => todo!("unknown error"),
+            _ => Err(MuxerError::Unexpected),
         }
-    }
-
-    /// Returns a raw pointer to the underlying FFI handle.
-    #[inline]
-    pub const fn as_ptr(&self) -> *mut XmfWebMMuxer {
-        self.ptr
     }
 }
 
 impl Drop for WebMMuxer {
-    #[inline]
     fn drop(&mut self) {
         // SAFETY: The pointer is owned.
         unsafe { XmfWebMMuxer_Free(self.ptr) };
