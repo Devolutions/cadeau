@@ -35,11 +35,6 @@ pub mod raw {
 
     crate::macros::external_library!(feature = "dlopen", Api, "xmf",
         functions:
-            // Time
-            fn XmfTime_GetTickCount() -> u64,
-            fn XmfTimeSource_Get(ts: *mut XmfTimeSource) -> u64,
-            fn XmfTimeSource_System(param: *mut c_void) -> u64,
-            fn XmfTimeSource_Manual(param: *mut c_void) -> u64,
 
             // BipBuffer
             fn XmfBipBuffer_Grow(ctx: *mut XmfBipBuffer, size: usize) -> bool,
@@ -50,16 +45,6 @@ pub mod raw {
             fn XmfBipBuffer_Write(ctx: *mut XmfBipBuffer, data: *const u8, size: usize) -> c_int,
             fn XmfBipBuffer_New(size: usize) -> *mut XmfBipBuffer,
             fn XmfBipBuffer_Free(ctx: *mut XmfBipBuffer) -> (),
-
-            // WebM
-            fn XmfWebM_Encode(ctx: *mut XmfWebM, srcData: *const u8, x: u16, y: u16, width: u16, height: u16) -> c_int,
-            fn XmfWebM_Finalize(ctx: *mut XmfWebM) -> (),
-            fn XmfWebM_FrameCount(ctx: *mut XmfWebM) -> u64,
-            fn XmfWebM_Duration(ctx: *mut XmfWebM) -> u64,
-            fn XmfWebM_Init(ctx: *mut XmfWebM, frameWidth: u32, frameHeight: u32, frameRate: u32, targetBitRate: u32, filename: *const c_char, bb: *mut XmfBipBuffer, ts: *mut XmfTimeSource) -> bool,
-            fn XmfWebM_Uninit(ctx: *mut XmfWebM) -> (),
-            fn XmfWebM_New() -> *mut XmfWebM,
-            fn XmfWebM_Free(ctx: *mut XmfWebM) -> (),
 
             // Recorder
             fn XmfRecorder_UpdateFrame(ctx: *mut XmfRecorder, buffer: *const u8, updateX: u32, updateY: u32, updateWidth: u32, updateHeight: u32, surfaceStep: u32) -> (),
