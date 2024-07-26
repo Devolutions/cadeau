@@ -5,6 +5,6 @@ pub mod recorder;
 pub mod time;
 
 #[cfg(feature = "dlopen")]
-pub use cadeau_sys::xmf::init;
+pub use xmf_sys::init;
 
-pub use cadeau_sys::xmf::is_init;
+pub use xmf_sys::is_init;

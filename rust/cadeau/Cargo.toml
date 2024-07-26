@@ -1,6 +1,6 @@
 [package]
 name = "cadeau"
-version = "0.2.0"
+version = "0.3.0"
 readme = "README.md"
 description = "Idiomatic rust bindings to Cadeau library, performance primitives and media foundation functions"
 categories = ["api-bindings"]
@@ -14,14 +14,15 @@ keywords.workspace = true
 
 [features]
 default = ["xmf"]
-xmf = ["cadeau-sys/xmf"]
-dlopen = ["cadeau-sys/dlopen"] # Use manual library loading at runtime by providing a path to the dynamic library file.
+xmf = ["dep:xmf-sys"]
+static = ["xmf-sys/static"] # Use static linking at build-time.
+dlopen = ["xmf-sys/dlopen"] # Use manual library loading at runtime.
 
 [lints]
 workspace = true
 
 [dependencies]
-cadeau-sys.workspace = true
+xmf-sys = { workspace = true, optional = true }
 
 [package.metadata.docs.rs]
 all-features = true

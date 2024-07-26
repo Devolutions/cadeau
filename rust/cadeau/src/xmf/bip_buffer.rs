@@ -1,4 +1,4 @@
-use cadeau_sys::xmf::{
+use xmf_sys::{
     XmfBipBuffer, XmfBipBuffer_BufferSize, XmfBipBuffer_Clear, XmfBipBuffer_Free, XmfBipBuffer_Grow, XmfBipBuffer_New,
     XmfBipBuffer_Read, XmfBipBuffer_UsedSize, XmfBipBuffer_Write,
 };

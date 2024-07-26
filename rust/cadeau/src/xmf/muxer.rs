@@ -2,7 +2,7 @@ use core::fmt;
 use std::ffi::CString;
 use std::path::Path;
 
-use cadeau_sys::xmf::{
+use xmf_sys::{
     XmfWebMMuxer, XmfWebMMuxer_Free, XmfWebMMuxer_New, XmfWebMMuxer_Remux, XMF_MUXER_FILE_OPEN_ERROR,
     XMF_MUXER_MUXER_ERROR, XMF_MUXER_PARSER_ERROR,
 };

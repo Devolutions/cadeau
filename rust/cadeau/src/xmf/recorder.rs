@@ -2,7 +2,7 @@ use core::fmt;
 use std::ffi::CString;
 use std::path::Path;
 
-use cadeau_sys::xmf::{
+use xmf_sys::{
     XmfRecorder, XmfRecorder_Free, XmfRecorder_GetCurrentTime, XmfRecorder_GetFrameRate, XmfRecorder_GetTimeout,
     XmfRecorder_Init, XmfRecorder_New, XmfRecorder_SetBipBuffer, XmfRecorder_SetCurrentTime, XmfRecorder_SetFileName,
     XmfRecorder_SetFrameRate, XmfRecorder_SetFrameSize, XmfRecorder_SetMinimumFrameRate, XmfRecorder_SetVideoQuality,

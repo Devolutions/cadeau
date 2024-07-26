@@ -1,7 +1,7 @@
 [workspace]
 members = [
   "cadeau",
-  "cadeau-sys",
+  "xmf-sys",
 ]
 resolver = "2"
 
@@ -15,8 +15,8 @@ keywords = ["multimedia", "codec", "decoder", "image", "bindings"]
 rust-version = "1.74.0"
 
 [workspace.dependencies]
-cadeau = { version = "0.2", path = "./cadeau" }
-cadeau-sys = { version = "0.2", path = "./cadeau-sys" }
+cadeau = { version = "0.3", path = "./cadeau" }
+xmf-sys = { version = "0.1", path = "./xmf-sys" }
 
 [workspace.lints.rust]
 

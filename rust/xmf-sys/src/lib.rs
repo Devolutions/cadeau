@@ -1,3 +1,10 @@
+#![doc = include_str!("../README.md")]
+#![allow(clippy::too_many_arguments)]
+#![allow(non_snake_case)]
+#![cfg_attr(docsrs, feature(doc_auto_cfg))]
+
+mod macros;
+
 use std::ffi::{c_char, c_int, c_void};
 
 pub type XmfGetTimeFn = unsafe extern "C" fn(*mut c_void) -> u64;

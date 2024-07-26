@@ -4,16 +4,9 @@ version = 3
 
 [[package]]
 name = "cadeau"
-version = "0.2.0"
+version = "0.3.0"
 dependencies = [
- "cadeau-sys",
-]
-
-[[package]]
-name = "cadeau-sys"
-version = "0.2.1"
-dependencies = [
- "dlib",
+ "xmf-sys",
 ]
 
 [[package]]
@@ -104,3 +97,10 @@ name = "windows_x86_64_msvc"
 version = "0.52.6"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "589f6da84c646204747d1270a2a5661ea66ed1cced2631d546fdfb155959f9ec"
+
+[[package]]
+name = "xmf-sys"
+version = "0.1.0"
+dependencies = [
+ "dlib",
+]

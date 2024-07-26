@@ -3,7 +3,7 @@ use std::ffi::CString;
 use std::mem::MaybeUninit;
 use std::path::Path;
 
-use cadeau_sys::xmf::{XmfImage_FreeData, XmfImage_LoadFile, XmfImage_SaveFile};
+use xmf_sys::{XmfImage_FreeData, XmfImage_LoadFile, XmfImage_SaveFile};
 
 #[derive(Debug, Clone)]
 pub enum ImageError {

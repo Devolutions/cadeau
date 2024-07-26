@@ -1,6 +1,6 @@
 use std::ptr::null_mut;
 
-use cadeau_sys::xmf::{XmfTimeSource, XmfTimeSource_Get, XmfTimeSource_System};
+use xmf_sys::{XmfTimeSource, XmfTimeSource_Get, XmfTimeSource_System};
 
 pub struct TimeSource {
     inner: XmfTimeSource,

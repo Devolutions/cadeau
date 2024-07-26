@@ -1,9 +1,11 @@
-# An idiomatic cadeau to Rust
+# An efficient and idiomatic cadeau to Rust
 
-Idiomatic wrapper around Cadeau library, performance primitives and media foundation functions.
+Idiomatic wrapper around the Cadeau library: performance primitives and media foundation.
 
-It’s possible to choose between dynamically loading the library at runtime by enabling the `dlopen` feature, or regular static / dynamic linkage at build-time.
-The API itself is identical except for a `init` function which must be called before using other API when `dlopen` feature is enabled.
+It’s possible to choose between dynamically loading the library and regular static / dynamic linking at build-time for a total of three options.
+See [xmf-sys](https://crates.io/crates/xmf-sys) to learn more about this.
+
+## Example: generate a WebM file from a PNG image
 
 ```rust,no_run
 use cadeau::xmf::image::Image;

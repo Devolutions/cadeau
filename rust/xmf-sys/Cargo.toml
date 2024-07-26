@@ -1,10 +1,12 @@
 [package]
-name = "cadeau-sys"
-version = "0.2.1"
+name = "xmf-sys"
+version = "0.1.0"
 readme = "README.md"
-description = "FFI bindings to Cadeau library, performance primitives and media foundation functions"
+description = "Bindings to XMF native library: eXtreme Media Foundation"
 categories = ["external-ffi-bindings"]
 include = ["src/**/*", "README.md"]
+links = "xmf"
+build = "build.rs"
 edition.workspace = true
 license.workspace = true
 homepage.workspace = true
@@ -13,9 +15,8 @@ authors.workspace = true
 keywords.workspace = true
 
 [features]
-default = ["xmf"]
-xmf = []
-dlopen = [] # Use manual library loading at runtime by providing a path to the dynamic library file.
+static = [] # Use static linking at build-time.
+dlopen = [] # Use manual library loading at runtime.
 
 [lints]
 workspace = true
