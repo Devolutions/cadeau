@@ -26,7 +26,7 @@ You can specify a search path for the static library using `XMF_SEARCH_PATH` env
 
 The shared library is not required when building the binary, and is not required when executing the binary either.
 However, you need to programmatically load the file before using any FFI function by using the `init` function.
-The API itself is identical except for a `init` function which must be called before using other API when `dlopen` feature is enabled.
+The rest of the API is identical except for this `init` function.
 You can check dynamically if the library has been loaded using the `is_init` function.
 This function is annotated with `#[inline]` and compiles down to `true` when the `dlopen` feature is not enabled.
 
