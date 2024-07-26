@@ -9,7 +9,6 @@ use std::{env, io};
 
 use cadeau::xmf::image::Image;
 use cadeau::xmf::recorder::Recorder;
-use cadeau::xmf::time::TimeSource;
 
 const USAGE: &str = "[--lib-xmf <PATH>] [--capture-folder <PATH>]";
 
@@ -39,7 +38,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
 
     let output_video_path = args.capture_path.join("video.webm");
 
-    let base_time = TimeSource::system().get();
+    let base_time = std::time::SystemTime::now().duration_since(std::time::UNIX_EPOCH)?.as_secs();
 
     let mut recorder = Recorder::builder(1920, 1080)
         .frame_rate(10)
