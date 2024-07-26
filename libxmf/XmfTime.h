@@ -7,21 +7,21 @@
 extern "C" {
 #endif
 
-XMF_EXPORT typedef uint64_t (*XMF_GET_TIME_FN)(void* param);
+typedef uint64_t (*XMF_GET_TIME_FN)(void* param);
 
-XMF_EXPORT typedef struct
+typedef struct
 {
     XMF_GET_TIME_FN func;
     void* param;
 } XmfTimeSource;
 
-XMF_EXPORT uint64_t XmfTime_GetTickCount();
+uint64_t XmfTime_GetTickCount();
 
-XMF_EXPORT uint64_t XmfTimeSource_Get(XmfTimeSource* ts);
+uint64_t XmfTimeSource_Get(XmfTimeSource* ts);
 
-XMF_EXPORT uint64_t XmfTimeSource_System(void* param);
+uint64_t XmfTimeSource_System(void* param);
 
-XMF_EXPORT uint64_t XmfTimeSource_Manual(void* param);
+uint64_t XmfTimeSource_Manual(void* param);
 
 #ifdef __cplusplus
 }
