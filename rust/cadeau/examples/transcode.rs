@@ -5,6 +5,7 @@
 use std::fs::File;
 use std::io::{BufRead, BufReader};
 use std::path::Path;
+use std::time::{SystemTime, UNIX_EPOCH};
 use std::{env, io};
 
 use cadeau::xmf::image::Image;
@@ -38,7 +39,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
 
     let output_video_path = args.capture_path.join("video.webm");
 
-    let base_time = std::time::SystemTime::now().duration_since(std::time::UNIX_EPOCH)?.as_secs();
+    let base_time = get_tick_count64();
 
     let mut recorder = Recorder::builder(1920, 1080)
         .frame_rate(10)
@@ -60,6 +61,13 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     }
 
     Ok(())
+}
+
+fn get_tick_count64() -> u64 {
+    let now = SystemTime::now();
+    let boot_time = now.duration_since(UNIX_EPOCH).unwrap();
+    let uptime = boot_time.as_secs() * 1000 + (boot_time.subsec_millis() as u64);
+    uptime
 }
 
 #[derive(Debug)]
