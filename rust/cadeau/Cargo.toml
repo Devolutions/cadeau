@@ -1,6 +1,6 @@
 [package]
 name = "cadeau"
-version = "0.3.0"
+version = "0.4.0"
 readme = "README.md"
 description = "Idiomatic rust bindings to Cadeau library, performance primitives and media foundation functions"
 categories = ["api-bindings"]

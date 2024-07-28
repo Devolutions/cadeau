@@ -1,6 +1,6 @@
 [package]
 name = "xmf-sys"
-version = "0.1.1"
+version = "0.2.0"
 readme = "README.md"
 description = "Bindings to XMF native library: eXtreme Media Foundation"
 categories = ["external-ffi-bindings"]

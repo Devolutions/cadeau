@@ -4,7 +4,7 @@ version = 3
 
 [[package]]
 name = "cadeau"
-version = "0.3.0"
+version = "0.4.0"
 dependencies = [
  "xmf-sys",
 ]
@@ -100,7 +100,7 @@ checksum = "589f6da84c646204747d1270a2a5661ea66ed1cced2631d546fdfb155959f9ec"
 
 [[package]]
 name = "xmf-sys"
-version = "0.1.1"
+version = "0.2.0"
 dependencies = [
  "dlib",
 ]
