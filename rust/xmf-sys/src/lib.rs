@@ -7,14 +7,6 @@ mod macros;
 
 use std::ffi::{c_char, c_int, c_void};
 
-pub type XmfGetTimeFn = unsafe extern "C" fn(*mut c_void) -> u64;
-
-#[repr(C)]
-pub struct XmfTimeSource {
-    pub func: XmfGetTimeFn,
-    pub param: *mut c_void,
-}
-
 pub type XmfBipBuffer = c_void;
 
 pub type XmfWebM = c_void;
@@ -35,7 +27,6 @@ pub mod raw {
 
     crate::macros::external_library!(feature = "dlopen", Api, "xmf",
         functions:
-
             // BipBuffer
             fn XmfBipBuffer_Grow(ctx: *mut XmfBipBuffer, size: usize) -> bool,
             fn XmfBipBuffer_Clear(ctx: *mut XmfBipBuffer) -> (),

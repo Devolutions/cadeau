@@ -59,7 +59,7 @@ impl WebMMuxer {
             .and_then(|s| CString::new(s).ok())
             .ok_or(MuxerError::BadArgument { name: "output_path" })?;
 
-        // SAFETY: We ensured that input_path and output_path are valid C strings.
+        // SAFETY: input_path and output_path are valid C strings (null-terminated char arrays).
         let ret = unsafe { XmfWebMMuxer_Remux(self.ptr, input_path.as_ptr(), output_path.as_ptr()) };
 
         match ret {
@@ -74,7 +74,7 @@ impl WebMMuxer {
 
 impl Drop for WebMMuxer {
     fn drop(&mut self) {
-        // SAFETY: The pointer is owned.
+        // SAFETY: Data owned by this type, and we are not going to use it again after executing drop.
         unsafe { XmfWebMMuxer_Free(self.ptr) };
     }
 }

@@ -123,6 +123,11 @@ impl Recorder {
         RecorderBuilder::new(frame_width, frame_height)
     }
 
+    /// Updates the frame at specified region with the image data found in the provided buffer
+    ///
+    /// `buffer` must be a 24-bit colors array of `surface_step * height == width × height × 4` bytes.
+    /// Since the provided image data must be encoded with a pixel depth of 4 (24-bit colors),
+    /// the relation `surface_step / width == 4` must hold too.
     pub fn update_frame(
         &mut self,
         buffer: &[u8],
@@ -132,13 +137,12 @@ impl Recorder {
         height: usize,
         surface_step: usize,
     ) -> Result<(), RecorderError> {
-        if buffer.len() < surface_step * height {
+        // INVARIANT: surface_step * height <= buffer.len()
+        // INVARIANT: width * height * 4 <= buffer.len()
+        if !(surface_step * height <= buffer.len()) {
             return Err(RecorderError::BadArgument { name: "buffer" });
         }
-
-        // Currently Cadeau is hardcoding this pixel depth instead of using surface_step, so we check for that too.
-        // This check should be removed if Cadeau is modified to use surface_step.
-        if buffer.len() < width * height * 4 {
+        if !(width * height * 4 <= buffer.len()) {
             return Err(RecorderError::BadArgument { name: "buffer" });
         }
 
@@ -149,7 +153,7 @@ impl Recorder {
         let surface_step =
             u32::try_from(surface_step).map_err(|_| RecorderError::BadArgument { name: "surface_step" })?;
 
-        // SAFETY: We ensured that buffer was big enough for the given width and height.
+        // SAFETY: Per invariants on buffer.len(), there are enough bytes to read for the specified surface.
         unsafe { XmfRecorder_UpdateFrame(self.ptr, buffer.as_ptr(), x, y, width, height, surface_step) };
 
         Ok(())
@@ -212,7 +216,7 @@ impl Recorder {
             .and_then(|s| CString::new(s).ok())
             .ok_or(RecorderError::BadArgument { name: "filename" })?;
 
-        // SAFETY: We ensured that filename is a valid C string.
+        // SAFETY: filename is a valid C string (null-terminated char array).
         unsafe { XmfRecorder_SetFileName(self.ptr, filename.as_ptr()) };
 
         Ok(())
@@ -265,7 +269,7 @@ impl Drop for Recorder {
     fn drop(&mut self) {
         self.uninit();
 
-        // SAFETY: The pointer is owned.
+        // SAFETY: Data owned by this type, and we are not going to use it again after executing drop.
         unsafe { XmfRecorder_Free(self.ptr) };
     }
 }

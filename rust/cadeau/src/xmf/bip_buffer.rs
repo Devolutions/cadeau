@@ -42,14 +42,14 @@ impl BipBuffer {
 
     #[inline]
     pub fn read(&mut self, data: &mut [u8]) -> usize {
-        // SAFETY: We are ensuring that size == data.size().
+        // SAFETY: data.as_ptr() is pointing to an array of data.size() elements.
         let n = unsafe { XmfBipBuffer_Read(self.ptr, data.as_mut_ptr(), data.len()) };
         usize::try_from(n).expect("n is never negative and is logically used as a pointer-sized type")
     }
 
     #[inline]
     pub fn write(&mut self, data: &[u8]) -> usize {
-        // SAFETY: We are ensuring that size == data.size().
+        // SAFETY: data.as_ptr() is pointing to an array of data.size() elements.
         let n = unsafe { XmfBipBuffer_Write(self.ptr, data.as_ptr(), data.len()) };
         usize::try_from(n).expect("n is never negative and is logically used as a pointer-sized type")
     }
@@ -64,7 +64,7 @@ impl BipBuffer {
 impl Drop for BipBuffer {
     #[inline]
     fn drop(&mut self) {
-        // SAFETY: The pointer is owned.
+        // SAFETY: Data owned by this type, and we are not going to use it again after executing drop.
         unsafe { XmfBipBuffer_Free(self.ptr) };
     }
 }

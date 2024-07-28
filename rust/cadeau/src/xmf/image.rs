@@ -150,7 +150,7 @@ impl Image {
 impl Drop for Image {
     #[inline]
     fn drop(&mut self) {
-        // SAFETY: The pointer is owned.
+        // SAFETY: Data owned by this type, and we are not going to use it again after executing drop.
         unsafe { XmfImage_FreeData(self.data) };
     }
 }
