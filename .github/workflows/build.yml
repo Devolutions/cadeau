@@ -44,10 +44,13 @@ jobs:
         include:
           - os: win
             runner: windows-2022
+            runner-arch: x86_64
           - os: osx
             runner: macos-14
+            runner-arch: aarch64
           - os: linux
             runner: ubuntu-20.04
+            runner-arch: x86_64
 
     steps:
       - name: Check out ${{ github.repository }}
@@ -92,7 +95,7 @@ jobs:
           $ClangLlvmVersion='14.0.6'
           $ClangLlvmPlatform=@{'win'='windows';'osx'='macos';'linux'='ubuntu-20.04'}['${{matrix.os}}']
           $ClangLlvmBaseUrl="https://github.com/awakecoding/llvm-prebuilt/releases/download/v2023.1.0"
-          $ClangLlvmName="clang+llvm-${ClangLlvmVersion}-x86_64-${ClangLlvmPlatform}"
+          $ClangLlvmName="clang+llvm-${ClangLlvmVersion}-${{matrix.runner-arch}}-${ClangLlvmPlatform}"
           wget -q "${ClangLlvmBaseUrl}/${ClangLlvmName}.tar.xz"
           if ($IsWindows) {
             $LLVM_PREFIX="C:/llvm"
@@ -114,7 +117,7 @@ jobs:
           $HalideVersion='14.0.0'
           $HalidePlatform=@{'win'='windows';'osx'='macos';'linux'='ubuntu-20.04'}['${{matrix.os}}']
           $HalideBaseUrl="https://github.com/awakecoding/llvm-prebuilt/releases/download/v2023.1.0"
-          $HalideName="halide-${HalideVersion}-x86_64-${HalidePlatform}"
+          $HalideName="halide-${HalideVersion}-${{matrix.runner-arch}}-${HalidePlatform}"
           wget -q "${HalideBaseUrl}/${HalideName}.tar.xz"
           if ($IsWindows) {
             $HalidePrefix="C:/halide"
