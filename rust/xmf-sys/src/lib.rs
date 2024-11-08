@@ -15,9 +15,16 @@ pub type XmfRecorder = c_void;
 
 pub type XmfWebMMuxer = c_void;
 
+pub type XmfVpxEncoder = c_void;
+pub type XmfVpxDecoder = c_void;
+pub type XmfVpxImage = c_void;
+
 pub const XMF_MUXER_FILE_OPEN_ERROR: c_int = -1001;
 pub const XMF_MUXER_PARSER_ERROR: c_int = -1002;
 pub const XMF_MUXER_MUXER_ERROR: c_int = -1003;
+
+pub mod vpx;
+use vpx::*;
 
 #[doc(inline)]
 pub use raw::global::*;
@@ -64,5 +71,26 @@ pub mod raw {
             fn XmfImage_LoadFile(filename: *const c_char, data: *mut *mut u8, width: *mut u32, height: *mut u32, step: *mut u32) -> bool,
             fn XmfImage_SaveFile(filename: *const c_char, data: *const u8, width: u32, height: u32, step: u32) -> bool,
             fn XmfImage_FreeData(data: *mut u8) -> (),
+
+            // VPX Encoder
+            fn XmfVpxEncoder_Create(config: XmfVpxEncoderConfig) -> *mut XmfVpxEncoder,
+            fn XmfVpxEncoder_EncodeFrame(ctx: *mut XmfVpxEncoder, image: *const XmfVpxImage, pts: i64, duration: i64, flags: u32) -> c_int,
+            fn XmfVpxEncoder_GetEncodedFrame(ctx: *mut XmfVpxEncoder, output: *mut *mut u8, output_size: *mut usize) -> c_int,
+            fn XmfVpxEncoder_Flush(ctx: *mut XmfVpxEncoder) -> c_int,
+            fn XmfVpxEncoder_Destroy(ctx: *mut XmfVpxEncoder) -> c_int,
+            fn XmfVpxEncoder_GetLastError(ctx: *const XmfVpxEncoder) -> XmfVpxEncoderError,
+
+            // VPX Decoder
+            fn XmfVpxDecoder_Create(cfg: XmfVpxDecoderConfig) -> *mut XmfVpxDecoder,
+            fn XmfVpxDecoder_Decode(ctx: *mut XmfVpxDecoder, data: *const u8, size: u32) -> c_int,
+            fn XmfVpxDecoder_GetNextFrame(ctx: *mut XmfVpxDecoder) -> *mut XmfVpxImage,
+            fn XmfVpxDecoder_GetLastError(ctx: *mut XmfVpxDecoder) -> XmfVpxDecoderError,
+            fn XmfVpxDecoder_Destroy(ctx: *mut XmfVpxDecoder) -> (),
+
+            // VPX Image
+            fn XmfVpxImage_GetData(ctx: *const XmfVpxImage) -> *const u8,
+            fn XmfVpxImage_Destroy(ctx: *mut XmfVpxImage) -> (),
+
+
     );
 }

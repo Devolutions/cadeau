@@ -17,6 +17,7 @@ keywords.workspace = true
 [features]
 static = [] # Use static linking at build-time.
 dlopen = [] # Use manual library loading at runtime.
+verbose = [] # Print build script output.
 
 [lints]
 workspace = true
@@ -27,3 +28,6 @@ dlib = "0.5"
 [package.metadata.docs.rs]
 all-features = true
 rustdoc-args = ["--cfg", "docsrs"]
+
+[build-dependencies]
+build-print = "0.1.1"

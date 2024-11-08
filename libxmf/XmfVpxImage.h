@@ -1,0 +1,24 @@
+#ifndef XMF_VPX_IMAGE_H
+#define XMF_VPX_IMAGE_H
+
+#include <vpx/vpx_image.h>
+#include <xmf/xmf.h>
+
+/// <div rustbindgen opaque></div>
+typedef struct xmf_vpx_image XmfVpxImage;
+
+#ifdef __cplusplus
+extern "C"
+{
+#endif
+
+    XmfVpxImage *XmfVpxImage_Create();
+    void XmfVpxImage_SetData(XmfVpxImage *image, vpx_image_t *data);
+
+    XMF_EXPORT void XmfVpxImage_Destroy(XmfVpxImage *image);
+    XMF_EXPORT vpx_image_t *XmfVpxImage_GetData(const XmfVpxImage *image);
+
+#ifdef __cplusplus
+}
+#endif
+#endif // XMF_VPX_IMAGE_H

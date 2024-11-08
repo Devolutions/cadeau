@@ -14,6 +14,9 @@ set(${MODULE_PREFIX}_SOURCES
     XmfNamedPipe.c
     XmfRecorder.c
     XmfMuxer.cpp
+    XmfVpxDecoder.c
+    XmfVpxEncoder.c
+    XmfVpxImage.c
     )
 
 set(${MODULE_PREFIX}_HEADERS
@@ -30,6 +33,9 @@ set(${MODULE_PREFIX}_HEADERS
     XmfNamedPipe.h
     XmfRecorder.h
     XmfMuxer.h
+    XmfVpxDecoder.h
+    XmfVpxEncoder.h
+    XmfVpxImage.h
     )
 
 set(${MODULE_PREFIX}_RESOURCES "")
