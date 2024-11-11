@@ -18,6 +18,7 @@ checksum = "4a2128d00b7061b82b72844a351e80acd29e05afc60e9261e2ac90dca9ecc2ac"
 name = "cadeau"
 version = "0.4.0"
 dependencies = [
+ "ebml-iterable",
  "webm-iterable",
  "xmf-sys",
 ]

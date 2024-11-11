@@ -16,4 +16,4 @@ package/
 output.*
 capture_sample*
 launchSettings.json
-examples/
+./examples/

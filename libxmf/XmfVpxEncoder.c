@@ -8,7 +8,6 @@ struct xmf_vpx_encoder
 {
 	vpx_codec_ctx_t codec;
 	vpx_codec_enc_cfg_t cfg;
-	vpx_codec_iter_t iter;
 	vpx_codec_pts_t pts;
 	XmfVpxEncoderError lastError;
 };
@@ -51,6 +50,11 @@ XmfVpxEncoder *XmfVpxEncoder_Create(XmfVpxEncoderConfig config)
 	encoder->cfg.g_timebase.den = config.timebase_num;
 	encoder->cfg.g_threads = config.threads;
 	encoder->cfg.g_error_resilient = 1;
+	
+	// allow keyframes at any time
+	encoder->cfg.kf_mode = VPX_KF_AUTO;
+	encoder->cfg.kf_min_dist = 0;
+	encoder->cfg.kf_max_dist = 9999;
 
 	// Initialize codec
 	res = vpx_codec_enc_init(&encoder->codec, iface, &encoder->cfg, 0);
@@ -60,7 +64,6 @@ XmfVpxEncoder *XmfVpxEncoder_Create(XmfVpxEncoderConfig config)
 		return NULL; // Failed to initialize codec
 	}
 
-	encoder->iter = NULL;
 	encoder->pts = 0;
 	encoder->lastError.code = NO_ERROR;
 
@@ -89,7 +92,7 @@ int XmfVpxEncoder_EncodeFrame(XmfVpxEncoder *encoder, const XmfVpxImage *image, 
 		encoder->lastError.detail.vpx_error.error_code = res;
 		return -1;
 	}
-
+	// Reset the iterator after encoding
 	return 0;
 }
 
@@ -98,7 +101,8 @@ int XmfVpxEncoder_GetEncodedFrame(XmfVpxEncoder *encoder, uint8_t **output, size
 
 	// Retrieve the encoded data
 	const vpx_codec_cx_pkt_t *pkt;
-	while ((pkt = vpx_codec_get_cx_data(&encoder->codec, &encoder->iter)) != NULL)
+	vpx_codec_iter_t itr = NULL;
+	while ((pkt = vpx_codec_get_cx_data(&encoder->codec, &itr)) != NULL)
 	{
 		if (pkt->kind == VPX_CODEC_CX_FRAME_PKT)
 		{
@@ -122,6 +126,14 @@ int XmfVpxEncoder_GetEncodedFrame(XmfVpxEncoder *encoder, uint8_t **output, size
 	return 0;
 }
 
+void XmfVpxEncoder_FreeEncodedFrame(uint8_t *output)
+{
+	if (output)
+	{
+		free(output);
+	}
+}
+
 int XmfVpxEncoder_Flush(XmfVpxEncoder *encoder)
 {
 	if (!encoder)
@@ -136,7 +148,7 @@ int XmfVpxEncoder_Flush(XmfVpxEncoder *encoder)
 		encoder->lastError.detail.vpx_error.error_code = res;
 		return -1;
 	}
-
+	// Reset the iterator after flushing
 	encoder->lastError.code = NO_ERROR;
 	return 0;
 }

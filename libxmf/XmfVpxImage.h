@@ -12,7 +12,7 @@ extern "C"
 {
 #endif
 
-    XmfVpxImage *XmfVpxImage_Create();
+    XmfVpxImage *XmfVpxImage_Create(vpx_image_t *data);
     void XmfVpxImage_SetData(XmfVpxImage *image, vpx_image_t *data);
 
     XMF_EXPORT void XmfVpxImage_Destroy(XmfVpxImage *image);

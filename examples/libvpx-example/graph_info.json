@@ -1,0 +1,18 @@
+{
+ "options": [
+  [
+   "libvpx:fPIC",
+   "True"
+  ],
+  [
+   "libvpx:shared",
+   "False"
+  ]
+ ],
+ "root": {
+  "name": "importer",
+  "version": null,
+  "user": null,
+  "channel": null
+ }
+}

@@ -7,12 +7,12 @@ struct xmf_vpx_image
     vpx_image_t *img;
 };
 
-XmfVpxImage *XmfVpxImage_Create()
+XmfVpxImage *XmfVpxImage_Create(vpx_image_t *data)
 {
     XmfVpxImage *image = (XmfVpxImage *)malloc(sizeof(XmfVpxImage));
     if (image)
     {
-        image->img = NULL;
+        image->img = data;
     }
     return image;
 }

@@ -1,0 +1,28 @@
+[settings]
+    build_type=Release
+    distro=None
+    os=Windows
+
+[requires]
+    libvpx/1.Y.Z
+
+[options]
+
+
+[full_settings]
+    build_type=Release
+    distro=None
+    os=Windows
+
+[full_requires]
+    libvpx/1.10.0@devolutions/stable:6442e490640e19db889480ba85e496a5dd2280a8
+
+[full_options]
+    libvpx:fPIC=True
+    libvpx:shared=False
+
+[recipe_hash]
+
+
+[env]
+

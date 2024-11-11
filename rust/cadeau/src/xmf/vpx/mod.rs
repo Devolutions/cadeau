@@ -37,5 +37,8 @@ impl From<VpxCodec> for XmfVpxCodecType {
 }
 
 pub fn is_key_frame(buffer: &[u8]) -> bool {
-    buffer[0] & 0x10 == 0
+    if buffer.is_empty() {
+        return false;
+    }
+    buffer[0] & 0x1 == 0
 }

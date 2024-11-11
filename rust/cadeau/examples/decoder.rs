@@ -9,7 +9,7 @@ use webm_iterable::{
     matroska_spec::{Block, Master, MatroskaSpec},
     WebmIterator,
 };
-use xmf_sys::vpx::VPX_ENCODE_FORCE_KEY_FRAME;
+use xmf_sys::vpx::VPX_EFLAG_FORCE_KF;
 
 fn main() -> Result<(), Box<dyn std::error::Error>> {
     let args: Vec<String> = env::args().collect();
@@ -65,9 +65,9 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         .threads(3)
         .width(width as u32)
         .height(height as u32)
-        .timebase_num(1)
-        .timebase_den(1000) // 1/1000 timebase
-        .bitrate(1000)
+        .timebase_num(1000) // Was backwards - this should be denominator
+        .timebase_den(1) // Was backwards - this should be numerator
+        .bitrate(1000000) // Set to 1Mbps instead of 1Kbps
         .build();
 
     println!(
@@ -80,7 +80,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
 
     println!("decoder initialized");
     let mut counter = 100;
-    let mut pts = 0;
+    let mut pts = 0i64;
     let mut previous_block_holder: Option<Vec<u8>> = None;
     while let Some(tag) = webm_iterator.next() {
         let tag = tag?;
@@ -103,6 +103,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
 
             let frame = previous_block.read_frame_data()?;
             for frame in frame {
+                let is_keyframe = is_key_frame(&frame.data);
                 decoder.decode(frame.data).map_err(|e| format!("error: {:?}", e.code))?;
                 counter -= 1;
                 let Ok(image) = decoder.next_frame() else {
@@ -110,36 +111,31 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
                     continue;
                 };
 
+                println!("Decode: successful, keyframe = {}", is_keyframe);
+
+                let flags = VPX_EFLAG_FORCE_KF;
+
+                let duration = duration as i64;
+                pts += duration;
+                println!("encoding frame, pts: {}, duration: {}", pts, duration);
                 encoder
-                    .encode_frame(&image, pts as i64, duration as i64, VPX_ENCODE_FORCE_KEY_FRAME)
+                    .encode_frame(&image, pts, duration, flags)
                     .map_err(|e| format!("error: {:?}", e.code))?;
 
-                let Ok(encoded_frame) = encoder.next_frame() else {
-                    println!("error encoding frame");
+                let Ok(Some(encoded_frame)) = encoder.next_frame() else {
+                    println!("no encoded frame");
                     continue;
                 };
 
                 let is_keyframe = is_key_frame(&encoded_frame);
-
-                println!("frame encoded successfully, keyframe: {}", is_keyframe);
+                println!("Encode: successful, keyframe = {}", is_keyframe);
             }
 
             previous_block_holder = Some(block_buffer.clone());
-            pts += duration;
         }
     }
 
-    loop {
-        match decoder.next_frame() {
-            Ok(_image) => {
-                println!("frame decoded");
-            }
-            Err(e) => {
-                println!("error decoding frame: {:?}", e.code);
-                break;
-            }
-        }
-    }
+    encoder.flush().map_err(|e| format!("error: {:?}", e.code))?;
 
     println!("Decoding finished, counter: {}", counter);
 

@@ -2,7 +2,7 @@ use super::{VpxCodec, VpxImage};
 
 use xmf_sys::{
     vpx::XmfVpxEncoderError, XmfVpxEncoder, XmfVpxEncoder_Create, XmfVpxEncoder_Destroy, XmfVpxEncoder_EncodeFrame,
-    XmfVpxEncoder_Flush, XmfVpxEncoder_GetEncodedFrame, XmfVpxEncoder_GetLastError,
+    XmfVpxEncoder_Flush, XmfVpxEncoder_FreeEncodedFrame, XmfVpxEncoder_GetEncodedFrame, XmfVpxEncoder_GetLastError,
 };
 
 pub struct VpxEncoderConfig(xmf_sys::vpx::XmfVpxEncoderConfig);
@@ -45,16 +45,27 @@ impl VpxEncoder {
         Ok(())
     }
 
-    pub fn next_frame(&mut self) -> Result<Vec<u8>, XmfVpxEncoderError> {
+    pub fn next_frame(&mut self) -> Result<Option<Vec<u8>>, XmfVpxEncoderError> {
         let mut output: *mut u8 = std::ptr::null_mut();
         let mut output_size: usize = 0;
         let ret = unsafe { XmfVpxEncoder_GetEncodedFrame(self.ptr, &mut output, &mut output_size) };
         if ret == 0 {
-            let data = unsafe { std::slice::from_raw_parts(output, output_size) };
+            let mut vec = Vec::with_capacity(output_size);
+
+            if output.is_null() {
+                return Ok(None);
+            }
+
             unsafe {
-                let _ = Box::from_raw(output);
-            }; // Free the allocated memory for the output buffer
-            Ok(data.to_vec())
+                vec.set_len(output_size);
+                std::ptr::copy_nonoverlapping(output, vec.as_mut_ptr(), output_size);
+            }
+
+            unsafe {
+                XmfVpxEncoder_FreeEncodedFrame(output);
+            }
+
+            Ok(Some(vec))
         } else {
             let error = unsafe { XmfVpxEncoder_GetLastError(self.ptr) };
             Err(error)

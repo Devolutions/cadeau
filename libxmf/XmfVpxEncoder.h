@@ -78,6 +78,14 @@ extern "C"
      * @return 0 on success, non-zero on failure.
      */
     XMF_EXPORT int XmfVpxEncoder_GetEncodedFrame(XmfVpxEncoder *encoder, uint8_t **output, size_t *output_size);
+
+    /**
+     * Frees the encoded frame data.
+     *
+     * @param output Pointer to the output buffer.
+     * @return 0 on success, non-zero on failure.
+     */
+    XMF_EXPORT void XmfVpxEncoder_FreeEncodedFrame(uint8_t *output);
     /**
      * Flushes the encoder, ensuring all frames are encoded.
      *

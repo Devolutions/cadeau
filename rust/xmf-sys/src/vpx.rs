@@ -1,5 +1,5 @@
 
-pub const VPX_ENCODE_FORCE_KEY_FRAME: u32 = 1 << 0;
+pub const VPX_EFLAG_FORCE_KF: u32 = 0x00000001;
 
 #[repr(C)]
 pub struct XmfVpXDecoder;

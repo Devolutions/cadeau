@@ -79,6 +79,7 @@ pub mod raw {
             fn XmfVpxEncoder_Flush(ctx: *mut XmfVpxEncoder) -> c_int,
             fn XmfVpxEncoder_Destroy(ctx: *mut XmfVpxEncoder) -> c_int,
             fn XmfVpxEncoder_GetLastError(ctx: *const XmfVpxEncoder) -> XmfVpxEncoderError,
+            fn XmfVpxEncoder_FreeEncodedFrame(input :*mut u8) -> (),
 
             // VPX Decoder
             fn XmfVpxDecoder_Create(cfg: XmfVpxDecoderConfig) -> *mut XmfVpxDecoder,

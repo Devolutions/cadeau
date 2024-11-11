@@ -9,7 +9,6 @@
 struct xmf_vpx_decoder
 {
     vpx_codec_ctx_t codec;
-    vpx_codec_iter_t iter;
     XmfVpxDecoderError lastError;
 };
 
@@ -59,7 +58,6 @@ int XmfVpxDecoder_Decode(XmfVpXDecoder *decoder, const uint8_t *data, unsigned i
         return -1;
     }
 
-    decoder->iter = NULL;
     decoder->lastError.code = NO_ERROR;
     return 0;
 }
@@ -71,7 +69,8 @@ XmfVpxImage *XmfVpxDecoder_GetNextFrame(XmfVpXDecoder *decoder)
         return NULL;
     }
 
-    vpx_image_t *image = vpx_codec_get_frame(&decoder->codec, &decoder->iter);
+    vpx_codec_iter_t itr = NULL;
+    vpx_image_t *image = vpx_codec_get_frame(&decoder->codec, &itr);
     if (!image)
     {
         decoder->lastError.code = NO_FRAME_AVAILABLE;

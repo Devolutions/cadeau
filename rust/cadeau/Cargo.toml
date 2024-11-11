@@ -31,3 +31,4 @@ rustdoc-args = ["--cfg", "docsrs"]
 
 [dev-dependencies]
 webm-iterable = "0.6.2" # For example and testing vpx decoding/encoding.
+ebml-iterable = "0.6.2" # For example and testing mkv parsing.
