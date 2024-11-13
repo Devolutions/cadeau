@@ -66,8 +66,8 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
 fn get_tick_count64() -> u64 {
     let now = SystemTime::now();
     let boot_time = now.duration_since(UNIX_EPOCH).unwrap();
-    let uptime = boot_time.as_secs() * 1000 + (boot_time.subsec_millis() as u64);
-    uptime
+
+    boot_time.as_secs() * 1000 + u64::from(boot_time.subsec_millis())
 }
 
 #[derive(Debug)]

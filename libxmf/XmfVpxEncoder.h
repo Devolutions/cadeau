@@ -4,6 +4,7 @@
 #include <stdint.h>
 #include "XmfVpxImage.h"
 #include "xmf/xmf.h"
+#include "XmfVpxPacket.h"
 
 typedef struct xmf_vpx_encoder XmfVpxEncoder;
 
@@ -67,7 +68,7 @@ extern "C"
      * @param flags    Flags for encoding (e.g., keyframe).
      * @return 0 on success, non-zero on failure.
      */
-    XMF_EXPORT int XmfVpxEncoder_EncodeFrame(XmfVpxEncoder *encoder, const XmfVpxImage *image, int64_t pts, int64_t duration, unsigned int flags);
+    XMF_EXPORT int XmfVpxEncoder_EncodeFrame(XmfVpxEncoder *encoder, const XmfVpxImage *image, vpx_codec_pts_t pts, unsigned long duration, unsigned int flags);
 
     /**
      * Retrieves the compressed frame data.
@@ -109,6 +110,14 @@ extern "C"
      * @return The last error code and details.
      */
     XMF_EXPORT XmfVpxEncoderError XmfVpxEncoder_GetLastError(const XmfVpxEncoder *encoder);
+
+    /**
+     * Retrieves the next packet from the encoder.
+     * @param encoder Pointer to the encoder instance.
+     *
+     * @return 0 on success, non-zero on failure.
+     */
+    XMF_EXPORT XmfVpxPacket* XmfVpxEncoder_GetPacket(XmfVpxEncoder *encoder, vpx_codec_iter_t *iter);
 
 #ifdef __cplusplus
 }

@@ -18,6 +18,9 @@ pub type XmfWebMMuxer = c_void;
 pub type XmfVpxEncoder = c_void;
 pub type XmfVpxDecoder = c_void;
 pub type XmfVpxImage = c_void;
+pub type XmfVpxPacket = c_void;
+pub type XmfVpxFrame = c_void;
+pub type VpxIterator = *const c_void;
 
 pub const XMF_MUXER_FILE_OPEN_ERROR: c_int = -1001;
 pub const XMF_MUXER_PARSER_ERROR: c_int = -1002;
@@ -74,12 +77,13 @@ pub mod raw {
 
             // VPX Encoder
             fn XmfVpxEncoder_Create(config: XmfVpxEncoderConfig) -> *mut XmfVpxEncoder,
-            fn XmfVpxEncoder_EncodeFrame(ctx: *mut XmfVpxEncoder, image: *const XmfVpxImage, pts: i64, duration: i64, flags: u32) -> c_int,
+            fn XmfVpxEncoder_EncodeFrame(ctx: *mut XmfVpxEncoder, image: *const XmfVpxImage, pts: i64, duration: usize, flags: u32) -> c_int,
             fn XmfVpxEncoder_GetEncodedFrame(ctx: *mut XmfVpxEncoder, output: *mut *mut u8, output_size: *mut usize) -> c_int,
             fn XmfVpxEncoder_Flush(ctx: *mut XmfVpxEncoder) -> c_int,
             fn XmfVpxEncoder_Destroy(ctx: *mut XmfVpxEncoder) -> c_int,
             fn XmfVpxEncoder_GetLastError(ctx: *const XmfVpxEncoder) -> XmfVpxEncoderError,
             fn XmfVpxEncoder_FreeEncodedFrame(input :*mut u8) -> (),
+            fn XmfVpxEncoder_GetPacket(ctx: *mut XmfVpxEncoder, itr:*mut VpxIterator) -> *mut XmfVpxPacket,
 
             // VPX Decoder
             fn XmfVpxDecoder_Create(cfg: XmfVpxDecoderConfig) -> *mut XmfVpxDecoder,
@@ -92,6 +96,23 @@ pub mod raw {
             fn XmfVpxImage_GetData(ctx: *const XmfVpxImage) -> *const u8,
             fn XmfVpxImage_Destroy(ctx: *mut XmfVpxImage) -> (),
 
+            // VPX Packet
+            fn XmfVpxPacket_Destroy(packet: *mut XmfVpxPacket) -> (),
+            fn XmfVpxPacket_GetKind(packet: *mut XmfVpxPacket) -> XmfVpxPacketKind,
+            fn XmfVpxPacket_GetFrame(packet: *const XmfVpxPacket) -> *mut XmfVpxFrame,
+            fn XmfVpxPacket_IsEmpty(packet: *const XmfVpxPacket) -> bool,
+
+            // VPX Frame
+            fn XmfVpxFrame_Destroy(frame: *mut XmfVpxFrame) -> (),
+            fn XmfVpxFrame_GetSize(frame: *const XmfVpxFrame) -> usize,
+            fn XmfVpxFrame_GetPts(frame: *const XmfVpxFrame) -> i64,
+            fn XmfVpxFrame_GetDuration(frame: *const XmfVpxFrame) -> u64,
+            fn XmfVpxFrame_GetFlags(frame: *const XmfVpxFrame) -> u32,
+            fn XmfVpxFrame_GetPartitionId(frame: *const XmfVpxFrame) -> c_int,
+            fn XmfVpxFrame_GetWidth(frame: *const XmfVpxFrame, layer: c_int) -> u32,
+            fn XmfVpxFrame_GetHeight(frame: *const XmfVpxFrame, layer: c_int) -> u32,
+            fn XmfVpxFrame_GetSpatialLayerEncoded(frame: *const XmfVpxFrame, layer: c_int) -> u8,
+            fn XmfVpxFrame_GetBuffer(frame: *const XmfVpxFrame, buffer: *mut *const u8, size: *mut usize) -> c_int,
 
     );
 }

@@ -1,8 +1,9 @@
-use super::{VpxCodec, VpxImage};
+use super::{VpxCodec, VpxError, VpxImage, VpxPacket};
 
 use xmf_sys::{
     vpx::XmfVpxEncoderError, XmfVpxEncoder, XmfVpxEncoder_Create, XmfVpxEncoder_Destroy, XmfVpxEncoder_EncodeFrame,
     XmfVpxEncoder_Flush, XmfVpxEncoder_FreeEncodedFrame, XmfVpxEncoder_GetEncodedFrame, XmfVpxEncoder_GetLastError,
+    XmfVpxEncoder_GetPacket,
 };
 
 pub struct VpxEncoderConfig(xmf_sys::vpx::XmfVpxEncoderConfig);
@@ -23,71 +24,122 @@ pub struct VpxEncoder {
 
 impl VpxEncoder {
     pub fn new(config: VpxEncoderConfig) -> Self {
+        // Safety: The way we build the config ensures that it is always valid.
         let ptr = unsafe { XmfVpxEncoder_Create(config.0) };
         Self { ptr }
     }
 
-    ///@param pts      Presentation timestamp of the frame.
-    ///@param flags    Flags for encoding (e.g., keyframe).
-    pub fn encode_frame(
-        &mut self,
-        image: &VpxImage,
-        pts: i64,
-        duration: i64,
-        flags: u32,
-    ) -> Result<(), XmfVpxEncoderError> {
+    pub fn encode_frame(&mut self, image: &VpxImage, pts: i64, duration: usize, flags: u32) -> Result<(), VpxError> {
+        // Safety: Always safe to call, even if the pointer is null.
         let ret = unsafe { XmfVpxEncoder_EncodeFrame(self.ptr, image.ptr, pts, duration, flags) };
         if ret != 0 {
+            // Safety: Always safe to call, even if the pointer is null.
             let error = unsafe { XmfVpxEncoder_GetLastError(self.ptr) };
-            return Err(error);
+            return Err(error.into());
         }
 
         Ok(())
     }
 
-    pub fn next_frame(&mut self) -> Result<Option<Vec<u8>>, XmfVpxEncoderError> {
+    pub fn next_frame(&mut self) -> Result<Option<Vec<u8>>, VpxError> {
         let mut output: *mut u8 = std::ptr::null_mut();
         let mut output_size: usize = 0;
+
+        // Safety: Always safe to call, even if the pointer is null.
         let ret = unsafe { XmfVpxEncoder_GetEncodedFrame(self.ptr, &mut output, &mut output_size) };
         if ret == 0 {
-            let mut vec = Vec::with_capacity(output_size);
-
             if output.is_null() {
                 return Ok(None);
             }
+            let mut vec = vec![0u8; output_size];
 
+            // Safety: Safe to call since we have allocated the vector with the correct size.
             unsafe {
-                vec.set_len(output_size);
                 std::ptr::copy_nonoverlapping(output, vec.as_mut_ptr(), output_size);
             }
 
+            // Safety: safe to call as we immediately copy the data to a Vec.
             unsafe {
                 XmfVpxEncoder_FreeEncodedFrame(output);
             }
 
             Ok(Some(vec))
         } else {
+            // Safety: Always safe to call, even if the pointer is null.
             let error = unsafe { XmfVpxEncoder_GetLastError(self.ptr) };
-            Err(error)
+            Err(error.into())
         }
     }
 
+    /// # Safety
+    ///
+    /// The caller must make sure to use the packets before calling any other function on the encoder.
+    pub unsafe fn packet_iterator(&mut self) -> PacketIterators<'_> {
+        PacketIterators::new(self)
+    }
+
     pub fn flush(&mut self) -> Result<(), XmfVpxEncoderError> {
+        // Safety: This method never panics, even if the pointer is null.
         let ret = unsafe { XmfVpxEncoder_Flush(self.ptr) };
         if ret == 0 {
             Ok(())
         } else {
+            // Safety: Always safe to call, even if the pointer is null.
             let error = unsafe { XmfVpxEncoder_GetLastError(self.ptr) };
             Err(error)
         }
     }
 }
 
+type VpxCodecIter = *const std::ffi::c_void;
+pub struct PacketIterators<'a> {
+    iter: VpxCodecIter,
+    encoder: &'a VpxEncoder,
+}
+
+impl<'a> PacketIterators<'a> {
+    fn new(encoder: &'a VpxEncoder) -> Self {
+        let iter = std::ptr::null_mut();
+        Self { iter, encoder }
+    }
+}
+
+impl Iterator for PacketIterators<'_> {
+    type Item = VpxPacket;
+
+    fn next(&mut self) -> Option<Self::Item> {
+        // Safety: Should be safe to call as the encoder pointer is never exposed to the caller.
+        let ptr = unsafe { XmfVpxEncoder_GetPacket(self.encoder.ptr, &mut self.iter as *mut VpxCodecIter) };
+
+        if ptr.is_null() {
+            return None;
+        }
+
+        let packet = VpxPacket { ptr };
+
+        // Safety: use packet before any other call to VpxEncoder
+        unsafe {
+            if packet.is_empty() {
+                return None;
+            }
+        }
+
+        Some(packet)
+    }
+}
+
 impl Drop for VpxEncoder {
     fn drop(&mut self) {
+        // Safety: Safe to call as the pointer is never exposed to the caller.
         unsafe {
             XmfVpxEncoder_Destroy(self.ptr);
         };
+    }
+}
+
+impl Default for VpxEncoderConfigBuilder {
+    fn default() -> Self {
+        Self::new()
     }
 }
 

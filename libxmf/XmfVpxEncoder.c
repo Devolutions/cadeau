@@ -3,6 +3,7 @@
 #include <string.h>
 #include <vpx/vpx_encoder.h>
 #include <vpx/vp8cx.h>
+#include "XmfVpxPacket.h"
 
 struct xmf_vpx_encoder
 {
@@ -46,11 +47,11 @@ XmfVpxEncoder *XmfVpxEncoder_Create(XmfVpxEncoderConfig config)
 	encoder->cfg.g_w = config.width;
 	encoder->cfg.g_h = config.height;
 	encoder->cfg.rc_target_bitrate = config.bitrate;
-	encoder->cfg.g_timebase.num = config.timebase_den;
-	encoder->cfg.g_timebase.den = config.timebase_num;
+	encoder->cfg.g_timebase.num = config.timebase_num;
+	encoder->cfg.g_timebase.den = config.timebase_den;
 	encoder->cfg.g_threads = config.threads;
 	encoder->cfg.g_error_resilient = 1;
-	
+
 	// allow keyframes at any time
 	encoder->cfg.kf_mode = VPX_KF_AUTO;
 	encoder->cfg.kf_min_dist = 0;
@@ -70,7 +71,7 @@ XmfVpxEncoder *XmfVpxEncoder_Create(XmfVpxEncoderConfig config)
 	return encoder;
 }
 
-int XmfVpxEncoder_EncodeFrame(XmfVpxEncoder *encoder, const XmfVpxImage *image, int64_t pts, int64_t duration, unsigned int flags)
+int XmfVpxEncoder_EncodeFrame(XmfVpxEncoder *encoder, const XmfVpxImage *image, vpx_codec_pts_t pts, unsigned long duration, unsigned int flags)
 {
 	if (!encoder || !image)
 	{
@@ -99,6 +100,11 @@ int XmfVpxEncoder_EncodeFrame(XmfVpxEncoder *encoder, const XmfVpxImage *image, 
 int XmfVpxEncoder_GetEncodedFrame(XmfVpxEncoder *encoder, uint8_t **output, size_t *output_size)
 {
 
+	if (!encoder || !output || !output_size)
+	{
+		return -1;
+	}
+
 	// Retrieve the encoded data
 	const vpx_codec_cx_pkt_t *pkt;
 	vpx_codec_iter_t itr = NULL;
@@ -124,6 +130,21 @@ int XmfVpxEncoder_GetEncodedFrame(XmfVpxEncoder *encoder, uint8_t **output, size
 	*output_size = 0;
 	encoder->lastError.code = NO_ERROR;
 	return 0;
+}
+
+XmfVpxPacket *XmfVpxEncoder_GetPacket(XmfVpxEncoder *encoder, vpx_codec_iter_t *iter)
+{
+	const vpx_codec_cx_pkt_t *pkt;
+
+	pkt = vpx_codec_get_cx_data(&encoder->codec, iter);
+	if (pkt == NULL)
+	{
+		return NULL;
+	}
+
+	XmfVpxPacket *packet = XmfVpxPacket_Create(pkt);
+
+	return packet;
 }
 
 void XmfVpxEncoder_FreeEncodedFrame(uint8_t *output)

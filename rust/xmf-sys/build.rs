@@ -54,10 +54,4 @@ fn main() {
     if let Ok(search_path) = env::var("XMF_SEARCH_PATH") {
         println!("cargo::rustc-link-search={search_path}");
     }
-
-    #[cfg(feature = "verbose")]
-    {
-        build_print::println!("xmf-sys: build with strategy: {:?}", strategy);
-        build_print::println!("xmf-sys: search path: {:?}", env::var("XMF_SEARCH_PATH"));
-    }
 }

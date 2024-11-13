@@ -1,9 +1,9 @@
 use xmf_sys::{
-    XmfVpxDecoder_Decode, vpx::XmfVpxDecoderError, XmfVpxDecoder, XmfVpxDecoder_Create, XmfVpxDecoder_Destroy,
-    XmfVpxDecoder_GetLastError, XmfVpxDecoder_GetNextFrame,
+    XmfVpxDecoder, XmfVpxDecoder_Create, XmfVpxDecoder_Decode, XmfVpxDecoder_Destroy, XmfVpxDecoder_GetLastError,
+    XmfVpxDecoder_GetNextFrame,
 };
 
-use super::{VpxCodec, VpxImage};
+use super::{VpxCodec, VpxError, VpxImage};
 
 pub struct VpxDecoderConfig(xmf_sys::vpx::XmfVpxDecoderConfig);
 
@@ -20,38 +20,54 @@ pub struct VpxDecoder {
 
 impl VpxDecoder {
     pub fn new(config: VpxDecoderConfig) -> Self {
+        // SAFETY: Safe to call, as the way the config is built ensures that the fields are valid.
         let ptr = unsafe { XmfVpxDecoder_Create(config.0) };
         Self { ptr }
     }
 
-    pub fn decode(&mut self, data: &[u8]) -> Result<(), XmfVpxDecoderError> {
+    pub fn decode(&mut self, data: &[u8]) -> Result<(), VpxError> {
         // SAFETY: FFI call with no outstanding precondition.
-        let ret = unsafe { XmfVpxDecoder_Decode(self.ptr, data.as_ptr(), data.len() as u32) };
+        let ret = unsafe {
+            XmfVpxDecoder_Decode(
+                self.ptr,
+                data.as_ptr(),
+                u32::try_from(data.len()).map_err(|_| "data.len cannot be converted to u32")?,
+            )
+        };
         if ret == 0 {
             Ok(())
         } else {
+            // SAFETY: Always safe to call, even if the pointer is null.
             let error = unsafe { XmfVpxDecoder_GetLastError(self.ptr) };
-            Err(error)
+            Err(error.into())
         }
     }
 
-    pub fn next_frame(&mut self) -> Result<VpxImage, XmfVpxDecoderError> {
+    pub fn next_frame(&mut self) -> Result<VpxImage, VpxError> {
         // SAFETY: FFI call with no outstanding precondition.
         let image = unsafe { XmfVpxDecoder_GetNextFrame(self.ptr) };
         if !image.is_null() {
             Ok(VpxImage { ptr: image })
         } else {
+            // SAFETY: Always safe to call, even if the pointer is null.
             let error = unsafe { XmfVpxDecoder_GetLastError(self.ptr) };
-            Err(error)
+            Err(error.into())
         }
     }
 }
 
 impl Drop for VpxDecoder {
     fn drop(&mut self) {
+        // SAFETY: Safe to call, as the VpxDecoder owns the pointer.
         unsafe {
             XmfVpxDecoder_Destroy(self.ptr);
         };
+    }
+}
+
+impl Default for VpxDecoderConfigBuilder {
+    fn default() -> Self {
+        Self::new()
     }
 }
 
@@ -72,13 +88,13 @@ impl VpxDecoderConfigBuilder {
     }
 
     #[must_use]
-    pub fn w(mut self, w: u32) -> Self {
+    pub fn width(mut self, w: u32) -> Self {
         self.w = Some(w);
         self
     }
 
     #[must_use]
-    pub fn h(mut self, h: u32) -> Self {
+    pub fn height(mut self, h: u32) -> Self {
         self.h = Some(h);
         self
     }
@@ -101,9 +117,7 @@ impl VpxDecoderConfigBuilder {
 }
 
 impl VpxDecoderConfig {
-
     pub fn builder() -> VpxDecoderConfigBuilder {
         VpxDecoderConfigBuilder::new()
     }
-    
 }

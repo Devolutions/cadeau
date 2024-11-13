@@ -9,12 +9,6 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "ace50bade8e6234aa140d9a2f552bbee1db4d353f69b8217bc503490fc1a9f26"
 
 [[package]]
-name = "build-print"
-version = "0.1.1"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "4a2128d00b7061b82b72844a351e80acd29e05afc60e9261e2ac90dca9ecc2ac"
-
-[[package]]
 name = "cadeau"
 version = "0.4.0"
 dependencies = [
@@ -241,9 +235,9 @@ checksum = "e91b56cd4cadaeb79bbf1a5645f6b4f8dc5bde8834ad5894a8db35fda9efa1fe"
 
 [[package]]
 name = "webm-iterable"
-version = "0.6.2"
+version = "0.6.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "176392cfdfe37b77c6a78f90d88e13f133fc98395e10c37754d3f6539d81ec16"
+checksum = "008955b5d96fc6e1e36f2c7f33120aef9e52b54efc5c76b6f1b125809513df78"
 dependencies = [
  "ebml-iterable",
 ]
@@ -316,6 +310,5 @@ checksum = "589f6da84c646204747d1270a2a5661ea66ed1cced2631d546fdfb155959f9ec"
 name = "xmf-sys"
 version = "0.2.0"
 dependencies = [
- "build-print",
  "dlib",
 ]

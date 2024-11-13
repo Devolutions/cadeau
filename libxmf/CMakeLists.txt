@@ -17,6 +17,8 @@ set(${MODULE_PREFIX}_SOURCES
     XmfVpxDecoder.c
     XmfVpxEncoder.c
     XmfVpxImage.c
+    XmfVpxPacket.c
+    XmfVpxFrame.c
     )
 
 set(${MODULE_PREFIX}_HEADERS
@@ -36,6 +38,8 @@ set(${MODULE_PREFIX}_HEADERS
     XmfVpxDecoder.h
     XmfVpxEncoder.h
     XmfVpxImage.h
+    XmfVpxPacket.h
+    XmfVpxFrame.h
     )
 
 set(${MODULE_PREFIX}_RESOURCES "")

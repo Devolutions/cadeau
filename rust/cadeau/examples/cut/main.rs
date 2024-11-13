@@ -1,16 +1,15 @@
+#![allow(clippy::print_stdout)]
+#![allow(clippy::unwrap_used)]
+
 use std::{env, fs::File, io, thread, time::Duration};
 
-use cadeau::xmf::vpx::{
-    decoder::{VpxDecoder, VpxDecoderConfig},
-    encoder::{VpxEncoder, VpxEncoderConfig},
-    is_key_frame, VpxCodec,
-};
+use debug::mastroka_spec_name;
 use webm_iterable::{
-    matroska_spec::{Block, Master, MatroskaSpec},
-    WebmIterator, WriteOptions,
+    matroska_spec::{Master, MatroskaSpec},
+    WriteOptions,
 };
-use xmf_sys::vpx::VPX_EFLAG_FORCE_KF;
 
+pub mod block_group;
 pub mod debug;
 pub mod webm_cutter;
 
@@ -41,17 +40,20 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     let mut writter = thread::spawn(move || {
         while let Ok(tag) = tx.recv_timeout(Duration::from_secs(2)) {
             if let MatroskaSpec::Segment(Master::Start) = tag {
-                let _ = writter
-                    .write_advanced(&tag, WriteOptions::is_unknown_sized_element())
-                    .inspect_err(|e| {
-                        eprintln!("error: {}", e);
-                    });
+                if let Err(e) = writter.write_advanced(&tag, WriteOptions::is_unknown_sized_element()) {
+                    let tag_name = mastroka_spec_name(&tag);
+                    println!("error: failed to write tag: {}", tag_name);
+                    println!("error: {:?}", e);
+                }
                 continue;
             }
 
-            let _ = writter.write(&tag).inspect_err(|e| {
-                eprintln!("error: {}", e);
-            });
+            if let Err(e) = writter.write(&tag) {
+                let tag_name = mastroka_spec_name(&tag);
+                println!("error: failed to write tag: {}", tag_name);
+                println!("error: {}", e);
+                break;
+            }
         }
         writter
     })
@@ -67,6 +69,7 @@ struct Args {
     // input path, -i
     input_path: String,
     // lib_xmf path, --lib-xmf
+    #[cfg(feature = "dlopen")]
     lib_xmf_path: Option<String>,
     // output path, -o
     output_path: String,
@@ -78,7 +81,7 @@ impl TryFrom<Vec<String>> for Args {
     type Error = &'static str;
 
     fn try_from(value: Vec<String>) -> Result<Self, Self::Error> {
-        if value.contains(&"-h".to_string()) || value.contains(&"--help".to_string()) {
+        if value.iter().any(|v| v == "-h" || v == "--help") {
             println!("Usage: cut -i <input> -o <output> --lib-xmf <libxmf.so> --cut-start <start_time>");
             std::process::exit(0);
         }
@@ -92,6 +95,7 @@ impl TryFrom<Vec<String>> for Args {
             .map(|(i, _)| value[i + 1].clone())
             .ok_or("missing input path")?;
 
+        #[cfg(feature = "dlopen")]
         let lib_xmf_path = value
             .iter()
             .enumerate()
@@ -118,6 +122,7 @@ impl TryFrom<Vec<String>> for Args {
 
         Ok(Self {
             input_path,
+            #[cfg(feature = "dlopen")]
             lib_xmf_path,
             output_path,
             cut_start,

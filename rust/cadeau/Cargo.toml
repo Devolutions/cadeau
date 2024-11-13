@@ -17,7 +17,6 @@ default = ["xmf"]
 xmf = ["dep:xmf-sys"]
 static = ["xmf-sys/static"] # Use static linking at build-time.
 dlopen = ["xmf-sys/dlopen"] # Use manual library loading at runtime.
-verbose = ["xmf-sys/verbose"] # Print build script output.
 
 [lints]
 workspace = true
@@ -30,5 +29,5 @@ all-features = true
 rustdoc-args = ["--cfg", "docsrs"]
 
 [dev-dependencies]
-webm-iterable = "0.6.2" # For example and testing vpx decoding/encoding.
+webm-iterable = "0.6.3" # For example and testing vpx decoding/encoding.
 ebml-iterable = "0.6.2" # For example and testing mkv parsing.
