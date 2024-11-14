@@ -18,14 +18,14 @@ pub enum VpxCodec {
 }
 
 pub struct VpxImage {
-    pub(crate) ptr: *const XmfVpxImage,
+    pub(crate) ptr: *mut XmfVpxImage,
 }
 
 impl Drop for VpxImage {
     fn drop(&mut self) {
         // Safety: it is safe to call, the owenership of the pointer is managed by the XmfVpxImage itself.
         unsafe {
-            XmfVpxImage_Destroy(self.ptr.cast_mut());
+            XmfVpxImage_Destroy(self.ptr);
         }
     }
 }
