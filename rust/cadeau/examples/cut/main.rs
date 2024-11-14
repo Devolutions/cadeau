@@ -3,7 +3,7 @@
 
 use std::{env, fs::File, io, thread, time::Duration};
 
-use debug::mastroka_spec_name;
+use debug::matroska_spec_name;
 use webm_iterable::{
     matroska_spec::{Master, MatroskaSpec},
     WriteOptions,
@@ -14,19 +14,14 @@ pub mod debug;
 pub mod webm_cutter;
 
 fn main() -> Result<(), Box<dyn std::error::Error>> {
-    let args: Args = env::args()
-        .collect::<Vec<String>>()
-        .try_into()
-        .map_err(|e| format!("error: {}", e))?;
+    let args: Vec<String> = env::args().collect();
+    let args: Vec<&str> = args.iter().skip(1).map(String::as_str).collect();
+    let args = parse_arg(&args)?;
 
     // SAFETY: Just pray at this point.
     #[cfg(feature = "dlopen")]
     unsafe {
-        cadeau::xmf::init(
-            args.lib_xmf_path
-                .as_ref()
-                .expect("xmf dll path is needed for dynamic loading"),
-        )?;
+        cadeau::xmf::init(args.lib_xmf_path)?;
     }
 
     let mut cutter = webm_cutter::WebmCutter::new(&args.input_path, args.cut_start)?;
@@ -40,22 +35,22 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     let mut writter = thread::spawn(move || {
         while let Ok(tag) = tx.recv_timeout(Duration::from_secs(2)) {
             if let MatroskaSpec::Segment(Master::Start) = tag {
-                if let Err(e) = writter.write_advanced(&tag, WriteOptions::is_unknown_sized_element()) {
-                    let tag_name = mastroka_spec_name(&tag);
+                if let Err(e) = writer.write_advanced(&tag, WriteOptions::is_unknown_sized_element()) {
+                    let tag_name = matroska_spec_name(&tag);
                     println!("error: failed to write tag: {}", tag_name);
                     println!("error: {:?}", e);
                 }
                 continue;
             }
 
-            if let Err(e) = writter.write(&tag) {
-                let tag_name = mastroka_spec_name(&tag);
+            if let Err(e) = writer.write(&tag) {
+                let tag_name = matroska_spec_name(&tag);
                 println!("error: failed to write tag: {}", tag_name);
                 println!("error: {}", e);
                 break;
             }
         }
-        writter
+        writer
     })
     .join()
     .map_err(|_| io::Error::new(io::ErrorKind::Other, "thread join error"))?;
@@ -65,67 +60,51 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     Ok(())
 }
 
-struct Args {
+#[derive(Debug, Default)]
+struct Args<'a> {
     // input path, -i
-    input_path: String,
+    input_path: &'a str,
     // lib_xmf path, --lib-xmf
     #[cfg(feature = "dlopen")]
-    lib_xmf_path: Option<String>,
+    lib_xmf_path: &'a str,
     // output path, -o
-    output_path: String,
+    output_path: &'a str,
     // -c or --cut,cut start time in seconds
     cut_start: u32,
 }
 
-impl TryFrom<Vec<String>> for Args {
-    type Error = &'static str;
+const HELP: &'static str = "Usage: cut -i <input> -o <output> --lib-xmf <libxmf.so> --cut-start <start_time>";
 
-    fn try_from(value: Vec<String>) -> Result<Self, Self::Error> {
-        if value.iter().any(|v| v == "-h" || v == "--help") {
-            println!("Usage: cut -i <input> -o <output> --lib-xmf <libxmf.so> --cut-start <start_time>");
-            std::process::exit(0);
+fn parse_arg<'a>(mut value: &[&'a str]) -> Result<Args<'a>, &'static str> {
+    let mut arg = Args::default();
+    loop {
+        match value {
+            ["--lib-xmf", lib_xmf_path, rest @ ..] => {
+                arg.lib_xmf_path = lib_xmf_path;
+                value = rest;
+            }
+            ["--input" | "-i", input_path, rest @ ..] => {
+                arg.input_path = input_path;
+                value = rest;
+            }
+            ["--output" | "-o", output_path, rest @ ..] => {
+                arg.output_path = output_path;
+                value = rest;
+            }
+            ["--cut" | "-c", cut_start, rest @ ..] => {
+                arg.cut_start = cut_start
+                    .parse::<u32>()
+                    .map_err(|_| "cut start time must be a number")?;
+                value = rest;
+            }
+            ["--help" | "-h", ..] => {
+                println!("{}", HELP);
+                std::process::exit(0);
+            }
+            [] => break,
+            _ => return Err("Invalid arguments"),
         }
-
-        // search for -i
-        let input_path = value
-            .iter()
-            .enumerate()
-            .find(|(_, v)| *v == "-i")
-            .filter(|(i, _)| i + 1 < value.len())
-            .map(|(i, _)| value[i + 1].clone())
-            .ok_or("missing input path")?;
-
-        #[cfg(feature = "dlopen")]
-        let lib_xmf_path = value
-            .iter()
-            .enumerate()
-            .find(|(_, v)| *v == "--lib-xmf")
-            .filter(|(i, _)| i + 1 < value.len())
-            .map(|(i, _)| value[i + 1].clone());
-
-        let output_path = value
-            .iter()
-            .enumerate()
-            .find(|(_, v)| *v == "-o")
-            .filter(|(i, _)| i + 1 < value.len())
-            .map(|(i, _)| value[i + 1].clone())
-            .ok_or("missing output path")?;
-
-        let cut_start = value
-            .iter()
-            .enumerate()
-            .find(|(_, v)| *v == "--cut" || *v == "-c")
-            .filter(|(i, _)| i + 1 < value.len())
-            .map(|(i, _)| value[i + 1].parse::<u32>())
-            .ok_or("missing cut start time")?
-            .map_err(|_| "cut start time must be a number")?;
-
-        Ok(Self {
-            input_path,
-            #[cfg(feature = "dlopen")]
-            lib_xmf_path,
-            output_path,
-            cut_start,
-        })
     }
+
+    Ok(arg)
 }
