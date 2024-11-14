@@ -72,7 +72,7 @@ impl VpxPacket {
         if frame_ptr.is_null() {
             None
         } else {
-            VpxFrame::new(frame_ptr).ok()
+            Some(VpxFrame { ptr: frame_ptr })
         }
     }
 
@@ -109,14 +109,6 @@ impl Drop for VpxFrame {
 }
 
 impl VpxFrame {
-    fn new(ptr: *const XmfVpxFrame) -> Result<Self, VpxError> {
-        if ptr.is_null() {
-            Err(VpxError::NullPointer)
-        } else {
-            Ok(Self { ptr })
-        }
-    }
-
     pub fn size(&self) -> usize {
         // Safety: The pointer is valid and the function is safe to call. See Safety Note in VpxFrame::new.
         unsafe { XmfVpxFrame_GetSize(self.ptr) }
