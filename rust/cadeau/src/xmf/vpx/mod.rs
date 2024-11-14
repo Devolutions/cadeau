@@ -1,6 +1,5 @@
 use core::fmt;
 
-use encoder::PacketIterator;
 use xmf_sys::{
     XmfVpxCodecType, XmfVpxDecoderError, XmfVpxEncoderError, XmfVpxFrame, XmfVpxFrame_Destroy, XmfVpxFrame_GetBuffer,
     XmfVpxFrame_GetDuration, XmfVpxFrame_GetFlags, XmfVpxFrame_GetHeight, XmfVpxFrame_GetPartitionId,

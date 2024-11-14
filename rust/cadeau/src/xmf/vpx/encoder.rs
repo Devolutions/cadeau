@@ -13,8 +13,8 @@ pub struct VpxEncoderConfigBuilder {
     width: Option<u32>,
     height: Option<u32>,
     bitrate: Option<u32>,
-    timebase_num: Option<u32>,
-    timebase_den: Option<u32>,
+    timebase_num: Option<i32>,
+    timebase_den: Option<i32>,
     threads: Option<u32>,
 }
 
@@ -177,13 +177,13 @@ impl VpxEncoderConfigBuilder {
     }
 
     #[must_use]
-    pub fn timebase_num(mut self, timebase_num: u32) -> Self {
+    pub fn timebase_num(mut self, timebase_num: i32) -> Self {
         self.timebase_num = Some(timebase_num);
         self
     }
 
     #[must_use]
-    pub fn timebase_den(mut self, timebase_den: u32) -> Self {
+    pub fn timebase_den(mut self, timebase_den: i32) -> Self {
         self.timebase_den = Some(timebase_den);
         self
     }

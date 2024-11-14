@@ -17,12 +17,12 @@ typedef enum
 typedef struct
 {
     XmfVpxCodecType codec;
-    unsigned int width;
-    unsigned int height;
-    unsigned int bitrate;
-    unsigned int timebase_num;
-    unsigned int timebase_den;
-    unsigned int threads;
+    uint32_t width;
+    uint32_t height;
+    uint32_t bitrate;
+    int32_t timebase_num;
+    int32_t timebase_den;
+    uint32_t threads;
 } XmfVpxEncoderConfig;
 
 typedef enum
@@ -117,7 +117,7 @@ extern "C"
      *
      * @return 0 on success, non-zero on failure.
      */
-    XMF_EXPORT XmfVpxPacket* XmfVpxEncoder_GetPacket(XmfVpxEncoder *encoder, vpx_codec_iter_t *iter);
+    XMF_EXPORT XmfVpxPacket *XmfVpxEncoder_GetPacket(XmfVpxEncoder *encoder, vpx_codec_iter_t *iter);
 
 #ifdef __cplusplus
 }

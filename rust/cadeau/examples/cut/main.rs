@@ -4,7 +4,6 @@
 use std::{
     env,
     fs::File,
-    io,
     path::Path,
     sync::{Arc, Mutex},
     thread,

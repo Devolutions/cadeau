@@ -1,5 +1,5 @@
 use core::fmt;
-use std::ffi::c_void;
+use std::ffi::{c_int, c_uint, c_void};
 use std::fmt::Debug;
 
 pub const VPX_EFLAG_FORCE_KF: u32 = 0x00000001;
@@ -23,9 +23,9 @@ pub enum XmfVpxCodecType {
 #[repr(C)]
 #[derive(Debug, Clone, Copy)]
 pub struct XmfVpxDecoderConfig {
-    pub threads: u32, // Corresponds to 'unsigned int' in C
-    pub w: u32,       // Width (set to 0 if unknown)
-    pub h: u32,       // Height (set to 0 if unknown)
+    pub threads: c_uint, // Corresponds to 'unsigned int' in C
+    pub w: c_uint,       // Width (set to 0 if unknown)
+    pub h: c_uint,       // Height (set to 0 if unknown)
     pub codec: XmfVpxCodecType,
 }
 
@@ -63,12 +63,12 @@ pub struct XmfVpxDecoderError {
 #[derive(Debug, Clone, Copy)]
 pub struct XmfVpxEncoderConfig {
     pub codec: XmfVpxCodecType,
-    pub width: u32,
-    pub height: u32,
-    pub bitrate: u32,
-    pub timebase_num: u32,
-    pub timebase_den: u32,
-    pub threads: u32,
+    pub width: c_uint,
+    pub height: c_uint,
+    pub bitrate: c_uint,
+    pub timebase_num: c_int,
+    pub timebase_den: c_int,
+    pub threads: c_uint,
 }
 
 #[repr(C)]
@@ -138,7 +138,7 @@ impl std::error::Error for XmfVpxDecoderError {
 impl fmt::Display for XmfVpxEncoderError {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         if matches!(self.code, XmfVpxEncoderErrorCode::VpxError) {
-            // Safety: The union detail.vpx_error is always valid when the error code is VpxError.
+            // Safety: The union detail.vpx_error is always valid when the error code is VpxErr:19or.
             unsafe { write!(f, "VPX error: {}", self.detail.vpx_error.error_code) }
         } else {
             write!(f, "XMF VPX encoder error: {:?}", self.code)
