@@ -109,8 +109,7 @@ impl Drop for VpxFrame {
 }
 
 impl VpxFrame {
-    // Safety Note: the XmfVpxFrame is a deep copy from the vpx packet, so it is safe to use the pointer until the frame is destroyed.
-    pub fn new(ptr: *const XmfVpxFrame) -> Result<Self, VpxError> {
+    fn new(ptr: *const XmfVpxFrame) -> Result<Self, VpxError> {
         if ptr.is_null() {
             Err(VpxError::NullPointer)
         } else {
