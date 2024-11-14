@@ -93,7 +93,7 @@ int XmfVpxEncoder_EncodeFrame(XmfVpxEncoder *encoder, const XmfVpxImage *image, 
 		encoder->lastError.detail.vpx_error.error_code = res;
 		return -1;
 	}
-	// Reset the iterator after encoding
+
 	return 0;
 }
 
@@ -169,7 +169,7 @@ int XmfVpxEncoder_Flush(XmfVpxEncoder *encoder)
 		encoder->lastError.detail.vpx_error.error_code = res;
 		return -1;
 	}
-	// Reset the iterator after flushing
+
 	encoder->lastError.code = NO_ERROR;
 	return 0;
 }

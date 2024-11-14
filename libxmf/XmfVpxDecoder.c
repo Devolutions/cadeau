@@ -15,13 +15,12 @@ struct xmf_vpx_decoder
 XmfVpXDecoder *XmfVpxDecoder_Create(XmfVpxDecoderConfig cfg)
 {
 
-    XmfVpXDecoder *decoder = (XmfVpXDecoder *)malloc(sizeof(XmfVpXDecoder));
+    XmfVpXDecoder *decoder = (XmfVpXDecoder *)calloc(1, sizeof(XmfVpXDecoder));
     if (!decoder)
     {
         return NULL;
     }
 
-    memset(decoder, 0, sizeof(XmfVpXDecoder));
     decoder->lastError.code = NO_ERROR;
 
     vpx_codec_dec_cfg_t dec_cfg = {
@@ -34,8 +33,6 @@ XmfVpXDecoder *XmfVpxDecoder_Create(XmfVpxDecoderConfig cfg)
     vpx_codec_err_t res = vpx_codec_dec_init(&decoder->codec, iface, &dec_cfg, 0);
     if (res != VPX_CODEC_OK)
     {
-        decoder->lastError.code = INIT_ERROR;
-        decoder->lastError.detail.vpx_error.error_code = res;
         free(decoder);
         return NULL;
     }
