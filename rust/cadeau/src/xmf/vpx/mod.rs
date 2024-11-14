@@ -1,5 +1,6 @@
 use core::fmt;
 
+use encoder::PacketIterator;
 use xmf_sys::{
     XmfVpxCodecType, XmfVpxDecoderError, XmfVpxEncoderError, XmfVpxFrame, XmfVpxFrame_Destroy, XmfVpxFrame_GetBuffer,
     XmfVpxFrame_GetDuration, XmfVpxFrame_GetFlags, XmfVpxFrame_GetHeight, XmfVpxFrame_GetPartitionId,
@@ -46,28 +47,54 @@ pub fn is_key_frame(buffer: &[u8]) -> bool {
     buffer[0] & 0x1 == 0
 }
 
-pub struct VpxPacket {
-    pub(crate) ptr: *mut XmfVpxPacket,
+/// Safety Note: The packet is only valid before the next call to any function on the encoder.
+/// The Packet iterator holds a mutable reference to the encoder,
+/// While the iterator is alive, the encoder with mutable reference is not allowed to be used.
+/// Hence all the functions on the packet are safe to call.
+///
+/// ex.
+///
+/// ```rust
+/// // This will not compile, as packet outlives the iterator.
+/// fn example(&mut self) {
+///     let mut packet;
+///     {
+///         let mut iterator = self.encoder.packet_iterator();
+///         packet = iterator.next().unwrap();
+///     }
+/// }
+/// ```
+/// // This will not compile as well, as the encoder is used after the iterator is created.
+/// ```rust
+/// fn example(&mut self) {
+///     let mut iterator = self.encoder.packet_iterator();
+///     let packet = iterator.next().unwrap();
+///     self.encoder.flush();
+/// }
+/// ```
+pub struct VpxPacket<'a> {
+    ptr: *mut XmfVpxPacket,
+    _marker: std::marker::PhantomData<&'a ()>,
 }
 
-impl VpxPacket {
+impl VpxPacket<'_> {
     /// # Safety
     ///
-    /// This function is `unsafe` because it assumes that `self.ptr` is a valid pointer.
-    /// It should not be used after any call to a `VpxEncoder` method that modifies or releases the packet.
-    pub unsafe fn kind(&self) -> XmfVpxPacketKind {
-        // Safety: It's up to the caller to ensure the packet is valid.
+    /// The pointer must be valid and must not be null.
+    pub(crate) unsafe fn from_raw(ptr: *mut XmfVpxPacket) -> Self {
+        VpxPacket {
+            ptr,
+            _marker: std::marker::PhantomData,
+        }
+    }
+
+    pub fn kind(&self) -> XmfVpxPacketKind {
+        // Safety: see Safety Note
         unsafe { XmfVpxPacket_GetKind(self.ptr) }
     }
 
-    /// # Safety
-    ///
-    /// Obtain the deep copy of the frame from the packet, must be used before any call to VpxEncoder method.
-    /// The frame produced by this method is always valid.
-    /// This function is `unsafe` because it assumes that `self.ptr` is a valid pointer.
-    /// It should not be used after any call to a `VpxEncoder` method that modifies or releases the packet.
-    pub unsafe fn frame(&self) -> Option<VpxFrame> {
-        // Safety: it's up to the caller to ensure the packet is valid, the frame will remain valid until the frame itself is destroyed.
+    pub fn frame(&self) -> Option<VpxFrame> {
+        // Safety: see Safety Note in VpxPacket
         let frame_ptr = unsafe { XmfVpxPacket_GetFrame(self.ptr) };
         if frame_ptr.is_null() {
             None
@@ -76,20 +103,15 @@ impl VpxPacket {
         }
     }
 
-    /// # Safety
-    ///
-    /// This function is `unsafe` because it assumes that `self.ptr` is a valid pointer.
-    /// It should not be used after any call to a `VpxEncoder` method that modifies or releases the packet.
-    pub unsafe fn is_empty(&self) -> bool {
-        // Safety: It's up to the caller to ensure the packet is valid.
+    pub fn is_empty(&self) -> bool {
+        // Safety: see Safety Note in VpxPacket
         unsafe { XmfVpxPacket_IsEmpty(self.ptr) }
     }
 }
 
-impl Drop for VpxPacket {
+impl Drop for VpxPacket<'_> {
     fn drop(&mut self) {
-        // Safety: XmfVpxPacket pointer is owned by the VpxPacket, the inner pointer of XmfVpxPacket is managed by vpx_encoder, however
-        // The `XmfVpxPacket_Destroy` will not touch the inner pointer managed by the encoder, so this functino is safe to call.
+        // Safety: See the Safety Note in VpxPacket
         unsafe {
             XmfVpxPacket_Destroy(self.ptr);
         }

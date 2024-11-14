@@ -1,6 +1,6 @@
 use core::fmt;
-use std::fmt::Debug;
 use std::ffi::c_void;
+use std::fmt::Debug;
 
 pub const VPX_EFLAG_FORCE_KF: u32 = 0x00000001;
 pub type XmfVpxEncoder = c_void;

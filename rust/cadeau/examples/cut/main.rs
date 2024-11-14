@@ -2,7 +2,13 @@
 #![allow(clippy::unwrap_used)]
 
 use std::{
-    env, fs::File, io, path::Path, sync::{Arc, Mutex}, thread, time::Duration
+    env,
+    fs::File,
+    io,
+    path::Path,
+    sync::{Arc, Mutex},
+    thread,
+    time::Duration,
 };
 
 use debug::matroska_spec_name;

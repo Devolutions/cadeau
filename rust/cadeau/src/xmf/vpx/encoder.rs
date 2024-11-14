@@ -1,7 +1,9 @@
 use super::{VpxCodec, VpxError, VpxImage, VpxPacket};
 
 use xmf_sys::{
-    XmfVpxEncoder, XmfVpxEncoderConfig, XmfVpxEncoderError, XmfVpxEncoder_Create, XmfVpxEncoder_Destroy, XmfVpxEncoder_EncodeFrame, XmfVpxEncoder_Flush, XmfVpxEncoder_FreeEncodedFrame, XmfVpxEncoder_GetEncodedFrame, XmfVpxEncoder_GetLastError, XmfVpxEncoder_GetPacket
+    XmfVpxEncoder, XmfVpxEncoderConfig, XmfVpxEncoderError, XmfVpxEncoder_Create, XmfVpxEncoder_Destroy,
+    XmfVpxEncoder_EncodeFrame, XmfVpxEncoder_Flush, XmfVpxEncoder_FreeEncodedFrame, XmfVpxEncoder_GetEncodedFrame,
+    XmfVpxEncoder_GetLastError, XmfVpxEncoder_GetPacket,
 };
 
 pub struct VpxEncoderConfig(XmfVpxEncoderConfig);
@@ -72,8 +74,8 @@ impl VpxEncoder {
     /// # Safety
     ///
     /// The caller must make sure to use the packets before calling any other function on the encoder.
-    pub unsafe fn packet_iterator(&mut self) -> PacketIterators<'_> {
-        PacketIterators::new(self)
+    pub fn packet_iterator<'encoder>(&'encoder mut self) -> PacketIterator<'encoder> {
+        PacketIterator::new(self)
     }
 
     pub fn flush(&mut self) -> Result<(), XmfVpxEncoderError> {
@@ -90,22 +92,20 @@ impl VpxEncoder {
 }
 
 type VpxCodecIter = *const std::ffi::c_void;
-pub struct PacketIterators<'a> {
+pub struct PacketIterator<'encoder> {
     iter: VpxCodecIter,
-    encoder: &'a VpxEncoder,
+    encoder: &'encoder mut VpxEncoder,
 }
 
-impl<'a> PacketIterators<'a> {
-    fn new(encoder: &'a VpxEncoder) -> Self {
+impl<'encoder> PacketIterator<'encoder> {
+    fn new(encoder: &'encoder mut VpxEncoder) -> Self {
         let iter = std::ptr::null_mut();
         Self { iter, encoder }
     }
 }
 
-impl Iterator for PacketIterators<'_> {
-    type Item = VpxPacket;
-
-    fn next(&mut self) -> Option<Self::Item> {
+impl<'itr> PacketIterator<'_> {
+    pub fn next(&'itr mut self) -> Option<VpxPacket<'itr>> {
         // Safety: Should be safe to call as the encoder pointer is never exposed to the caller.
         let ptr = unsafe { XmfVpxEncoder_GetPacket(self.encoder.ptr, &mut self.iter as *mut VpxCodecIter) };
 
@@ -113,13 +113,11 @@ impl Iterator for PacketIterators<'_> {
             return None;
         }
 
-        let packet = VpxPacket { ptr };
+        // Safety: XmfVpxEncoder_GetPacket will always return a valid pointer or null, which is handled above.
+        let packet = unsafe { VpxPacket::from_raw(ptr) };
 
-        // Safety: use packet before any other call to VpxEncoder
-        unsafe {
-            if packet.is_empty() {
-                return None;
-            }
+        if packet.is_empty() {
+            return None;
         }
 
         Some(packet)
