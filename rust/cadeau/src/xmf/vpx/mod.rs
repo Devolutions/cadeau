@@ -24,7 +24,7 @@ pub struct VpxImage {
 
 impl Drop for VpxImage {
     fn drop(&mut self) {
-        // Safety: it is safe to call, the owenership of the pointer is managed by the XmfVpxImage itself.
+        // Safety: it is safe to call, the pointer is owned by the VpxImage itself.
         unsafe {
             XmfVpxImage_Destroy(self.ptr);
         }
