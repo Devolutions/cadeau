@@ -1,7 +1,7 @@
 use super::{VpxCodec, VpxError, VpxImage, VpxPacket};
 
 use xmf_sys::{
-    vpx::XmfVpxEncoderError, XmfVpxEncoder, XmfVpxEncoder_Create, XmfVpxEncoder_Destroy, XmfVpxEncoder_EncodeFrame,
+    vpx::{XmfVpxEncoder, XmfVpxEncoderError}, XmfVpxEncoder_Create, XmfVpxEncoder_Destroy, XmfVpxEncoder_EncodeFrame,
     XmfVpxEncoder_Flush, XmfVpxEncoder_FreeEncodedFrame, XmfVpxEncoder_GetEncodedFrame, XmfVpxEncoder_GetLastError,
     XmfVpxEncoder_GetPacket,
 };

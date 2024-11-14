@@ -2,12 +2,7 @@
 #![allow(clippy::unwrap_used)]
 
 use std::{
-    env,
-    fs::File,
-    io,
-    sync::{Arc, Mutex},
-    thread,
-    time::Duration,
+    env, fs::File, io, path::Path, sync::{Arc, Mutex}, thread, time::Duration
 };
 
 use debug::matroska_spec_name;
@@ -31,7 +26,8 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         cadeau::xmf::init(args.lib_xmf_path)?;
     }
 
-    let mut cutter = webm_cutter::WebmCutter::new(&args.input_path, args.cut_start)?;
+    let path = Path::new(args.input_path);
+    let mut cutter = webm_cutter::WebmCutter::new(path, args.cut_start)?;
     let mut writer = webm_iterable::WebmWriter::new(File::create(&args.output_path)?);
 
     let (sender, receiver) = std::sync::mpsc::sync_channel(10);

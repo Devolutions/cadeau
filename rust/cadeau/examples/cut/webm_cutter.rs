@@ -25,7 +25,7 @@ pub struct WebmCutter {
 
 // Cutter for webm videos with only video tracks and no cues.
 impl WebmCutter {
-    pub fn new(input: impl AsRef<Path>, cut_time: u32) -> Result<Self, Box<dyn std::error::Error>> {
+    pub fn new(input: &Path, cut_time: u32) -> Result<Self, Box<dyn std::error::Error>> {
         let file = std::fs::File::open(&input)?;
         let mut webm_iterator = WebmIterator::new(file, &[MatroskaSpec::BlockGroup(Master::Start)]);
         let mut headers = Vec::new();

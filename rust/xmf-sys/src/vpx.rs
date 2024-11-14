@@ -1,7 +1,14 @@
 use core::fmt;
 use std::fmt::Debug;
+use std::ffi::c_void;
 
 pub const VPX_EFLAG_FORCE_KF: u32 = 0x00000001;
+pub type XmfVpxEncoder = c_void;
+pub type XmfVpxDecoder = c_void;
+pub type XmfVpxImage = c_void;
+pub type XmfVpxPacket = c_void;
+pub type XmfVpxFrame = c_void;
+pub type VpxIterator = *const c_void;
 
 #[repr(C)]
 pub struct XmfVpXDecoder;
@@ -51,9 +58,6 @@ pub struct XmfVpxDecoderError {
     pub code: XmfVpxDecoderErrorCode,
     pub detail: XmfVpxDecoderErrorDetail,
 }
-
-#[repr(C)]
-pub struct XmfVpxEncoder;
 
 #[repr(C)]
 #[derive(Debug, Clone, Copy)]

@@ -1,5 +1,5 @@
 use xmf_sys::{
-    XmfVpxDecoder, XmfVpxDecoder_Create, XmfVpxDecoder_Decode, XmfVpxDecoder_Destroy, XmfVpxDecoder_GetLastError,
+    vpx::XmfVpxDecoder, XmfVpxDecoder_Create, XmfVpxDecoder_Decode, XmfVpxDecoder_Destroy, XmfVpxDecoder_GetLastError,
     XmfVpxDecoder_GetNextFrame,
 };
 
