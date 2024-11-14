@@ -1,7 +1,14 @@
 #![allow(clippy::print_stdout)]
 #![allow(clippy::unwrap_used)]
 
-use std::{env, fs::File, io, thread, time::Duration};
+use std::{
+    env,
+    fs::File,
+    io,
+    sync::{Arc, Mutex},
+    thread,
+    time::Duration,
+};
 
 use debug::matroska_spec_name;
 use webm_iterable::{
@@ -27,36 +34,36 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     let mut cutter = webm_cutter::WebmCutter::new(&args.input_path, args.cut_start)?;
     let mut writer = webm_iterable::WebmWriter::new(File::create(&args.output_path)?);
 
-    let (rx, tx) = std::sync::mpsc::channel();
+    let (sender, receiver) = std::sync::mpsc::sync_channel(10);
+    let receiver = Arc::new(Mutex::new(receiver));
     cutter.on_element(|tag| {
-        rx.send(tag).unwrap();
+        sender.send(tag).unwrap();
     })?;
 
-    let mut writter = thread::spawn(move || {
-        while let Ok(tag) = tx.recv_timeout(Duration::from_secs(2)) {
-            if let MatroskaSpec::Segment(Master::Start) = tag {
-                if let Err(e) = writer.write_advanced(&tag, WriteOptions::is_unknown_sized_element()) {
+    thread::scope(|s| {
+        s.spawn(|| {
+            while let Ok(tag) = receiver.lock().unwrap().recv_timeout(Duration::from_secs(2)) {
+                if let MatroskaSpec::Segment(Master::Start) = tag {
+                    if let Err(e) = writer.write_advanced(&tag, WriteOptions::is_unknown_sized_element()) {
+                        let tag_name = matroska_spec_name(&tag);
+                        println!("error: failed to write tag: {}", tag_name);
+                        println!("error: {:?}", e);
+                    }
+                    continue;
+                }
+
+                if let Err(e) = writer.write(&tag) {
                     let tag_name = matroska_spec_name(&tag);
                     println!("error: failed to write tag: {}", tag_name);
-                    println!("error: {:?}", e);
+                    println!("error: {}", e);
+                    break;
                 }
-                continue;
             }
-
-            if let Err(e) = writer.write(&tag) {
-                let tag_name = matroska_spec_name(&tag);
-                println!("error: failed to write tag: {}", tag_name);
-                println!("error: {}", e);
-                break;
-            }
-        }
-        writer
-    })
-    .join()
-    .map_err(|_| io::Error::new(io::ErrorKind::Other, "thread join error"))?;
+        });
+    });
 
     println!("done,flushing");
-    writter.flush().unwrap();
+    writer.flush().unwrap();
     Ok(())
 }
 
