@@ -88,7 +88,8 @@ impl VpxPacket {
 
 impl Drop for VpxPacket {
     fn drop(&mut self) {
-        // Safety: Ensure that the pointer is valid and has not been freed before calling the drop function.
+        // Safety: XmfVpxPacket pointer is owned by the VpxPacket, the inner pointer of XmfVpxPacket is managed by vpx_encoder, however
+        // The `XmfVpxPacket_Destroy` will not touch the inner pointer managed by the encoder, so this functino is safe to call.
         unsafe {
             XmfVpxPacket_Destroy(self.ptr.cast_mut());
         }
