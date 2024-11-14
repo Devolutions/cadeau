@@ -47,7 +47,7 @@ pub fn is_key_frame(buffer: &[u8]) -> bool {
 }
 
 pub struct VpxPacket {
-    pub(crate) ptr: *const XmfVpxPacket,
+    pub(crate) ptr: *mut XmfVpxPacket,
 }
 
 impl VpxPacket {
@@ -57,7 +57,7 @@ impl VpxPacket {
     /// It should not be used after any call to a `VpxEncoder` method that modifies or releases the packet.
     pub unsafe fn kind(&self) -> XmfVpxPacketKind {
         // Safety: It's up to the caller to ensure the packet is valid.
-        unsafe { XmfVpxPacket_GetKind(self.ptr.cast_mut()) }
+        unsafe { XmfVpxPacket_GetKind(self.ptr) }
     }
 
     /// # Safety
@@ -91,20 +91,20 @@ impl Drop for VpxPacket {
         // Safety: XmfVpxPacket pointer is owned by the VpxPacket, the inner pointer of XmfVpxPacket is managed by vpx_encoder, however
         // The `XmfVpxPacket_Destroy` will not touch the inner pointer managed by the encoder, so this functino is safe to call.
         unsafe {
-            XmfVpxPacket_Destroy(self.ptr.cast_mut());
+            XmfVpxPacket_Destroy(self.ptr);
         }
     }
 }
 
 pub struct VpxFrame {
-    ptr: *const XmfVpxFrame,
+    ptr: *mut XmfVpxFrame,
 }
 
 impl Drop for VpxFrame {
     fn drop(&mut self) {
         // Safety: see Safety Note in VpxFrame::new, this is safe to call.
         unsafe {
-            XmfVpxFrame_Destroy(self.ptr.cast_mut());
+            XmfVpxFrame_Destroy(self.ptr);
         }
     }
 }
