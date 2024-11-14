@@ -30,7 +30,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     }
 
     let mut cutter = webm_cutter::WebmCutter::new(&args.input_path, args.cut_start)?;
-    let mut writter = webm_iterable::WebmWriter::new(File::create(&args.output_path)?);
+    let mut writer = webm_iterable::WebmWriter::new(File::create(&args.output_path)?);
 
     let (rx, tx) = std::sync::mpsc::channel();
     cutter.on_element(|tag| {
