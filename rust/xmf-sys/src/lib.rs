@@ -4,6 +4,7 @@
 #![cfg_attr(docsrs, feature(doc_auto_cfg))]
 
 mod macros;
+mod vpx;
 
 use std::ffi::{c_char, c_int, c_void};
 
@@ -21,8 +22,7 @@ pub const XMF_MUXER_FILE_OPEN_ERROR: c_int = -1001;
 pub const XMF_MUXER_PARSER_ERROR: c_int = -1002;
 pub const XMF_MUXER_MUXER_ERROR: c_int = -1003;
 
-pub mod vpx;
-use vpx::*;
+pub use vpx::*;
 
 #[doc(inline)]
 pub use raw::global::*;

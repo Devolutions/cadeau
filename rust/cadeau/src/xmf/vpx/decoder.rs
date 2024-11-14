@@ -1,11 +1,11 @@
 use xmf_sys::{
-    vpx::XmfVpxDecoder, XmfVpxDecoder_Create, XmfVpxDecoder_Decode, XmfVpxDecoder_Destroy, XmfVpxDecoder_GetLastError,
-    XmfVpxDecoder_GetNextFrame,
+    XmfVpxDecoder, XmfVpxDecoderConfig, XmfVpxDecoder_Create, XmfVpxDecoder_Decode, XmfVpxDecoder_Destroy,
+    XmfVpxDecoder_GetLastError, XmfVpxDecoder_GetNextFrame,
 };
 
 use super::{VpxCodec, VpxError, VpxImage};
 
-pub struct VpxDecoderConfig(xmf_sys::vpx::XmfVpxDecoderConfig);
+pub struct VpxDecoderConfig(XmfVpxDecoderConfig);
 
 pub struct VpxDecoderConfigBuilder {
     threads: Option<u32>, // Corresponds to 'unsigned int' in C
@@ -106,7 +106,7 @@ impl VpxDecoderConfigBuilder {
     }
 
     pub fn build(self) -> VpxDecoderConfig {
-        let config = xmf_sys::vpx::XmfVpxDecoderConfig {
+        let config = XmfVpxDecoderConfig {
             threads: self.threads.unwrap_or(0),
             w: self.w.unwrap_or(0),
             h: self.h.unwrap_or(0),

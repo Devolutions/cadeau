@@ -10,7 +10,7 @@ use webm_iterable::{
     matroska_spec::{Block, BlockLacing, Master, MatroskaSpec, SimpleBlock},
     WebmIterator,
 };
-use xmf_sys::vpx::VPX_EFLAG_FORCE_KF;
+use xmf_sys::VPX_EFLAG_FORCE_KF;
 
 use crate::block_group::BlockGroup;
 

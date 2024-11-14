@@ -1,12 +1,10 @@
 use super::{VpxCodec, VpxError, VpxImage, VpxPacket};
 
 use xmf_sys::{
-    vpx::{XmfVpxEncoder, XmfVpxEncoderError}, XmfVpxEncoder_Create, XmfVpxEncoder_Destroy, XmfVpxEncoder_EncodeFrame,
-    XmfVpxEncoder_Flush, XmfVpxEncoder_FreeEncodedFrame, XmfVpxEncoder_GetEncodedFrame, XmfVpxEncoder_GetLastError,
-    XmfVpxEncoder_GetPacket,
+    XmfVpxEncoder, XmfVpxEncoderConfig, XmfVpxEncoderError, XmfVpxEncoder_Create, XmfVpxEncoder_Destroy, XmfVpxEncoder_EncodeFrame, XmfVpxEncoder_Flush, XmfVpxEncoder_FreeEncodedFrame, XmfVpxEncoder_GetEncodedFrame, XmfVpxEncoder_GetLastError, XmfVpxEncoder_GetPacket
 };
 
-pub struct VpxEncoderConfig(xmf_sys::vpx::XmfVpxEncoderConfig);
+pub struct VpxEncoderConfig(XmfVpxEncoderConfig);
 
 pub struct VpxEncoderConfigBuilder {
     codec: Option<VpxCodec>,
@@ -199,7 +197,7 @@ impl VpxEncoderConfigBuilder {
     }
 
     pub fn build(self) -> VpxEncoderConfig {
-        let config = xmf_sys::vpx::XmfVpxEncoderConfig {
+        let config = XmfVpxEncoderConfig {
             codec: self.codec.unwrap_or(VpxCodec::VP8).into(),
             width: self.width.unwrap_or(0),
             height: self.height.unwrap_or(0),

@@ -1,11 +1,11 @@
 use core::fmt;
 
 use xmf_sys::{
-    vpx::{XmfVpxCodecType, XmfVpxFrame, XmfVpxImage, XmfVpxPacket, XmfVpxPacketKind},
-    XmfVpxFrame_Destroy, XmfVpxFrame_GetBuffer, XmfVpxFrame_GetDuration, XmfVpxFrame_GetFlags,
-    XmfVpxFrame_GetHeight, XmfVpxFrame_GetPartitionId, XmfVpxFrame_GetPts, XmfVpxFrame_GetSize,
-    XmfVpxFrame_GetSpatialLayerEncoded, XmfVpxFrame_GetWidth, XmfVpxImage_Destroy,
-    XmfVpxPacket_Destroy, XmfVpxPacket_GetFrame, XmfVpxPacket_GetKind, XmfVpxPacket_IsEmpty,
+    XmfVpxCodecType, XmfVpxDecoderError, XmfVpxEncoderError, XmfVpxFrame, XmfVpxFrame_Destroy, XmfVpxFrame_GetBuffer,
+    XmfVpxFrame_GetDuration, XmfVpxFrame_GetFlags, XmfVpxFrame_GetHeight, XmfVpxFrame_GetPartitionId,
+    XmfVpxFrame_GetPts, XmfVpxFrame_GetSize, XmfVpxFrame_GetSpatialLayerEncoded, XmfVpxFrame_GetWidth, XmfVpxImage,
+    XmfVpxImage_Destroy, XmfVpxPacket, XmfVpxPacketKind, XmfVpxPacket_Destroy, XmfVpxPacket_GetFrame,
+    XmfVpxPacket_GetKind, XmfVpxPacket_IsEmpty,
 };
 
 pub mod decoder;
@@ -172,18 +172,18 @@ impl VpxFrame {
 pub enum VpxError {
     NullPointer,
     Other(&'static str),
-    DecoderError(xmf_sys::vpx::XmfVpxDecoderError),
-    EncoderError(xmf_sys::vpx::XmfVpxEncoderError),
+    DecoderError(XmfVpxDecoderError),
+    EncoderError(XmfVpxEncoderError),
 }
 
-impl From<xmf_sys::vpx::XmfVpxDecoderError> for VpxError {
-    fn from(error: xmf_sys::vpx::XmfVpxDecoderError) -> Self {
+impl From<XmfVpxDecoderError> for VpxError {
+    fn from(error: XmfVpxDecoderError) -> Self {
         VpxError::DecoderError(error)
     }
 }
 
-impl From<xmf_sys::vpx::XmfVpxEncoderError> for VpxError {
-    fn from(error: xmf_sys::vpx::XmfVpxEncoderError) -> Self {
+impl From<XmfVpxEncoderError> for VpxError {
+    fn from(error: XmfVpxEncoderError) -> Self {
         VpxError::EncoderError(error)
     }
 }
