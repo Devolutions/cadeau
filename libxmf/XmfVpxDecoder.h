@@ -15,9 +15,9 @@ typedef enum
 
 typedef struct xmf_vpx_decoder_config
 {
-    unsigned int threads; /**< Maximum number of threads to use, default 1 */
-    unsigned int w;       /**< Width (set to 0 if unknown) */
-    unsigned int h;       /**< Height (set to 0 if unknown) */
+    uint32_t threads; /**< Maximum number of threads to use, default 1 */
+    uint32_t w;       /**< Width (set to 0 if unknown) */
+    uint32_t h;       /**< Height (set to 0 if unknown) */
     XmfVpxCodecType codec;
 } XmfVpxDecoderConfig;
 
