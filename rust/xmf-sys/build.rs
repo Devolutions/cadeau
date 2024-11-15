@@ -1,6 +1,5 @@
 use std::env;
 
-#[derive(Debug)]
 enum Strategy {
     StaticLinking,
     DynamicLinking,

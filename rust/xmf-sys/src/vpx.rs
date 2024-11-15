@@ -150,6 +150,7 @@ impl std::error::Error for XmfVpxDecoderError {
         "XMF VPX decoder error"
     }
 }
+
 impl fmt::Display for XmfVpxEncoderError {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         if matches!(self.code, XmfVpxEncoderErrorCode::VpxError) {
