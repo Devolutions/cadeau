@@ -2,6 +2,7 @@
 #define XMF_VPXDECODER_H
 
 #include <stdint.h>
+#include "vpx/vpx_codec.h"
 #include "xmf/xmf.h"
 #include "XmfVpxImage.h"
 
@@ -31,6 +32,11 @@ typedef enum xmf_vpx_decoder_error_code
     VPX_ERROR = 5,
 } XmfVpxDecoderErrorCode;
 
+/**
+ * @brief Error information for the decoder.
+ * 
+ * When the error code is of enum XmfVpxDecoderErrorCode::VPX_ERROR, the union detail.vpx_error.error_code is set to the VPX error code.
+ */
 typedef struct xmf_vpx_decoder_error
 {
     XmfVpxDecoderErrorCode code;
@@ -38,7 +44,7 @@ typedef struct xmf_vpx_decoder_error
     {
         struct
         {
-            int error_code;
+            vpx_codec_err_t error_code;
         } vpx_error;
     } detail;
 } XmfVpxDecoderError;

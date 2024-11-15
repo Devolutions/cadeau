@@ -12,7 +12,7 @@ use webm_iterable::{
 };
 use xmf_sys::VPX_EFLAG_FORCE_KF;
 
-use crate::block_group::BlockGroup;
+use crate::{block_group::BlockGroup, debug::matroska_spec_name};
 
 pub struct WebmCutter {
     encoder: VpxEncoder,
@@ -94,10 +94,15 @@ impl WebmCutter {
         })
     }
 
-    pub fn on_element(&mut self, write: impl Fn(MatroskaSpec)) -> Result<(), Box<dyn std::error::Error>> {
+    pub fn on_element(
+        &mut self,
+        mut write: impl FnMut(MatroskaSpec) -> Result<(), Box<dyn std::error::Error>>,
+    ) -> Result<(), Box<dyn std::error::Error>> {
         while !self.headers.is_empty() {
             let tag = self.headers.remove(0);
-            write(tag);
+            let tag_name = matroska_spec_name(&tag);
+            println!("writing header: {}", tag_name);
+            write(tag)?;
         }
         println!("writing headers done");
 
@@ -170,10 +175,10 @@ impl WebmCutter {
 
             if !cluster_start_written {
                 let cluster = MatroskaSpec::Cluster(Master::Start);
-                write(cluster);
+                write(cluster)?;
                 let timestamp = MatroskaSpec::Timestamp(0);
                 time_offset = current_block_group.absolute_timestamp()?;
-                write(timestamp);
+                write(timestamp)?;
                 cluster_start_written = true;
             }
 
@@ -186,17 +191,17 @@ impl WebmCutter {
                 false,
                 true,
             );
-            write(block.into());
+            write(block.into())?;
         }
 
         let cluster_end = MatroskaSpec::Cluster(Master::End);
-        write(cluster_end);
+        write(cluster_end)?;
         while let Some(Ok(tag)) = self.next_tag() {
             if let MatroskaSpec::Timestamp(time) = tag {
                 let tag = MatroskaSpec::Timestamp(time - time_offset);
-                write(tag);
+                write(tag)?;
             } else {
-                write(tag);
+                write(tag)?;
             }
         }
 

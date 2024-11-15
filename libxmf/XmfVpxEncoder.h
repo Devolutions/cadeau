@@ -2,6 +2,7 @@
 #define XMF_VPXENCODER_H
 
 #include <stdint.h>
+#include "vpx/vpx_codec.h"
 #include "XmfVpxImage.h"
 #include "xmf/xmf.h"
 #include "XmfVpxPacket.h"
@@ -40,7 +41,7 @@ typedef struct
     {
         struct
         {
-            int error_code;
+            vpx_codec_err_t error_code;
         } vpx_error;
     } detail;
 } XmfVpxEncoderError;

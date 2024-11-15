@@ -16,8 +16,6 @@ pub type XmfRecorder = c_void;
 
 pub type XmfWebMMuxer = c_void;
 
-
-
 pub const XMF_MUXER_FILE_OPEN_ERROR: c_int = -1001;
 pub const XMF_MUXER_PARSER_ERROR: c_int = -1002;
 pub const XMF_MUXER_MUXER_ERROR: c_int = -1003;
