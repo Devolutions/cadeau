@@ -179,7 +179,4 @@ impl Debug for XmfVpxEncoderError {
 }
 
 impl std::error::Error for XmfVpxEncoderError {
-    fn description(&self) -> &str {
-        "XMF VPX encoder error"
-    }
 }
