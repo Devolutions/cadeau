@@ -8,7 +8,7 @@ use super::{VpxCodec, VpxError, VpxImage};
 pub struct VpxDecoderConfig(XmfVpxDecoderConfig);
 
 pub struct VpxDecoderConfigBuilder {
-    threads: Option<u32>, // Corresponds to 'unsigned int' in C
+    threads: Option<u32>,
     w: Option<u32>,       // Width (set to 0 if unknown)
     h: Option<u32>,       // Height (set to 0 if unknown)
     codec: Option<VpxCodec>,
