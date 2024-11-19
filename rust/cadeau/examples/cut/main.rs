@@ -62,7 +62,7 @@ struct Args<'a> {
     cut_start: u32,
 }
 
-const HELP: &str = "Usage: cut -i <input> -o <output> --lib-xmf <libxmf.so> --cut-start <start_time>";
+const HELP: &str = "Usage: cut -i <input> -o <output> --lib-xmf <libxmf.so> -c <start_time>";
 
 fn parse_arg<'a>(mut value: &[&'a str]) -> Result<Args<'a>, &'static str> {
     let mut arg = Args::default();
