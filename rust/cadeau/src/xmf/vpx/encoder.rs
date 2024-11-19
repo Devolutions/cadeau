@@ -205,7 +205,8 @@ impl VpxEncoderBuilder {
             threads: self.threads.unwrap_or(0),
         };
 
-        // SAFETY: The way we build the config ensures that it is always valid.
+        // SAFETY: It is always memory safe to call this function.
+        // If we passed in an invalid configuration, the function will simply return a null pointer.
         let ptr = unsafe { XmfVpxEncoder_Create(config) };
 
         if ptr.is_null() {
