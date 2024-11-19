@@ -24,7 +24,7 @@ pub struct VpxImage<'decoder> {
 }
 
 impl VpxImage<'_> {
-    /// # SAFETY
+    /// # Safety
     ///
     /// The pointer must be valid and must not be null.
     unsafe fn from_raw(ptr: *mut XmfVpxImage) -> Self {
@@ -37,7 +37,7 @@ impl VpxImage<'_> {
 
 impl Drop for VpxImage<'_> {
     fn drop(&mut self) {
-        // SAFETY: it is safe to call, the pointer is owned by the VpxImage itself.
+        // Safety: it is safe to call, the pointer is owned by the VpxImage itself.
         unsafe {
             XmfVpxImage_Destroy(self.ptr);
         }
@@ -92,7 +92,7 @@ pub struct VpxPacket<'a> {
 }
 
 impl VpxPacket<'_> {
-    /// # SAFETY
+    /// # Safety
     ///
     /// The pointer must be valid and must not be null.
     pub(crate) unsafe fn from_raw(ptr: *mut XmfVpxPacket) -> Self {
@@ -139,7 +139,7 @@ pub struct VpxFrame {
 
 impl Drop for VpxFrame {
     fn drop(&mut self) {
-        // SAFETY: see SAFETY Note in VpxFrame::new, this is safe to call.
+        // SAFETY: see SAFETY Note in VpxFrame::from_raw, this is safe to call.
         unsafe {
             XmfVpxFrame_Destroy(self.ptr);
         }
@@ -147,49 +147,52 @@ impl Drop for VpxFrame {
 }
 
 impl VpxFrame {
-    /// # SAFETY
+    /// # Safety
+    /// 
     /// The pointer must be valid and must not be null.
+    /// Once it's constructed, the struct VpxFrame owns the pointer. As it is a always a deep copy of the frame data from a packet.
+    /// unless the frame is dropped, the pointer is always valid.
     unsafe fn from_raw(ptr: *mut XmfVpxFrame) -> Self {
         VpxFrame { ptr }
     }
 
     pub fn size(&self) -> usize {
-        // SAFETY: The pointer is valid and the function is safe to call. See SAFETY Note in VpxFrame::new.
+        // SAFETY: The pointer is valid and the function is safe to call. See SAFETY Note in VpxFrame::from_raw.
         unsafe { XmfVpxFrame_GetSize(self.ptr) }
     }
 
     pub fn pts(&self) -> i64 {
-        // SAFETY: The pointer is valid and the function is safe to call. See SAFETY Note in VpxFrame::new.
+        // SAFETY: The pointer is valid and the function is safe to call. See SAFETY Note in VpxFrame::from_raw.
         unsafe { XmfVpxFrame_GetPts(self.ptr) }
     }
 
     pub fn duration(&self) -> u64 {
-        // SAFETY: The pointer is valid and the function is safe to call. See SAFETY Note in VpxFrame::new.
+        // SAFETY: The pointer is valid and the function is safe to call. See SAFETY Note in VpxFrame::from_raw.
         unsafe { XmfVpxFrame_GetDuration(self.ptr) }
     }
 
     pub fn flags(&self) -> u32 {
-        // SAFETY: The pointer is valid and the function is safe to call. See SAFETY Note in VpxFrame::new.
+        // SAFETY: The pointer is valid and the function is safe to call. See SAFETY Note in VpxFrame::from_raw.
         unsafe { XmfVpxFrame_GetFlags(self.ptr) }
     }
 
     pub fn partition_id(&self) -> i32 {
-        // SAFETY: The pointer is valid and the function is safe to call. See SAFETY Note in VpxFrame::new.
+        // SAFETY: The pointer is valid and the function is safe to call. See SAFETY Note in VpxFrame::from_raw.
         unsafe { XmfVpxFrame_GetPartitionId(self.ptr) }
     }
 
     pub fn width(&self, layer: i32) -> u32 {
-        // SAFETY: The pointer is valid and the function is safe to call. See SAFETY Note in VpxFrame::new.
+        // SAFETY: The pointer is valid and the function is safe to call. See SAFETY Note in VpxFrame::from_raw.
         unsafe { XmfVpxFrame_GetWidth(self.ptr, layer) }
     }
 
     pub fn height(&self, layer: i32) -> u32 {
-        // SAFETY: The pointer is valid and the function is safe to call. See SAFETY Note in VpxFrame::new.
+        // SAFETY: The pointer is valid and the function is safe to call. See SAFETY Note in VpxFrame::from_raw.
         unsafe { XmfVpxFrame_GetHeight(self.ptr, layer) }
     }
 
     pub fn spatial_layer_encoded(&self, layer: i32) -> u8 {
-        // SAFETY: The pointer is valid and the function is safe to call. See SAFETY Note in VpxFrame::new.
+        // SAFETY: The pointer is valid and the function is safe to call. See SAFETY Note in VpxFrame::from_raw.
         unsafe { XmfVpxFrame_GetSpatialLayerEncoded(self.ptr, layer) }
     }
 
