@@ -139,10 +139,10 @@ impl Recorder {
     ) -> Result<(), RecorderError> {
         // INVARIANT: surface_step * height <= buffer.len()
         // INVARIANT: width * height * 4 <= buffer.len()
-        if surface_step * height > buffer.len() {
+        if !(surface_step * height <= buffer.len()) {
             return Err(RecorderError::BadArgument { name: "buffer" });
         }
-        if width * height * 4 > buffer.len() {
+        if !(width * height * 4 <= buffer.len()) {
             return Err(RecorderError::BadArgument { name: "buffer" });
         }
 
