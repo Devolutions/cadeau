@@ -14,9 +14,9 @@ extern "C"
 
     XmfVpxImage *XmfVpxImage_Create(vpx_image_t *data);
     void XmfVpxImage_SetData(XmfVpxImage *image, vpx_image_t *data);
+    vpx_image_t *XmfVpxImage_GetData(const XmfVpxImage *image);
 
     XMF_EXPORT void XmfVpxImage_Destroy(XmfVpxImage *image);
-    XMF_EXPORT vpx_image_t *XmfVpxImage_GetData(const XmfVpxImage *image);
 
 #ifdef __cplusplus
 }
