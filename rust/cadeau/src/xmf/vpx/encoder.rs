@@ -73,9 +73,6 @@ impl VpxEncoder {
         }
     }
 
-    /// # SAFETY
-    ///
-    /// The caller must make sure to use the packets before calling any other function on the encoder.
     pub fn packet_iterator(&mut self) -> PacketIterator<'_> {
         PacketIterator::new(self)
     }
