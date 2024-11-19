@@ -6,9 +6,7 @@ use xmf_sys::{
     XmfVpxEncoder_GetPacket,
 };
 
-pub struct VpxEncoderConfig(XmfVpxEncoderConfig);
-
-pub struct VpxEncoderConfigBuilder {
+pub struct VpxEncoderBuilder {
     codec: Option<VpxCodec>,
     width: Option<u32>,
     height: Option<u32>,
@@ -23,10 +21,8 @@ pub struct VpxEncoder {
 }
 
 impl VpxEncoder {
-    pub fn new(config: VpxEncoderConfig) -> Self {
-        // SAFETY: The way we build the config ensures that it is always valid.
-        let ptr = unsafe { XmfVpxEncoder_Create(config.0) };
-        Self { ptr }
+    pub fn builder() -> VpxEncoderBuilder {
+        VpxEncoderBuilder::new()
     }
 
     pub fn encode_frame(
@@ -137,13 +133,13 @@ impl Drop for VpxEncoder {
     }
 }
 
-impl Default for VpxEncoderConfigBuilder {
+impl Default for VpxEncoderBuilder {
     fn default() -> Self {
         Self::new()
     }
 }
 
-impl VpxEncoderConfigBuilder {
+impl VpxEncoderBuilder {
     pub fn new() -> Self {
         Self {
             codec: None,
@@ -198,7 +194,7 @@ impl VpxEncoderConfigBuilder {
         self
     }
 
-    pub fn build(self) -> VpxEncoderConfig {
+    pub fn build(self) -> Result<VpxEncoder, VpxError> {
         let config = XmfVpxEncoderConfig {
             codec: self.codec.unwrap_or(VpxCodec::VP8).into(),
             width: self.width.unwrap_or(0),
@@ -208,12 +204,14 @@ impl VpxEncoderConfigBuilder {
             timebase_den: self.timebase_den.unwrap_or(0),
             threads: self.threads.unwrap_or(0),
         };
-        VpxEncoderConfig(config)
-    }
-}
 
-impl VpxEncoderConfig {
-    pub fn builder() -> VpxEncoderConfigBuilder {
-        VpxEncoderConfigBuilder::new()
+        // SAFETY: The way we build the config ensures that it is always valid.
+        let ptr = unsafe { XmfVpxEncoder_Create(config) };
+
+        if ptr.is_null() {
+            return Err(VpxError::NullPointer);
+        }
+
+        Ok(VpxEncoder { ptr })
     }
 }

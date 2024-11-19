@@ -1,10 +1,6 @@
 use std::{io::Seek, path::Path};
 
-use cadeau::xmf::vpx::{
-    decoder::VpxDecoder,
-    encoder::{VpxEncoder, VpxEncoderConfig},
-    is_key_frame, VpxCodec,
-};
+use cadeau::xmf::vpx::{decoder::VpxDecoder, encoder::VpxEncoder, is_key_frame, VpxCodec};
 use ebml_iterable::tools::Vint;
 use webm_iterable::{
     matroska_spec::{Block, BlockLacing, Master, MatroskaSpec, SimpleBlock},
@@ -64,13 +60,14 @@ impl WebmCutter {
         let width = u32::try_from(width)?;
         let height = u32::try_from(height)?;
 
-        let dcoder_builder = VpxDecoder::builder()
+        let decoder = VpxDecoder::builder()
             .codec(codec)
             .width(width)
             .height(height)
-            .threads(3);
+            .threads(3)
+            .build()?;
 
-        let encoder_config = VpxEncoderConfig::builder()
+        let encoder = VpxEncoder::builder()
             .codec(codec)
             .threads(3)
             .width(width)
@@ -78,10 +75,7 @@ impl WebmCutter {
             .timebase_num(1)
             .timebase_den(1000) // 1ms
             .bitrate(256 * 1024) // Set to 256Kbps
-            .build();
-
-        let decoder = dcoder_builder.build()?;
-        let encoder = VpxEncoder::new(encoder_config);
+            .build()?;
 
         Ok(Self {
             encoder,
