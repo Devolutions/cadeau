@@ -33,9 +33,7 @@ impl VpxEncoder {
         // Safety: Always safe to call, even if the pointer is null.
         let ret = unsafe { XmfVpxEncoder_EncodeFrame(self.ptr, image.ptr, pts, duration, flags) };
         if ret != 0 {
-            // Safety: Always safe to call, even if the pointer is null.
-            let error = unsafe { XmfVpxEncoder_GetLastError(self.ptr) };
-            return Err(error.into());
+            return Err(self.last_error());
         }
 
         Ok(())
@@ -65,9 +63,7 @@ impl VpxEncoder {
 
             Ok(Some(vec))
         } else {
-            // Safety: Always safe to call, even if the pointer is null.
-            let error = unsafe { XmfVpxEncoder_GetLastError(self.ptr) };
-            Err(error.into())
+            Err(self.last_error())
         }
     }
 
@@ -78,16 +74,20 @@ impl VpxEncoder {
         PacketIterator::new(self)
     }
 
-    pub fn flush(&mut self) -> Result<(), XmfVpxEncoderError> {
+    pub fn flush(&mut self) -> Result<(), VpxError> {
         // Safety: This method never panics, even if the pointer is null.
         let ret = unsafe { XmfVpxEncoder_Flush(self.ptr) };
         if ret == 0 {
             Ok(())
         } else {
-            // Safety: Always safe to call, even if the pointer is null.
-            let error = unsafe { XmfVpxEncoder_GetLastError(self.ptr) };
-            Err(error)
+            Err(self.last_error())
         }
+    }
+
+    fn last_error(&self) -> VpxError {
+        // Safety: Always safe to call, even if the pointer is null or no error.
+        let error = unsafe { XmfVpxEncoder_GetLastError(self.ptr) };
+        error.into()
     }
 }
 

@@ -37,9 +37,7 @@ impl VpxDecoder {
         if ret == 0 {
             Ok(())
         } else {
-            // SAFETY: Always safe to call, even if the pointer is null.
-            let error = unsafe { XmfVpxDecoder_GetLastError(self.ptr) };
-            Err(error.into())
+            Err(self.last_error())
         }
     }
 
@@ -49,10 +47,15 @@ impl VpxDecoder {
         if !image.is_null() {
             Ok(VpxImage { ptr: image })
         } else {
-            // SAFETY: Always safe to call, even if the pointer is null.
-            let error = unsafe { XmfVpxDecoder_GetLastError(self.ptr) };
-            Err(error.into())
+            Err(self.last_error())
         }
+    }
+
+
+    fn last_error(&self) -> VpxError {
+        // SAFETY: Always safe to call, even if no error or no pointer.
+        let error = unsafe { XmfVpxDecoder_GetLastError(self.ptr) };
+        error.into()
     }
 }
 
