@@ -9,8 +9,8 @@ pub struct VpxDecoderConfig(XmfVpxDecoderConfig);
 
 pub struct VpxDecoderConfigBuilder {
     threads: Option<u32>,
-    w: Option<u32>,       // Width (set to 0 if unknown)
-    h: Option<u32>,       // Height (set to 0 if unknown)
+    w: Option<u32>, // Width (set to 0 if unknown)
+    h: Option<u32>, // Height (set to 0 if unknown)
     codec: Option<VpxCodec>,
 }
 
@@ -41,16 +41,17 @@ impl VpxDecoder {
         }
     }
 
-    pub fn next_frame(&mut self) -> Result<VpxImage, VpxError> {
+    pub fn next_frame(&mut self) -> Result<VpxImage<'_>, VpxError> {
         // SAFETY: FFI call with no outstanding precondition.
         let image = unsafe { XmfVpxDecoder_GetNextFrame(self.ptr) };
         if !image.is_null() {
-            Ok(VpxImage { ptr: image })
+            // SAFETY: Safe to call, the pointer is garanteed to be valid until the next call to the decoder.
+            // and since the VpxImage have a lifetime tied to the VpxDecoder, it is safe to create and use it.
+            Ok(unsafe { VpxImage::from_raw(image) })
         } else {
             Err(self.last_error())
         }
     }
-
 
     fn last_error(&self) -> VpxError {
         // SAFETY: Always safe to call, even if no error or no pointer.

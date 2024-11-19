@@ -145,13 +145,15 @@ impl WebmCutter {
 
             // we assume only one frame per block group for now and there's no complicated lacing and frame dependencies
             self.decoder.decode(current_block_group.get_frame().as_ref())?;
-            let image = self.decoder.next_frame()?;
-            self.encoder.encode_frame(
-                &image,
-                pts.try_into().unwrap(),
-                usize::try_from(duration)?,
-                VPX_EFLAG_FORCE_KF,
-            )?; // we make every frame a keyframe inside this cluster
+            {
+                let image = self.decoder.next_frame()?;
+                self.encoder.encode_frame(
+                    &image,
+                    pts.try_into().unwrap(),
+                    usize::try_from(duration)?,
+                    VPX_EFLAG_FORCE_KF,
+                )?; // we make every frame a keyframe inside this cluster
+            }
             let frame = self.encoder.next_frame()?.ok_or("no frame found")?;
             let is_key_frame = is_key_frame(&frame);
 

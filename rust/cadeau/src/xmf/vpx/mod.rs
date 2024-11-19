@@ -1,5 +1,6 @@
 use core::fmt;
 
+use decoder::VpxDecoder;
 use xmf_sys::{
     XmfVpxCodecType, XmfVpxDecoderError, XmfVpxEncoderError, XmfVpxFrame, XmfVpxFrame_Destroy, XmfVpxFrame_GetBuffer,
     XmfVpxFrame_GetDuration, XmfVpxFrame_GetFlags, XmfVpxFrame_GetHeight, XmfVpxFrame_GetPartitionId,
@@ -16,12 +17,24 @@ pub enum VpxCodec {
     VP8,
     VP9,
 }
-
-pub struct VpxImage {
-    pub(crate) ptr: *mut XmfVpxImage,
+pub struct VpxImage<'decoder> {
+    ptr: *mut XmfVpxImage,
+    _marker: std::marker::PhantomData<&'decoder mut VpxDecoder>,
 }
 
-impl Drop for VpxImage {
+impl VpxImage<'_> {
+    /// # SAFETY
+    ///
+    /// The pointer must be valid and must not be null.
+    unsafe fn from_raw(ptr: *mut XmfVpxImage) -> Self {
+        VpxImage {
+            ptr,
+            _marker: std::marker::PhantomData,
+        }
+    }
+}
+
+impl Drop for VpxImage<'_> {
     fn drop(&mut self) {
         // SAFETY: it is safe to call, the pointer is owned by the VpxImage itself.
         unsafe {
@@ -98,7 +111,8 @@ impl VpxPacket<'_> {
         if frame_ptr.is_null() {
             None
         } else {
-            Some(VpxFrame { ptr: frame_ptr })
+            // SAFETY: The frame pointer is not null and is valid, since the packet is valid.
+            Some(unsafe { VpxFrame::from_raw(frame_ptr) })
         }
     }
 
@@ -131,6 +145,12 @@ impl Drop for VpxFrame {
 }
 
 impl VpxFrame {
+    /// # SAFETY
+    /// The pointer must be valid and must not be null.
+    unsafe fn from_raw(ptr: *mut XmfVpxFrame) -> Self {
+        VpxFrame { ptr }
+    }
+
     pub fn size(&self) -> usize {
         // SAFETY: The pointer is valid and the function is safe to call. See SAFETY Note in VpxFrame::new.
         unsafe { XmfVpxFrame_GetSize(self.ptr) }

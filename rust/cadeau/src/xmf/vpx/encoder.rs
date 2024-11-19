@@ -1,9 +1,9 @@
 use super::{VpxCodec, VpxError, VpxImage, VpxPacket};
 
 use xmf_sys::{
-    XmfVpxEncoder, XmfVpxEncoderConfig, XmfVpxEncoderError, XmfVpxEncoder_Create, XmfVpxEncoder_Destroy,
-    XmfVpxEncoder_EncodeFrame, XmfVpxEncoder_Flush, XmfVpxEncoder_FreeEncodedFrame, XmfVpxEncoder_GetEncodedFrame,
-    XmfVpxEncoder_GetLastError, XmfVpxEncoder_GetPacket,
+    XmfVpxEncoder, XmfVpxEncoderConfig, XmfVpxEncoder_Create, XmfVpxEncoder_Destroy, XmfVpxEncoder_EncodeFrame,
+    XmfVpxEncoder_Flush, XmfVpxEncoder_FreeEncodedFrame, XmfVpxEncoder_GetEncodedFrame, XmfVpxEncoder_GetLastError,
+    XmfVpxEncoder_GetPacket,
 };
 
 pub struct VpxEncoderConfig(XmfVpxEncoderConfig);
@@ -29,7 +29,13 @@ impl VpxEncoder {
         Self { ptr }
     }
 
-    pub fn encode_frame(&mut self, image: &VpxImage, pts: i64, duration: usize, flags: u32) -> Result<(), VpxError> {
+    pub fn encode_frame(
+        &mut self,
+        image: &VpxImage<'_>,
+        pts: i64,
+        duration: usize,
+        flags: u32,
+    ) -> Result<(), VpxError> {
         // SAFETY: Always safe to call, even if the pointer is null.
         let ret = unsafe { XmfVpxEncoder_EncodeFrame(self.ptr, image.ptr, pts, duration, flags) };
         if ret != 0 {
