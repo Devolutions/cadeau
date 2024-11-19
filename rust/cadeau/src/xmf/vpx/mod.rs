@@ -37,7 +37,7 @@ impl VpxImage<'_> {
 
 impl Drop for VpxImage<'_> {
     fn drop(&mut self) {
-        // Safety: it is safe to call, the pointer is owned by the VpxImage itself.
+        // SAFETY: XmfVpxImage_Destroy requires no preconditions, it is safe to call. Even if the pointer is null.
         unsafe {
             XmfVpxImage_Destroy(self.ptr);
         }
@@ -131,7 +131,10 @@ impl VpxPacket<'_> {
 
 impl Drop for VpxPacket<'_> {
     fn drop(&mut self) {
-        // SAFETY: See the SAFETY Note in VpxPacket
+        // SAFETY: XmfVpxPacket_Destroy safe to call even if the pointer is null.
+        // 
+        // note: The pointer in side `XmfVpxPacket` is owned by the encoder and will not be freed by this funciton
+        // this function will only free the pointer reference to the packet.
         unsafe {
             XmfVpxPacket_Destroy(self.ptr);
         }
@@ -144,7 +147,7 @@ pub struct VpxFrame {
 
 impl Drop for VpxFrame {
     fn drop(&mut self) {
-        // SAFETY: see SAFETY in VpxFrame::from_raw, this is safe to call.
+        // SAFETY: self.ptr is always owned by the VpxFrame, and hence it is safe to call XmfVpxFrame_Destroy.
         unsafe {
             XmfVpxFrame_Destroy(self.ptr);
         }
