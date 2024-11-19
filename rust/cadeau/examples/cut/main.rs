@@ -26,7 +26,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
 
     let path = Path::new(args.input_path);
     let mut cutter = webm_cutter::WebmCutter::new(path, args.cut_start)?;
-    let mut writer = webm_iterable::WebmWriter::new(File::create(&args.output_path)?);
+    let mut writer = webm_iterable::WebmWriter::new(File::create(args.output_path)?);
     let writer_mut_ref = &mut writer;
     cutter.on_element(move |tag| {
         if let MatroskaSpec::Segment(Master::Start) = tag {

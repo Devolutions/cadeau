@@ -1,5 +1,5 @@
 use core::fmt;
-use std::ffi::{c_int, c_uint, c_void};
+use std::ffi::{c_uint, c_void};
 use std::fmt::Debug;
 
 pub const VPX_EFLAG_FORCE_KF: u32 = 0x00000001;
@@ -178,5 +178,4 @@ impl Debug for XmfVpxEncoderError {
     }
 }
 
-impl std::error::Error for XmfVpxEncoderError {
-}
+impl std::error::Error for XmfVpxEncoderError {}

@@ -5,9 +5,7 @@ use xmf_sys::{
 
 use super::{VpxCodec, VpxError, VpxImage};
 
-pub struct VpxDecoderConfig(XmfVpxDecoderConfig);
-
-pub struct VpxDecoderConfigBuilder {
+pub struct VpxDecoderBuilder {
     threads: Option<u32>,
     w: Option<u32>, // Width (set to 0 if unknown)
     h: Option<u32>, // Height (set to 0 if unknown)
@@ -19,10 +17,8 @@ pub struct VpxDecoder {
 }
 
 impl VpxDecoder {
-    pub fn new(config: VpxDecoderConfig) -> Self {
-        // SAFETY: Safe to call, as the way the config is built ensures that the fields are valid.
-        let ptr = unsafe { XmfVpxDecoder_Create(config.0) };
-        Self { ptr }
+    pub fn builder() -> VpxDecoderBuilder {
+        VpxDecoderBuilder::new()
     }
 
     pub fn decode(&mut self, data: &[u8]) -> Result<(), VpxError> {
@@ -69,13 +65,13 @@ impl Drop for VpxDecoder {
     }
 }
 
-impl Default for VpxDecoderConfigBuilder {
+impl Default for VpxDecoderBuilder {
     fn default() -> Self {
         Self::new()
     }
 }
 
-impl VpxDecoderConfigBuilder {
+impl VpxDecoderBuilder {
     pub fn new() -> Self {
         Self {
             threads: None,
@@ -109,19 +105,21 @@ impl VpxDecoderConfigBuilder {
         self
     }
 
-    pub fn build(self) -> VpxDecoderConfig {
+    pub fn build(self) -> Result<VpxDecoder, VpxError> {
         let config = XmfVpxDecoderConfig {
             threads: self.threads.unwrap_or(0),
             w: self.w.unwrap_or(0),
             h: self.h.unwrap_or(0),
             codec: self.codec.unwrap_or(VpxCodec::VP8).into(),
         };
-        VpxDecoderConfig(config)
-    }
-}
 
-impl VpxDecoderConfig {
-    pub fn builder() -> VpxDecoderConfigBuilder {
-        VpxDecoderConfigBuilder::new()
+        // SAFETY: FFI call with no outstanding precondition.
+        let ptr = unsafe { XmfVpxDecoder_Create(config) };
+
+        if ptr.is_null() {
+            return Err(VpxError::NullPointer);
+        }
+
+        Ok(VpxDecoder { ptr })
     }
 }

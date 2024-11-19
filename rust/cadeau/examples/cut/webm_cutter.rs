@@ -1,7 +1,7 @@
 use std::{io::Seek, path::Path};
 
 use cadeau::xmf::vpx::{
-    decoder::{VpxDecoder, VpxDecoderConfig},
+    decoder::VpxDecoder,
     encoder::{VpxEncoder, VpxEncoderConfig},
     is_key_frame, VpxCodec,
 };
@@ -26,7 +26,7 @@ pub struct WebmCutter {
 // Cutter for webm videos with only video tracks and no cues.
 impl WebmCutter {
     pub fn new(input: &Path, cut_time: u32) -> Result<Self, Box<dyn std::error::Error>> {
-        let file = std::fs::File::open(&input)?;
+        let file = std::fs::File::open(input)?;
         let mut webm_iterator = WebmIterator::new(file, &[MatroskaSpec::BlockGroup(Master::Start)]);
         let mut headers = Vec::new();
         let mut codec = VpxCodec::VP8;
@@ -64,12 +64,11 @@ impl WebmCutter {
         let width = u32::try_from(width)?;
         let height = u32::try_from(height)?;
 
-        let decoder_config = VpxDecoderConfig::builder()
+        let dcoder_builder = VpxDecoder::builder()
             .codec(codec)
             .width(width)
             .height(height)
-            .threads(3)
-            .build();
+            .threads(3);
 
         let encoder_config = VpxEncoderConfig::builder()
             .codec(codec)
@@ -81,7 +80,7 @@ impl WebmCutter {
             .bitrate(256 * 1024) // Set to 256Kbps
             .build();
 
-        let decoder = VpxDecoder::new(decoder_config);
+        let decoder = dcoder_builder.build()?;
         let encoder = VpxEncoder::new(encoder_config);
 
         Ok(Self {
