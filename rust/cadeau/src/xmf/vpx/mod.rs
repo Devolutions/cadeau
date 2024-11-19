@@ -23,7 +23,7 @@ pub struct VpxImage {
 
 impl Drop for VpxImage {
     fn drop(&mut self) {
-        // Safety: it is safe to call, the pointer is owned by the VpxImage itself.
+        // SAFETY: it is safe to call, the pointer is owned by the VpxImage itself.
         unsafe {
             XmfVpxImage_Destroy(self.ptr);
         }
@@ -46,7 +46,7 @@ pub fn is_key_frame(buffer: &[u8]) -> bool {
     buffer[0] & 0x1 == 0
 }
 
-/// Safety Note: The packet is only valid before the next call to any function on the encoder.
+/// SAFETY Note: The packet is only valid before the next call to any function on the encoder.
 /// The Packet iterator holds a mutable reference to the encoder,
 /// While the iterator is alive, the encoder with mutable reference is not allowed to be used.
 /// Hence all the functions on the packet are safe to call.
@@ -77,7 +77,7 @@ pub struct VpxPacket<'a> {
 }
 
 impl VpxPacket<'_> {
-    /// # Safety
+    /// # SAFETY
     ///
     /// The pointer must be valid and must not be null.
     pub(crate) unsafe fn from_raw(ptr: *mut XmfVpxPacket) -> Self {
@@ -88,12 +88,12 @@ impl VpxPacket<'_> {
     }
 
     pub fn kind(&self) -> XmfVpxPacketKind {
-        // Safety: see Safety Note
+        // SAFETY: see SAFETY Note
         unsafe { XmfVpxPacket_GetKind(self.ptr) }
     }
 
     pub fn frame(&self) -> Option<VpxFrame> {
-        // Safety: see Safety Note in VpxPacket
+        // SAFETY: see SAFETY Note in VpxPacket
         let frame_ptr = unsafe { XmfVpxPacket_GetFrame(self.ptr) };
         if frame_ptr.is_null() {
             None
@@ -103,14 +103,14 @@ impl VpxPacket<'_> {
     }
 
     pub fn is_empty(&self) -> bool {
-        // Safety: see Safety Note in VpxPacket
+        // SAFETY: see SAFETY Note in VpxPacket
         unsafe { XmfVpxPacket_IsEmpty(self.ptr) }
     }
 }
 
 impl Drop for VpxPacket<'_> {
     fn drop(&mut self) {
-        // Safety: See the Safety Note in VpxPacket
+        // SAFETY: See the SAFETY Note in VpxPacket
         unsafe {
             XmfVpxPacket_Destroy(self.ptr);
         }
@@ -123,7 +123,7 @@ pub struct VpxFrame {
 
 impl Drop for VpxFrame {
     fn drop(&mut self) {
-        // Safety: see Safety Note in VpxFrame::new, this is safe to call.
+        // SAFETY: see SAFETY Note in VpxFrame::new, this is safe to call.
         unsafe {
             XmfVpxFrame_Destroy(self.ptr);
         }
@@ -132,53 +132,53 @@ impl Drop for VpxFrame {
 
 impl VpxFrame {
     pub fn size(&self) -> usize {
-        // Safety: The pointer is valid and the function is safe to call. See Safety Note in VpxFrame::new.
+        // SAFETY: The pointer is valid and the function is safe to call. See SAFETY Note in VpxFrame::new.
         unsafe { XmfVpxFrame_GetSize(self.ptr) }
     }
 
     pub fn pts(&self) -> i64 {
-        // Safety: The pointer is valid and the function is safe to call. See Safety Note in VpxFrame::new.
+        // SAFETY: The pointer is valid and the function is safe to call. See SAFETY Note in VpxFrame::new.
         unsafe { XmfVpxFrame_GetPts(self.ptr) }
     }
 
     pub fn duration(&self) -> u64 {
-        // Safety: The pointer is valid and the function is safe to call. See Safety Note in VpxFrame::new.
+        // SAFETY: The pointer is valid and the function is safe to call. See SAFETY Note in VpxFrame::new.
         unsafe { XmfVpxFrame_GetDuration(self.ptr) }
     }
 
     pub fn flags(&self) -> u32 {
-        // Safety: The pointer is valid and the function is safe to call. See Safety Note in VpxFrame::new.
+        // SAFETY: The pointer is valid and the function is safe to call. See SAFETY Note in VpxFrame::new.
         unsafe { XmfVpxFrame_GetFlags(self.ptr) }
     }
 
     pub fn partition_id(&self) -> i32 {
-        // Safety: The pointer is valid and the function is safe to call. See Safety Note in VpxFrame::new.
+        // SAFETY: The pointer is valid and the function is safe to call. See SAFETY Note in VpxFrame::new.
         unsafe { XmfVpxFrame_GetPartitionId(self.ptr) }
     }
 
     pub fn width(&self, layer: i32) -> u32 {
-        // Safety: The pointer is valid and the function is safe to call. See Safety Note in VpxFrame::new.
+        // SAFETY: The pointer is valid and the function is safe to call. See SAFETY Note in VpxFrame::new.
         unsafe { XmfVpxFrame_GetWidth(self.ptr, layer) }
     }
 
     pub fn height(&self, layer: i32) -> u32 {
-        // Safety: The pointer is valid and the function is safe to call. See Safety Note in VpxFrame::new.
+        // SAFETY: The pointer is valid and the function is safe to call. See SAFETY Note in VpxFrame::new.
         unsafe { XmfVpxFrame_GetHeight(self.ptr, layer) }
     }
 
     pub fn spatial_layer_encoded(&self, layer: i32) -> u8 {
-        // Safety: The pointer is valid and the function is safe to call. See Safety Note in VpxFrame::new.
+        // SAFETY: The pointer is valid and the function is safe to call. See SAFETY Note in VpxFrame::new.
         unsafe { XmfVpxFrame_GetSpatialLayerEncoded(self.ptr, layer) }
     }
 
     pub fn buffer(&self) -> Option<Vec<u8>> {
         let mut buffer: *const u8 = std::ptr::null();
         let mut size: usize = 0;
-        // Safety: We are pretty sure the frame is valid, and so is the buffer, since frame is a deep copy of the packet.
+        // SAFETY: We are pretty sure the frame is valid, and so is the buffer, since frame is a deep copy of the packet.
         let result = unsafe { XmfVpxFrame_GetBuffer(self.ptr, &mut buffer, &mut size) };
         if result == 0 && !buffer.is_null() {
             let mut vec = vec![0u8; size];
-            // Safety: Copying the buffer to the vec is safe, since the buffer is valid and the size is correct.
+            // SAFETY: Copying the buffer to the vec is safe, since the buffer is valid and the size is correct.
             unsafe {
                 std::ptr::copy_nonoverlapping(buffer, vec.as_mut_ptr(), size);
             }

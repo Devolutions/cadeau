@@ -24,13 +24,13 @@ pub struct VpxEncoder {
 
 impl VpxEncoder {
     pub fn new(config: VpxEncoderConfig) -> Self {
-        // Safety: The way we build the config ensures that it is always valid.
+        // SAFETY: The way we build the config ensures that it is always valid.
         let ptr = unsafe { XmfVpxEncoder_Create(config.0) };
         Self { ptr }
     }
 
     pub fn encode_frame(&mut self, image: &VpxImage, pts: i64, duration: usize, flags: u32) -> Result<(), VpxError> {
-        // Safety: Always safe to call, even if the pointer is null.
+        // SAFETY: Always safe to call, even if the pointer is null.
         let ret = unsafe { XmfVpxEncoder_EncodeFrame(self.ptr, image.ptr, pts, duration, flags) };
         if ret != 0 {
             return Err(self.last_error());
@@ -43,7 +43,7 @@ impl VpxEncoder {
         let mut output: *mut u8 = std::ptr::null_mut();
         let mut output_size: usize = 0;
 
-        // Safety: Always safe to call, even if the pointer is null.
+        // SAFETY: Always safe to call, even if the pointer is null.
         let ret = unsafe { XmfVpxEncoder_GetEncodedFrame(self.ptr, &mut output, &mut output_size) };
         if ret == 0 {
             if output.is_null() {
@@ -51,12 +51,12 @@ impl VpxEncoder {
             }
             let mut vec = vec![0u8; output_size];
 
-            // Safety: Safe to call since we have allocated the vector with the correct size.
+            // SAFETY: Safe to call since we have allocated the vector with the correct size.
             unsafe {
                 std::ptr::copy_nonoverlapping(output, vec.as_mut_ptr(), output_size);
             }
 
-            // Safety: safe to call as we immediately copy the data to a Vec.
+            // SAFETY: safe to call as we immediately copy the data to a Vec.
             unsafe {
                 XmfVpxEncoder_FreeEncodedFrame(output);
             }
@@ -67,7 +67,7 @@ impl VpxEncoder {
         }
     }
 
-    /// # Safety
+    /// # SAFETY
     ///
     /// The caller must make sure to use the packets before calling any other function on the encoder.
     pub fn packet_iterator(&mut self) -> PacketIterator<'_> {
@@ -75,7 +75,7 @@ impl VpxEncoder {
     }
 
     pub fn flush(&mut self) -> Result<(), VpxError> {
-        // Safety: This method never panics, even if the pointer is null.
+        // SAFETY: This method never panics, even if the pointer is null.
         let ret = unsafe { XmfVpxEncoder_Flush(self.ptr) };
         if ret == 0 {
             Ok(())
@@ -85,7 +85,7 @@ impl VpxEncoder {
     }
 
     fn last_error(&self) -> VpxError {
-        // Safety: Always safe to call, even if the pointer is null or no error.
+        // SAFETY: Always safe to call, even if the pointer is null or no error.
         let error = unsafe { XmfVpxEncoder_GetLastError(self.ptr) };
         error.into()
     }
@@ -107,14 +107,14 @@ impl<'encoder> PacketIterator<'encoder> {
 impl<'iter> Iterator for PacketIterator<'iter> {
     type Item = VpxPacket<'iter>;
     fn next(&'_ mut self) -> Option<Self::Item> {
-        // Safety: Should be safe to call as the encoder pointer is never exposed to the caller.
+        // SAFETY: Should be safe to call as the encoder pointer is never exposed to the caller.
         let ptr = unsafe { XmfVpxEncoder_GetPacket(self.encoder.ptr, &mut self.iter as *mut VpxCodecIter) };
 
         if ptr.is_null() {
             return None;
         }
 
-        // Safety: XmfVpxEncoder_GetPacket will always return a valid pointer or null, which is handled above.
+        // SAFETY: XmfVpxEncoder_GetPacket will always return a valid pointer or null, which is handled above.
         let packet = unsafe { VpxPacket::from_raw(ptr) };
 
         if packet.is_empty() {
@@ -127,7 +127,7 @@ impl<'iter> Iterator for PacketIterator<'iter> {
 
 impl Drop for VpxEncoder {
     fn drop(&mut self) {
-        // Safety: Safe to call as the pointer is never exposed to the caller.
+        // SAFETY: Safe to call as the pointer is never exposed to the caller.
         unsafe {
             XmfVpxEncoder_Destroy(self.ptr);
         };
