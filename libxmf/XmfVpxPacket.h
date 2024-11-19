@@ -28,10 +28,11 @@ extern "C"
     /**
      * Retrieves the frame data from the packet.
      * This function will return NULL if the packet is not a frame packet.
+     *
      * @param packet Pointer to the packet instance.
      * @return Pointer to the frame data, or NULL if the packet is not a frame packet.
      *
-     * @note The returned frame data is owned by the packet and should not be freed by the caller.
+     * @note The returned frame data is deep copied from the packet data and should be freed by the caller.
      */
     XMF_EXPORT XmfVpxFrame *XmfVpxPacket_GetFrame(const XmfVpxPacket *packet);
     XMF_EXPORT bool XmfVpxPacket_IsEmpty(const XmfVpxPacket *packet);
