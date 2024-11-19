@@ -78,12 +78,12 @@ pub struct XmfVpxDecoderError {
 #[derive(Debug, Clone, Copy)]
 pub struct XmfVpxEncoderConfig {
     pub codec: XmfVpxCodecType,
-    pub width: c_uint,
-    pub height: c_uint,
-    pub bitrate: c_uint,
-    pub timebase_num: c_int,
-    pub timebase_den: c_int,
-    pub threads: c_uint,
+    pub width: u32,
+    pub height: u32,
+    pub bitrate: u32,
+    pub timebase_num: i32,
+    pub timebase_den: i32,
+    pub threads: u32,
 }
 
 #[repr(C)]
