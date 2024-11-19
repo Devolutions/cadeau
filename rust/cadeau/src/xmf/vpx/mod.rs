@@ -113,7 +113,7 @@ impl VpxPacket<'_> {
         if frame_ptr.is_null() {
             None
         } else {
-            // SAFETY: The frame pointer is not null and is valid, since the packet is valid.
+            // SAFETY: The frame pointer is not null and is valid, since the packet is valid. XmfVpxFrame is deep copied on creating from XmfVpxPacket.
             Some(unsafe { VpxFrame::from_raw(frame_ptr) })
         }
     }
