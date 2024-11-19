@@ -2,11 +2,7 @@ use core::fmt;
 
 use decoder::VpxDecoder;
 use xmf_sys::{
-    XmfVpxCodecType, XmfVpxDecoderError, XmfVpxEncoderError, XmfVpxFrame, XmfVpxFrame_Destroy, XmfVpxFrame_GetBuffer,
-    XmfVpxFrame_GetDuration, XmfVpxFrame_GetFlags, XmfVpxFrame_GetHeight, XmfVpxFrame_GetPartitionId,
-    XmfVpxFrame_GetPts, XmfVpxFrame_GetSize, XmfVpxFrame_GetSpatialLayerEncoded, XmfVpxFrame_GetWidth, XmfVpxImage,
-    XmfVpxImage_Destroy, XmfVpxPacket, XmfVpxPacketKind, XmfVpxPacket_Destroy, XmfVpxPacket_GetFrame,
-    XmfVpxPacket_GetKind, XmfVpxPacket_IsEmpty,
+    XmfVpxCodecType, XmfVpxDecoderError, XmfVpxEncoder, XmfVpxEncoderError, XmfVpxFrame, XmfVpxFrame_Destroy, XmfVpxFrame_GetBuffer, XmfVpxFrame_GetDuration, XmfVpxFrame_GetFlags, XmfVpxFrame_GetHeight, XmfVpxFrame_GetPartitionId, XmfVpxFrame_GetPts, XmfVpxFrame_GetSize, XmfVpxFrame_GetSpatialLayerEncoded, XmfVpxFrame_GetWidth, XmfVpxImage, XmfVpxImage_Destroy, XmfVpxPacket, XmfVpxPacketKind, XmfVpxPacket_Destroy, XmfVpxPacket_GetFrame, XmfVpxPacket_GetKind, XmfVpxPacket_IsEmpty
 };
 
 pub mod decoder;
@@ -86,7 +82,7 @@ pub fn is_key_frame(buffer: &[u8]) -> bool {
 /// ```
 pub struct VpxPacket<'a> {
     ptr: *mut XmfVpxPacket,
-    _marker: std::marker::PhantomData<&'a ()>,
+    _marker: std::marker::PhantomData<&'a mut XmfVpxEncoder>
 }
 
 impl VpxPacket<'_> {

@@ -107,8 +107,8 @@ impl<'encoder> PacketIterator<'encoder> {
     }
 }
 
-impl<'iter> Iterator for PacketIterator<'iter> {
-    type Item = VpxPacket<'iter>;
+impl<'encoder> Iterator for PacketIterator<'encoder> {
+    type Item = VpxPacket<'encoder>;
     fn next(&'_ mut self) -> Option<Self::Item> {
         // SAFETY: Should be safe to call as the encoder pointer is never exposed to the caller.
         let ptr = unsafe { XmfVpxEncoder_GetPacket(self.encoder.ptr, &mut self.iter as *mut VpxCodecIter) };
