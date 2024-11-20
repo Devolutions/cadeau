@@ -128,6 +128,7 @@ impl Recorder {
     /// `buffer` must be a 24-bit colors array of `surface_step * height == width × height × 4` bytes.
     /// Since the provided image data must be encoded with a pixel depth of 4 (24-bit colors),
     /// the relation `surface_step / width == 4` must hold too.
+    #[expect(clippy::nonminimal_bool)]
     pub fn update_frame(
         &mut self,
         buffer: &[u8],

@@ -27,3 +27,7 @@ xmf-sys = { workspace = true, optional = true }
 [package.metadata.docs.rs]
 all-features = true
 rustdoc-args = ["--cfg", "docsrs"]
+
+[dev-dependencies]
+webm-iterable = "0.6.3" # For example and testing vpx decoding/encoding.
+ebml-iterable = "0.6.2" # For example and testing mkv parsing.
