@@ -70,7 +70,7 @@ namespace Devolutions.Cadeau
 
     public delegate void OnError(Exception e);
 
-    public delegate bool OnValidateCertificate(X509Certificate certificate, X509Chain chain, SslPolicyErrors sslPolicyErrors);
+    public delegate bool OnValidateCertificate(object sender, X509Certificate certificate, X509Chain chain, SslPolicyErrors sslPolicyErrors);
 
     public class DucStreamer
     {
@@ -545,7 +545,7 @@ namespace Devolutions.Cadeau
                 return false;
             }
 
-            return this.OnValidateCertificate(certificate, chain, sslPolicyErrors);
+            return this.OnValidateCertificate(sender, certificate, chain, sslPolicyErrors);
         }
 
         private bool RecvServerHello()
