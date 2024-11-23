@@ -1,16 +1,13 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Drawing;
 using System.IO;
 using System.IO.Compression;
 using System.Net.Security;
 using System.Net.Sockets;
 using System.Net.WebSockets;
-using System.Runtime.InteropServices;
 using System.Security.Cryptography.X509Certificates;
 using System.Text;
 using System.Threading;
-using System.Xml.Linq;
 
 namespace Devolutions.Cadeau
 {
@@ -70,7 +67,7 @@ namespace Devolutions.Cadeau
 
     public delegate void OnError(Exception e);
 
-    public delegate bool OnValidateCertificate(X509Certificate certificate, X509Chain chain, SslPolicyErrors sslPolicyErrors);
+    public delegate bool OnValidateCertificate(object sender, X509Certificate certificate, X509Chain chain, SslPolicyErrors sslPolicyErrors);
 
     public class DucStreamer
     {
@@ -538,15 +535,7 @@ namespace Devolutions.Cadeau
             return true;
         }
 
-        private bool ValidateServerCertificate(object sender, X509Certificate certificate, X509Chain chain, SslPolicyErrors sslPolicyErrors)
-        {
-            if (this.OnValidateCertificate == null)
-            {
-                return false;
-            }
-
-            return this.OnValidateCertificate(certificate, chain, sslPolicyErrors);
-        }
+        private bool ValidateServerCertificate(object sender, X509Certificate certificate, X509Chain chain, SslPolicyErrors sslPolicyErrors) => this.OnValidateCertificate?.Invoke(sender, certificate, chain, sslPolicyErrors) ?? false;
 
         private bool RecvServerHello()
         {
