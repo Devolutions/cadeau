@@ -50,7 +50,7 @@ int XmfVpxDecoder_Decode(XmfVpXDecoder *decoder, const uint8_t *data, unsigned i
     vpx_codec_err_t res = vpx_codec_decode(&decoder->codec, data, size, NULL, 0);
     if (res != VPX_CODEC_OK)
     {
-        decoder->lastError.code = DECODE_ERROR;
+        decoder->lastError.code = VPX_ERROR;
         decoder->lastError.detail.vpx_error.error_code = res;
         return -1;
     }
