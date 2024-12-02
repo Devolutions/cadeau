@@ -62,7 +62,7 @@ if(WIN32)
 endif()
 
 # Shared library target
-add_library(${MODULE_NAME} SHARED
+add_library(${MODULE_NAME} STATIC
     ${${MODULE_PREFIX}_SOURCES}
     ${${MODULE_PREFIX}_HEADERS}
     ${${MODULE_PREFIX}_RESOURCES}
@@ -71,47 +71,22 @@ add_library(${MODULE_NAME} SHARED
 
 target_link_libraries(${MODULE_NAME} PRIVATE xpp ${CONAN_TARGETS})
 
-# Static library target
-add_library(${MODULE_NAME}_static STATIC
-    ${${MODULE_PREFIX}_SOURCES}
-    ${${MODULE_PREFIX}_HEADERS}
-    ${${MODULE_PREFIX}_RESOURCES}
-    $<TARGET_OBJECTS:webm>
-)
 
 # Set properties for static library
-set_target_properties(${MODULE_NAME}_static PROPERTIES
+set_target_properties(${MODULE_NAME} PROPERTIES
     POSITION_INDEPENDENT_CODE ON
 )
 
-# Link dependencies for the static library
-target_link_libraries(${MODULE_NAME}_static PRIVATE
-    xpp ${CONAN_TARGETS}
-)
-
-# For Conan dependencies, ensure static linking
-if(CONAN_TARGETS)
-    foreach(target IN LISTS CONAN_TARGETS)
-        target_link_options(${MODULE_NAME}_static PRIVATE $<TARGET_PROPERTY:${target},INTERFACE_LINK_LIBRARIES>)
-    endforeach()
-endif()
-
 # AddressSanitizer settings for Debug builds
 if(CMAKE_BUILD_TYPE MATCHES "Debug")
-    if(CMAKE_CXX_COMPILER_ID MATCHES "Clang")
-        target_compile_options(${MODULE_NAME} PUBLIC -fsanitize=address)
-        target_compile_options(${MODULE_NAME}_static PUBLIC -fsanitize=address)
+    target_compile_options(${MODULE_NAME} PUBLIC -fsanitize=address)
+    target_compile_options(${MODULE_NAME} PUBLIC -fsanitize=address)
 
-        target_link_options(${MODULE_NAME} PUBLIC -fsanitize=address -static-libsan)
-        target_link_options(${MODULE_NAME}_static PUBLIC -fsanitize=address -static-libsan)
-    else()
-        target_compile_options(${MODULE_NAME} PUBLIC -fsanitize=address)
-        target_compile_options(${MODULE_NAME}_static PUBLIC -fsanitize=address)
-
-        target_link_options(${MODULE_NAME} PUBLIC -fsanitize=address -static-libasan)
-        target_link_options(${MODULE_NAME}_static PUBLIC -fsanitize=address -static-libasan)
-    endif()
+    target_link_options(${MODULE_NAME} PUBLIC -fsanitize=address -static-libsan)
+    target_link_options(${MODULE_NAME} PUBLIC -fsanitize=address -static-libsan)
 endif()
+
+target_link_options(${MODULE_NAME} PRIVATE -static-libasan)
 
 # Custom copy command for xmf.dll
 if(XMF_COPY_PATH)
@@ -130,15 +105,6 @@ if(CADEAU_INSTALL)
         EXPORT cadeau-targets
         ARCHIVE DESTINATION lib
         LIBRARY DESTINATION lib)
-
-    # Add static library installation
-    install(TARGETS ${MODULE_NAME}_static
-        EXPORT cadeau-targets
-        ARCHIVE DESTINATION lib
-        LIBRARY DESTINATION lib)
-
-    export(TARGETS ${MODULE_NAME} ${MODULE_NAME}_static
-        APPEND FILE ${PROJECT_BINARY_DIR}/cadeau-targets.cmake)
 
     install(EXPORT cadeau-targets
             FILE cadeau-targets.cmake
