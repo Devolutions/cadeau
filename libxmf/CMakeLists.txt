@@ -82,8 +82,8 @@ if(CMAKE_BUILD_TYPE MATCHES "Debug")
     target_compile_options(${MODULE_NAME} PUBLIC -fsanitize=address)
     target_compile_options(${MODULE_NAME} PUBLIC -fsanitize=address)
 
-    target_link_options(${MODULE_NAME} PUBLIC -fsanitize=address -static-libsan)
-    target_link_options(${MODULE_NAME} PUBLIC -fsanitize=address -static-libsan)
+    target_link_options(${MODULE_NAME} PUBLIC -fsanitize=address -static-libasan)
+    target_link_options(${MODULE_NAME} PUBLIC -fsanitize=address -static-libasan)
 endif()
 
 target_link_options(${MODULE_NAME} PRIVATE -static-libasan)
