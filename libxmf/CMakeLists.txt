@@ -80,9 +80,6 @@ set_target_properties(${MODULE_NAME} PROPERTIES
 # AddressSanitizer settings for Debug builds
 if(CMAKE_BUILD_TYPE MATCHES "Debug")
     target_compile_options(${MODULE_NAME} PUBLIC -fsanitize=address)
-    target_compile_options(${MODULE_NAME} PUBLIC -fsanitize=address)
-
-    target_link_options(${MODULE_NAME} PUBLIC -fsanitize=address -static-libasan)
     target_link_options(${MODULE_NAME} PUBLIC -fsanitize=address -static-libasan)
 endif()
 
