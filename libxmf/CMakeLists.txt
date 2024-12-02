@@ -86,8 +86,6 @@ if(CMAKE_BUILD_TYPE MATCHES "Debug")
     target_link_options(${MODULE_NAME} PUBLIC -fsanitize=address -static-libasan)
 endif()
 
-target_link_options(${MODULE_NAME} PRIVATE -static-libasan)
-
 # Custom copy command for xmf.dll
 if(XMF_COPY_PATH)
     add_custom_command(
