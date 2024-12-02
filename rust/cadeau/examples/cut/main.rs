@@ -68,6 +68,7 @@ fn parse_arg<'a>(mut value: &[&'a str]) -> Result<Args<'a>, &'static str> {
     let mut arg = Args::default();
     loop {
         match value {
+            #[cfg(feature = "dlopen")]
             ["--lib-xmf", lib_xmf_path, rest @ ..] => {
                 arg.lib_xmf_path = lib_xmf_path;
                 value = rest;
