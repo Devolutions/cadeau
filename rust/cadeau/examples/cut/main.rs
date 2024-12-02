@@ -30,7 +30,8 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     let args: Vec<&str> = args.iter().skip(1).map(String::as_str).collect();
     let args = parse_arg(&args)?;
 
-    san();
+    // uncomment to sanity check if memory sanitizer works
+    // san();
 
     // SAFETY: Just pray at this point.
     #[cfg(feature = "dlopen")]

@@ -14,6 +14,9 @@ struct xmf_vpx_decoder
 
 XmfVpXDecoder *XmfVpxDecoder_Create(XmfVpxDecoderConfig cfg)
 {
+    // uncomment this to trigger the memory error, this is for sanity check with memory sanitizer
+    // int* ptr = NULL;
+    // printf("hello %d", *ptr);
 
     XmfVpXDecoder *decoder = (XmfVpXDecoder *)calloc(1, sizeof(XmfVpXDecoder));
     if (!decoder)
