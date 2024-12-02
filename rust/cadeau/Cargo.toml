@@ -11,6 +11,7 @@ homepage.workspace = true
 repository.workspace = true
 authors.workspace = true
 keywords.workspace = true
+build = "build.rs"
 
 [features]
 default = ["xmf"]

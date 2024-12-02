@@ -69,7 +69,7 @@ add_library(${MODULE_NAME} STATIC
     $<TARGET_OBJECTS:webm>
 )
 
-target_link_libraries(${MODULE_NAME} PRIVATE xpp ${CONAN_TARGETS})
+target_link_libraries(${MODULE_NAME} PRIVATE xpp ${CONAN_TARGETS} -static)
 
 
 # Set properties for static library
@@ -82,6 +82,15 @@ if(CMAKE_BUILD_TYPE MATCHES "Debug")
     target_compile_options(${MODULE_NAME} PUBLIC -fsanitize=address)
     target_link_options(${MODULE_NAME} PUBLIC -fsanitize=address -static-libasan)
 endif()
+
+if(WIN32)
+    file(GLOB DEPENDENCY_DLLS "${CONAN_BIN_DIRS}/*.dll")
+    install(FILES ${DEPENDENCY_DLLS} DESTINATION bin)
+elseif(UNIX)
+    file(GLOB DEPENDENCY_SOS "${CONAN_BIN_DIRS}/*.so")
+    install(FILES ${DEPENDENCY_SOS} DESTINATION lib)
+endif()
+
 
 # Custom copy command for xmf.dll
 if(XMF_COPY_PATH)

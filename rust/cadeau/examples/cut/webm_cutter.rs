@@ -93,11 +93,8 @@ impl WebmCutter {
     ) -> Result<(), Box<dyn std::error::Error>> {
         while !self.headers.is_empty() {
             let tag = self.headers.remove(0);
-            let tag_name = matroska_spec_name(&tag);
-            println!("writing header: {}", tag_name);
             write(tag)?;
         }
-        println!("writing headers done");
 
         // Based on Webm Muxer Guide line, the first block in a cluster must be a keyframe.
         let cluster_offset = self.find_cluster_at_cut_time()?;
@@ -148,21 +145,6 @@ impl WebmCutter {
                 )?; // we make every frame a keyframe inside this cluster
             }
             let frame = self.encoder.next_frame()?.ok_or("no frame found")?;
-            let is_key_frame = is_key_frame(&frame);
-
-            println!(
-                "encoding blockgroup: 
-                pts: {},
-                duration: {},
-                absolute_timestamp: {},
-                original frame is key frame: {},
-                encoded frame is key frame: {}",
-                pts,
-                duration,
-                current_block_group.absolute_timestamp()?,
-                current_block_group.is_key_frame(),
-                is_key_frame
-            );
 
             if current_block_group.absolute_timestamp()? < self.cut_time_in_ms() {
                 continue;

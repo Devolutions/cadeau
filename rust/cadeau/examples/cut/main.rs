@@ -1,22 +1,36 @@
 #![allow(clippy::print_stdout)]
 #![allow(clippy::unwrap_used)]
 
-use std::{env, fs::File, path::Path, process::exit};
+use std::env;
+use std::fs::File;
+use std::path::Path;
+use std::process::exit;
 
 use debug::matroska_spec_name;
-use webm_iterable::{
-    matroska_spec::{Master, MatroskaSpec},
-    WriteOptions,
-};
+use webm_iterable::matroska_spec::{Master, MatroskaSpec};
+use webm_iterable::WriteOptions;
 
 pub mod block_group;
 pub mod debug;
 pub mod webm_cutter;
 
+fn san() {
+    let dangling = {
+        let a: u32 = 0;
+        &a as *const u32
+    };
+
+    let value = unsafe { dangling.read() };
+
+    println!("{value}");
+}
+
 fn main() -> Result<(), Box<dyn std::error::Error>> {
     let args: Vec<String> = env::args().collect();
     let args: Vec<&str> = args.iter().skip(1).map(String::as_str).collect();
     let args = parse_arg(&args)?;
+
+    san();
 
     // SAFETY: Just pray at this point.
     #[cfg(feature = "dlopen")]

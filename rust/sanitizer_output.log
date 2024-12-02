@@ -1,0 +1,25 @@
+warning: /home/irving/code/cadeau/rust/cadeau/Cargo.toml: unused manifest key: build
+warning: lint `pointer_structural_match` has been removed: converted into hard error, see RFC #3535 <https://rust-lang.github.io/rfcs/3535-constants-in-patterns.html> for more information
+  |
+  = note: requested on the command line with `-W pointer_structural_match`
+  = note: `#[warn(renamed_and_removed_lints)]` on by default
+
+warning: `xmf-sys` (build script) generated 1 warning
+warning: `cadeau` (build script) generated 1 warning (1 duplicate)
+   Compiling cadeau v0.4.0 (/home/irving/code/cadeau/rust/cadeau)
+warning: `xmf-sys` (lib) generated 1 warning (1 duplicate)
+warning: `cadeau` (lib) generated 1 warning (1 duplicate)
+warning: unused import: `debug::matroska_spec_name`
+  --> cadeau/examples/cut/webm_cutter.rs:11:38
+   |
+11 | use crate::{block_group::BlockGroup, debug::matroska_spec_name};
+   |                                      ^^^^^^^^^^^^^^^^^^^^^^^^^
+   |
+   = note: `#[warn(unused_imports)]` on by default
+
+warning: `cadeau` (example "cut") generated 2 warnings (1 duplicate) (run `cargo fix --example "cut"` to apply 1 suggestion)
+    Finished `dev` profile [unoptimized + debuginfo] target(s) in 0.70s
+     Running `target/x86_64-unknown-linux-gnu/debug/examples/cut -i ../media/clock.webm -o ./out.webm -c 10`
+thread 'main' panicked at cadeau/examples/cut/main.rs:23:21:
+index out of bounds: the len is 3 but the index is 5
+note: run with `RUST_BACKTRACE=1` environment variable to display a backtrace
