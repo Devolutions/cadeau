@@ -1,16 +1,17 @@
-use std::{io::Seek, path::Path};
+use std::io::Seek;
+use std::path::Path;
 
-use cadeau::xmf::vpx::{decoder::VpxDecoder, encoder::VpxEncoder, is_key_frame, VpxCodec};
-use ebml_iterable::tools::Vint;
+use cadeau::xmf::vpx::{is_key_frame, VpxCodec, VpxDecoder, VpxEncoder};
 use webm_iterable::{
-    matroska_spec::{Block, BlockLacing, Master, MatroskaSpec, SimpleBlock},
+    matroska_spec::{Master, MatroskaSpec, SimpleBlock},
     WebmIterator,
 };
 use xmf_sys::VPX_EFLAG_FORCE_KF;
 
-use crate::{block_group::BlockGroup, debug::matroska_spec_name};
+use crate::block_group::BlockGroup;
+use crate::debug::matroska_spec_name;
 
-pub struct WebmCutter {
+pub(crate) struct WebmCutter {
     encoder: VpxEncoder,
     decoder: VpxDecoder,
     iterator: Option<WebmIterator<std::fs::File>>,
@@ -21,7 +22,7 @@ pub struct WebmCutter {
 
 // Cutter for webm videos with only video tracks and no cues.
 impl WebmCutter {
-    pub fn new(input: &Path, cut_time: u32) -> Result<Self, Box<dyn std::error::Error>> {
+    pub(crate) fn new(input: &Path, cut_time: u32) -> Result<Self, Box<dyn std::error::Error>> {
         let file = std::fs::File::open(input)?;
         let mut webm_iterator = WebmIterator::new(file, &[MatroskaSpec::BlockGroup(Master::Start)]);
         let mut headers = Vec::new();
@@ -29,6 +30,7 @@ impl WebmCutter {
         let mut height = 0;
         let mut width = 0;
         let mut time_stamp_scale = 0;
+
         while let Some(Ok(tag)) = webm_iterator.next() {
             if let MatroskaSpec::CodecID(ref codec_id) = tag {
                 codec = if codec_id == "V_VP8" {
@@ -87,17 +89,18 @@ impl WebmCutter {
         })
     }
 
-    pub fn on_element(
+    pub(crate) fn on_element(
         &mut self,
         mut write: impl FnMut(MatroskaSpec) -> Result<(), Box<dyn std::error::Error>>,
     ) -> Result<(), Box<dyn std::error::Error>> {
         while !self.headers.is_empty() {
             let tag = self.headers.remove(0);
             let tag_name = matroska_spec_name(&tag);
-            println!("writing header: {}", tag_name);
+            println!("Writing header: {tag_name}...");
             write(tag)?;
         }
-        println!("writing headers done");
+
+        println!("Done writing headers.");
 
         // Based on Webm Muxer Guide line, the first block in a cluster must be a keyframe.
         let cluster_offset = self.find_cluster_at_cut_time()?;
@@ -262,114 +265,5 @@ impl WebmCutter {
         }
 
         Err("no cluster found".into())
-    }
-}
-
-pub fn is_key_frame_block_group(block_group: &MatroskaSpec) -> bool {
-    let MatroskaSpec::BlockGroup(Master::Full(block_group)) = block_group else {
-        return false;
-    };
-
-    let block = block_group.iter().find_map(|tag| {
-        if let MatroskaSpec::Block(block) = tag {
-            Some(block)
-        } else {
-            None
-        }
-    });
-
-    let Some(block) = block else {
-        return false;
-    };
-
-    let block = Block::try_from(block).unwrap();
-    let frame = block.read_frame_data().unwrap();
-    let is_keyframe = frame.iter().any(|frame| is_key_frame(frame.data));
-
-    is_keyframe
-}
-
-pub fn block_group_relative_time(block_group: &MatroskaSpec) -> Result<i16, Box<dyn std::error::Error>> {
-    let MatroskaSpec::BlockGroup(Master::Full(block_group)) = block_group else {
-        return Err("not a block group".into());
-    };
-
-    let block = block_group.iter().find_map(|tag| {
-        if let MatroskaSpec::Block(block) = tag {
-            Some(block)
-        } else {
-            None
-        }
-    });
-
-    let Some(block) = block else {
-        return Err("no block found in block group".into());
-    };
-
-    let block = Block::try_from(block).unwrap();
-
-    Ok(block.timestamp)
-}
-
-#[derive(Clone, Debug)]
-pub struct WriteBlockGroup<'a> {
-    /// Raw frame data used to create the block (avoids the extra allocation of using owned_frame_data)
-    frame_data: &'a [u8],
-
-    pub track: u64,
-    pub timestamp: i16,
-
-    pub keyframe: bool, // Add this field
-
-    pub invisible: bool,
-    pub lacing: Option<BlockLacing>,
-}
-
-impl<'a> WriteBlockGroup<'a> {
-    pub fn new(track: u64, timestamp: i16, frame_data: &'a [u8], keyframe: bool) -> Self {
-        Self {
-            track,
-            timestamp,
-            invisible: false,
-            keyframe,
-            lacing: None,
-            frame_data,
-        }
-    }
-}
-
-impl<'a> From<WriteBlockGroup<'a>> for MatroskaSpec {
-    fn from(block: WriteBlockGroup<'a>) -> Self {
-        let mut flags: u8 = 0x00;
-        if block.invisible {
-            flags |= 0x08;
-        }
-
-        if block.lacing.is_some() {
-            match block.lacing.unwrap() {
-                BlockLacing::Xiph => {
-                    flags |= 0x02;
-                }
-                BlockLacing::Ebml => {
-                    flags |= 0x06;
-                }
-                BlockLacing::FixedSize => {
-                    flags |= 0x04;
-                }
-            }
-        }
-
-        if block.keyframe {
-            flags |= 0x10;
-        }
-
-        let data = block.frame_data;
-        let mut result = Vec::with_capacity(data.len() + 11);
-        result.extend_from_slice(&block.track.as_vint().expect("Unable to convert track value to vint"));
-        result.extend_from_slice(&block.timestamp.to_be_bytes());
-        result.extend_from_slice(&flags.to_be_bytes());
-        result.extend_from_slice(data);
-
-        MatroskaSpec::Block(result)
     }
 }

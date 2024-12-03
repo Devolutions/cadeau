@@ -1,18 +1,20 @@
 use xmf_sys::{
-    XmfVpxDecoder, XmfVpxDecoderConfig, XmfVpxDecoder_Create, XmfVpxDecoder_Decode, XmfVpxDecoder_Destroy,
-    XmfVpxDecoder_GetLastError, XmfVpxDecoder_GetNextFrame,
+    XmfVpxCodecType, XmfVpxDecoder, XmfVpxDecoderConfig, XmfVpxDecoder_Create, XmfVpxDecoder_Decode,
+    XmfVpxDecoder_Destroy, XmfVpxDecoder_GetLastError, XmfVpxDecoder_GetNextFrame,
 };
 
-use super::{VpxCodec, VpxError, VpxImage};
+use crate::xmf::vpx::{VpxCodec, VpxError, VpxImage};
 
 pub struct VpxDecoderBuilder {
-    threads: Option<u32>,
-    w: Option<u32>, // Width (set to 0 if unknown)
-    h: Option<u32>, // Height (set to 0 if unknown)
-    codec: Option<VpxCodec>,
+    threads: u32,
+    w: u32,
+    h: u32,
+    codec: VpxCodec,
 }
 
 pub struct VpxDecoder {
+    // INVARIANT: A valid pointer to a properly initialized XmfVpxEncoder.
+    // INVARIANT: The pointer is owned.
     ptr: *mut XmfVpxDecoder,
 }
 
@@ -30,6 +32,7 @@ impl VpxDecoder {
                 u32::try_from(data.len()).map_err(|_| "data.len cannot be converted to u32")?,
             )
         };
+
         if ret == 0 {
             Ok(())
         } else {
@@ -40,6 +43,7 @@ impl VpxDecoder {
     pub fn next_frame(&mut self) -> Result<VpxImage<'_>, VpxError> {
         // SAFETY: FFI call with no outstanding precondition.
         let image = unsafe { XmfVpxDecoder_GetNextFrame(self.ptr) };
+
         if !image.is_null() {
             // SAFETY: Safe to call, the pointer is garanteed to be valid until the next call to the decoder.
             // and since the VpxImage have a lifetime tied to the VpxDecoder, it is safe to create and use it.
@@ -74,50 +78,50 @@ impl Default for VpxDecoderBuilder {
 impl VpxDecoderBuilder {
     pub fn new() -> Self {
         Self {
-            threads: None,
-            w: None,
-            h: None,
-            codec: None,
+            threads: 0,
+            w: 0,
+            h: 0,
+            codec: VpxCodec::VP8,
         }
     }
 
     #[must_use]
     pub fn threads(mut self, threads: u32) -> Self {
-        self.threads = Some(threads);
+        self.threads = threads;
         self
     }
 
     #[must_use]
-    pub fn width(mut self, w: u32) -> Self {
-        self.w = Some(w);
+    pub fn width(mut self, width: u32) -> Self {
+        self.w = width;
         self
     }
 
     #[must_use]
-    pub fn height(mut self, h: u32) -> Self {
-        self.h = Some(h);
+    pub fn height(mut self, height: u32) -> Self {
+        self.h = height;
         self
     }
 
     #[must_use]
     pub fn codec(mut self, codec: VpxCodec) -> Self {
-        self.codec = Some(codec);
+        self.codec = codec;
         self
     }
 
     pub fn build(self) -> Result<VpxDecoder, VpxError> {
         let config = XmfVpxDecoderConfig {
-            threads: self.threads.unwrap_or(0),
-            w: self.w.unwrap_or(0),
-            h: self.h.unwrap_or(0),
-            codec: self.codec.unwrap_or(VpxCodec::VP8).into(),
+            threads: self.threads,
+            w: self.w,
+            h: self.h,
+            codec: XmfVpxCodecType::from(self.codec),
         };
 
         // SAFETY: FFI call with no outstanding precondition.
         let ptr = unsafe { XmfVpxDecoder_Create(config) };
 
         if ptr.is_null() {
-            return Err(VpxError::NullPointer);
+            return Err(VpxError::Internal("XmfVpxDecoder_Create returned null"));
         }
 
         Ok(VpxDecoder { ptr })

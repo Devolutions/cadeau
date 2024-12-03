@@ -44,7 +44,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
 
     let output_path = args.output_path.unwrap_or(&default_output_path);
 
-    // SAFETY: Just pray at this point.
+    // SAFETY: No initialisation or termination routine in the XMF library we should worry about for preconditions.
     #[cfg(feature = "dlopen")]
     unsafe {
         cadeau::xmf::init(args.lib_xmf_path)?;

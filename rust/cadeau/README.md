@@ -29,8 +29,3 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
   Ok(())
 }
 ```
-
-## Vpx Encoder/Decoder
-
-### Safety:
-The `VpxPacket` can never be used after two consecutive calls to the Encoder/Decoder's mutable reference. This is already enforced by the lifetime bound of `VpxPacket`. If you notice anything that does not align with this behavior, please contact us!

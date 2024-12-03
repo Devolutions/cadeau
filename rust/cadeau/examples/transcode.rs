@@ -26,7 +26,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         println!("{args:?}");
     }
 
-    // SAFETY: Just pray at this point.
+    // SAFETY: No initialisation or termination routine in the XMF library we should worry about for preconditions.
     #[cfg(feature = "dlopen")]
     unsafe {
         cadeau::xmf::init(args.lib_xmf_path)?;

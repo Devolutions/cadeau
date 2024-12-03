@@ -1,6 +1,5 @@
 use core::fmt;
 
-use decoder::VpxDecoder;
 use xmf_sys::{
     XmfVpxCodecType, XmfVpxDecoderError, XmfVpxEncoder, XmfVpxEncoderError, XmfVpxFrame, XmfVpxFrame_Destroy,
     XmfVpxFrame_GetBuffer, XmfVpxFrame_GetDuration, XmfVpxFrame_GetFlags, XmfVpxFrame_GetHeight,
@@ -9,17 +8,23 @@ use xmf_sys::{
     XmfVpxPacket_GetFrame, XmfVpxPacket_GetKind, XmfVpxPacket_IsEmpty,
 };
 
-pub mod decoder;
-pub mod encoder;
+mod decoder;
+mod encoder;
+
+pub use decoder::{VpxDecoder, VpxDecoderBuilder};
+pub use encoder::{PacketIterator, VpxEncoder, VpxEncoderBuilder};
 
 #[derive(Debug, Clone, Copy)]
 pub enum VpxCodec {
     VP8,
     VP9,
 }
+
 pub struct VpxImage<'decoder> {
+    // INVARIANT: A valid pointer to a properly initialized XmfVpxPacket.
+    // INVARIANT: The pointer is owned.
     ptr: *mut XmfVpxImage,
-    // Hold a reference to the decoder, so method requires &mut decoder will not be allowed.
+    // Logically holds a reference to the VpxEncoder.
     _marker: std::marker::PhantomData<&'decoder VpxDecoder>,
 }
 
@@ -37,7 +42,7 @@ impl VpxImage<'_> {
 
 impl Drop for VpxImage<'_> {
     fn drop(&mut self) {
-        // SAFETY: XmfVpxImage_Destroy requires no preconditions, it is safe to call. Even if the pointer is null.
+        // SAFETY: Pointer is owned.
         unsafe {
             XmfVpxImage_Destroy(self.ptr);
         }
@@ -57,37 +62,35 @@ pub fn is_key_frame(buffer: &[u8]) -> bool {
     if buffer.is_empty() {
         return false;
     }
+
     buffer[0] & 0x1 == 0
 }
 
-/// SAFETY Note: The packet is only valid before the next call to any function on the encoder.
-/// The Packet iterator holds a mutable reference to the encoder,
-/// While the iterator is alive, the encoder with mutable reference is not allowed to be used.
-/// Hence all the functions on the packet are safe to call.
+/// [`VpxEncoder`] output packet.
 ///
-/// ex.
+/// It contains the different kinds of output data the encoder may produce while compressing a frame.
 ///
-/// ```rust
-/// // This will not compile, as packet outlives the iterator.
-/// fn example(&mut self) {
-///     let mut packet;
-///     {
-///         let mut iterator = self.encoder.packet_iterator();
-///         packet = iterator.next().unwrap();
-///     }
-/// }
-/// ```
-/// // This will not compile as well, as the encoder is used after the iterator is created.
-/// ```rust
-/// fn example(&mut self) {
-///     let mut iterator = self.encoder.packet_iterator();
-///     let packet = iterator.next().unwrap();
-///     self.encoder.flush();
-/// }
+/// # API Design and Safety
+///
+/// The [`VpxPacket`] may be invalidated as soon as the [`VpxEncoder`] which returned it is modified.
+///
+/// To avoid memory corruptions, we ensure the encoder is not modified by binding a logical lifetime to the encoder ('encoder).
+///
+/// For instance, this will not compile, as the encoder is used after the iterator is created.
+///
+/// ```compile_fail
+///# fn example(encoder: &mut cadeau::xmf::vpx::VpxEncoder) -> Result<(), Box<dyn std::error::Error>> {
+/// let mut iterator = encoder.packet_iterator();
+/// let packet = iterator.next().unwrap();
+/// encoder.flush();
+///# Ok(())
+///# }
 /// ```
 pub struct VpxPacket<'a> {
+    // INVARIANT: A valid pointer to a properly initialized XmfVpxPacket.
+    // INVARIANT: The pointer is owned.
     ptr: *mut XmfVpxPacket,
-    // Hold a reference to the encoder, so method requires &mut encoder will not be allowed.
+    // Logically holds a reference to the VpxEncoder.
     _marker: std::marker::PhantomData<&'a XmfVpxEncoder>,
 }
 
@@ -104,15 +107,14 @@ impl VpxPacket<'_> {
     }
 
     pub fn kind(&self) -> XmfVpxPacketKind {
-        // SAFETY: We are sure the pointer is valid, since it's lifetime is tied to the packet iterator.
-        // and which is further tied to the encoder. See documentation on `VpxPacket` for more details.
+        // SAFETY: Pointer is valid as the lifetime is bound to the associated encoder.
         unsafe { XmfVpxPacket_GetKind(self.ptr) }
     }
 
     pub fn frame(&self) -> Option<VpxFrame> {
-        // SAFETY: We are sure the pointer is valid, since it's lifetime is tied to the packet iterator.
-        // and which is further tied to the encoder. See documentation on `VpxPacket` for more details.
+        // SAFETY: Pointer is valid as the lifetime is bound to the associated encoder.
         let frame_ptr = unsafe { XmfVpxPacket_GetFrame(self.ptr) };
+
         if frame_ptr.is_null() {
             None
         } else {
@@ -124,17 +126,17 @@ impl VpxPacket<'_> {
     }
 
     pub fn is_empty(&self) -> bool {
-        // SAFETY: see SAFETY Note in VpxPacket
+        // SAFETY: Pointer is valid as the lifetime is bound to the associated encoder.
         unsafe { XmfVpxPacket_IsEmpty(self.ptr) }
     }
 }
 
 impl Drop for VpxPacket<'_> {
     fn drop(&mut self) {
-        // SAFETY: XmfVpxPacket_Destroy safe to call even if the pointer is null.
-        // 
-        // note: The pointer in side `XmfVpxPacket` is owned by the encoder and will not be freed by this funciton
-        // this function will only free the pointer reference to the packet.
+        // SAFETY:
+        // - Pointer is valid as the lifetime is bound to the associated encoder.
+        // - Pointer is owned.
+        // - This function is not freeing the actual data held by the encoder, only the XmfVpxPacket structure.
         unsafe {
             XmfVpxPacket_Destroy(self.ptr);
         }
@@ -142,16 +144,9 @@ impl Drop for VpxPacket<'_> {
 }
 
 pub struct VpxFrame {
+    // INVARIANT: A valid pointer to a properly initialized XmfVpxFrame.
+    // INVARIANT: The pointer is owned.
     ptr: *mut XmfVpxFrame,
-}
-
-impl Drop for VpxFrame {
-    fn drop(&mut self) {
-        // SAFETY: self.ptr is always owned by the VpxFrame, and hence it is safe to call XmfVpxFrame_Destroy.
-        unsafe {
-            XmfVpxFrame_Destroy(self.ptr);
-        }
-    }
 }
 
 impl VpxFrame {
@@ -165,56 +160,60 @@ impl VpxFrame {
     }
 
     pub fn size(&self) -> usize {
-        // SAFETY: This pointer is always valid, since it is owned by the VpxFrame.
+        // SAFETY: FFI call with no outstanding precondition.
         unsafe { XmfVpxFrame_GetSize(self.ptr) }
     }
 
     pub fn pts(&self) -> i64 {
-        // SAFETY: This pointer is always valid, since it is owned by the VpxFrame.
+        // SAFETY: FFI call with no outstanding precondition.
         unsafe { XmfVpxFrame_GetPts(self.ptr) }
     }
 
     pub fn duration(&self) -> u64 {
-        // SAFETY: This pointer is always valid, since it is owned by the VpxFrame.
+        // SAFETY: FFI call with no outstanding precondition.
         unsafe { XmfVpxFrame_GetDuration(self.ptr) }
     }
 
     pub fn flags(&self) -> u32 {
-        // SAFETY: This pointer is always valid, since it is owned by the VpxFrame.
+        // SAFETY: FFI call with no outstanding precondition.
         unsafe { XmfVpxFrame_GetFlags(self.ptr) }
     }
 
     pub fn partition_id(&self) -> i32 {
-        // SAFETY: This pointer is always valid, since it is owned by the VpxFrame.
+        // SAFETY: FFI call with no outstanding precondition.
         unsafe { XmfVpxFrame_GetPartitionId(self.ptr) }
     }
 
     pub fn width(&self, layer: i32) -> u32 {
-        // SAFETY: This pointer is always valid, since it is owned by the VpxFrame.
+        // SAFETY: FFI call with no outstanding precondition.
         unsafe { XmfVpxFrame_GetWidth(self.ptr, layer) }
     }
 
     pub fn height(&self, layer: i32) -> u32 {
-        // SAFETY: This pointer is always valid, since it is owned by the VpxFrame.
+        // SAFETY: FFI call with no outstanding precondition.
         unsafe { XmfVpxFrame_GetHeight(self.ptr, layer) }
     }
 
     pub fn spatial_layer_encoded(&self, layer: i32) -> u8 {
-        // SAFETY: This pointer is always valid, since it is owned by the VpxFrame.
+        // SAFETY: FFI call with no outstanding precondition.
         unsafe { XmfVpxFrame_GetSpatialLayerEncoded(self.ptr, layer) }
     }
 
     pub fn buffer(&self) -> Option<Vec<u8>> {
         let mut buffer: *const u8 = std::ptr::null();
         let mut size: usize = 0;
-        // SAFETY: This pointer is always valid, since it is owned by the VpxFrame.
+
+        // SAFETY: FFI call with no outstanding precondition.
         let result = unsafe { XmfVpxFrame_GetBuffer(self.ptr, &mut buffer, &mut size) };
+
         if result == 0 && !buffer.is_null() {
             let mut vec = vec![0u8; size];
+
             // SAFETY: Copying the buffer to the vec is safe, since the buffer is valid and the size is correct.
             unsafe {
                 std::ptr::copy_nonoverlapping(buffer, vec.as_mut_ptr(), size);
             }
+
             Some(vec)
         } else {
             None
@@ -222,9 +221,18 @@ impl VpxFrame {
     }
 }
 
+impl Drop for VpxFrame {
+    fn drop(&mut self) {
+        // SAFETY: Pointer is owned.
+        unsafe {
+            XmfVpxFrame_Destroy(self.ptr);
+        }
+    }
+}
+
 #[derive(Debug, Clone, Copy)]
 pub enum VpxError {
-    NullPointer,
+    Internal(&'static str),
     Other(&'static str),
     DecoderError(XmfVpxDecoderError),
     EncoderError(XmfVpxEncoderError),
@@ -251,10 +259,10 @@ impl From<&'static str> for VpxError {
 impl fmt::Display for VpxError {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
-            VpxError::NullPointer => write!(f, "Null pointer error"),
-            VpxError::Other(msg) => write!(f, "Other error: {}", msg),
-            VpxError::DecoderError(err) => write!(f, "Decoder error: {:?}", err),
-            VpxError::EncoderError(err) => write!(f, "Encoder error: {:?}", err),
+            VpxError::Internal(msg) => write!(f, "internal error (bug): {msg}"),
+            VpxError::Other(msg) => write!(f, "{msg}"),
+            VpxError::DecoderError(_) => write!(f, "decoder error"),
+            VpxError::EncoderError(_) => write!(f, "encoder error"),
         }
     }
 }
@@ -265,7 +273,7 @@ impl std::error::Error for VpxError {
             VpxError::DecoderError(decoder_error) => Some(decoder_error),
             VpxError::EncoderError(encoder_error) => Some(encoder_error),
             VpxError::Other(_) => None,
-            VpxError::NullPointer => None,
+            VpxError::Internal(_) => None,
         }
     }
 }

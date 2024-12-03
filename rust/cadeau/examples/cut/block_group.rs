@@ -4,13 +4,13 @@ use cadeau::xmf::vpx::is_key_frame;
 use ebml_iterable::specs::Master;
 use webm_iterable::matroska_spec::{Block, MatroskaSpec};
 
-pub struct BlockGroup<'a> {
-    pub(crate) cluster_timestamp: u64,
-    pub(crate) block_group: &'a MatroskaSpec,
+pub(crate) struct BlockGroup<'a> {
+    cluster_timestamp: u64,
+    block_group: &'a MatroskaSpec,
 }
 
 impl<'a> BlockGroup<'a> {
-    pub fn new(block_group: &'a MatroskaSpec, cluster_timestamp: u64) -> Self {
+    pub(crate) fn new(block_group: &'a MatroskaSpec, cluster_timestamp: u64) -> Self {
         let MatroskaSpec::BlockGroup(Master::Full(_)) = block_group else {
             panic!("BlockGroup expected, got {:?}", block_group);
         };
@@ -21,12 +21,12 @@ impl<'a> BlockGroup<'a> {
         }
     }
 
-    pub fn absolute_timestamp(&self) -> Result<u64, TryFromIntError> {
+    pub(crate) fn absolute_timestamp(&self) -> Result<u64, TryFromIntError> {
         let timestamp = u64::try_from(self.timestamp())?;
         Ok(self.cluster_timestamp + timestamp)
     }
 
-    pub fn timestamp(&self) -> i16 {
+    pub(crate) fn timestamp(&self) -> i16 {
         self.get_children()
             .iter()
             .find_map(|tag| {
@@ -40,20 +40,7 @@ impl<'a> BlockGroup<'a> {
             .unwrap()
     }
 
-    pub fn reference_block(&self) -> Option<i64> {
-        self.get_children()
-            .iter()
-            .find_map(|tag| {
-                if let MatroskaSpec::ReferenceBlock(ref block) = tag {
-                    Some(block)
-                } else {
-                    None
-                }
-            })
-            .copied()
-    }
-
-    pub fn is_key_frame(&self) -> bool {
+    pub(crate) fn is_key_frame(&self) -> bool {
         self.get_children()
             .iter()
             .find_map(|tag| {
@@ -69,7 +56,7 @@ impl<'a> BlockGroup<'a> {
     }
 
     // we assume only one frame per block group for now
-    pub fn get_frame(&self) -> Vec<u8> {
+    pub(crate) fn get_frame(&self) -> Vec<u8> {
         self.get_children()
             .iter()
             .find_map(|tag| {

@@ -24,8 +24,14 @@ pub enum XmfVpxCodecType {
 #[derive(Debug, Clone, Copy)]
 pub struct XmfVpxDecoderConfig {
     pub threads: c_uint,
+    /// Width
+    ///
+    /// Set to 0 when unknown.
     pub w: c_uint, // Width (set to 0 if unknown)
-    pub h: c_uint, // Height (set to 0 if unknown)
+    /// Height
+    ///
+    /// Set to 0 when unknown.
+    pub h: c_uint,
     pub codec: XmfVpxCodecType,
 }
 
@@ -43,22 +49,32 @@ pub enum XmfVpxDecoderErrorCode {
 #[repr(C)]
 #[derive(Debug, Clone, Copy)]
 pub enum VpxCodecError {
-    VpxCodecOk,             // Operation completed without error
-    VpxCodecError,          // Unspecified error
-    VpxCodecMemError,       // Memory operation failed
-    VpxCodecAbiMismatch,    // ABI version mismatch
-    VpxCodecIncapable,      // Algorithm does not have required capability
-    VpxCodecUnsupBitstream, // The given bitstream is not supported
-    VpxCodecUnsupFeature,   // Encoded bitstream uses an unsupported feature
-    VpxCodecCorruptFrame,   // The coded data for this stream is corrupt or incomplete
-    VpxCodecInvalidParam,   // An application-supplied parameter is not valid
-    VpxCodecListEnd,        // An iterator reached the end of list
+    /// Operation completed without error
+    VpxCodecOk,
+    /// Unspecified error
+    VpxCodecError,
+    /// Memory operation failed
+    VpxCodecMemError,
+    /// ABI version mismatch
+    VpxCodecAbiMismatch,
+    /// Algorithm does not have required capability
+    VpxCodecIncapable,
+    /// The given bitstream is not supported
+    VpxCodecUnsupBitstream,
+    /// Encoded bitstream uses an unsupported feature
+    VpxCodecUnsupFeature,
+    /// The coded data for this stream is corrupt or incomplete
+    VpxCodecCorruptFrame,
+    /// An application-supplied parameter is not valid
+    VpxCodecInvalidParam,
+    /// An iterator reached the end of list
+    VpxCodecListEnd,
 }
 
 #[repr(C)]
 #[derive(Debug, Clone, Copy)]
 pub struct VpxErrorDetail {
-    pub error_code: VpxCodecError, // vpx_codec_err_t is an enum defined in
+    pub error_code: VpxCodecError,
 }
 
 #[repr(C)]
@@ -118,6 +134,8 @@ pub enum XmfVpxPacketKind {
     CodecCustomPkt = 256,
 }
 
+impl std::error::Error for XmfVpxDecoderError {}
+
 impl fmt::Display for XmfVpxDecoderError {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         if matches!(self.code, XmfVpxDecoderErrorCode::VpxError) {
@@ -145,11 +163,7 @@ impl Debug for XmfVpxDecoderError {
     }
 }
 
-impl std::error::Error for XmfVpxDecoderError {
-    fn description(&self) -> &str {
-        "XMF VPX decoder error"
-    }
-}
+impl std::error::Error for XmfVpxEncoderError {}
 
 impl fmt::Display for XmfVpxEncoderError {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
@@ -177,5 +191,3 @@ impl Debug for XmfVpxEncoderError {
         }
     }
 }
-
-impl std::error::Error for XmfVpxEncoderError {}
