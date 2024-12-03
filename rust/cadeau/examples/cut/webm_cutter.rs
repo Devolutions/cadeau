@@ -2,10 +2,8 @@ use std::io::Seek;
 use std::path::Path;
 
 use cadeau::xmf::vpx::{is_key_frame, VpxCodec, VpxDecoder, VpxEncoder};
-use webm_iterable::{
-    matroska_spec::{Master, MatroskaSpec, SimpleBlock},
-    WebmIterator,
-};
+use webm_iterable::matroska_spec::{Master, MatroskaSpec, SimpleBlock};
+use webm_iterable::WebmIterator;
 use xmf_sys::VPX_EFLAG_FORCE_KF;
 
 use crate::block_group::BlockGroup;

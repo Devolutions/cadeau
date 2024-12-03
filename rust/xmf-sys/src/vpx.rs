@@ -3,6 +3,7 @@ use std::ffi::{c_uint, c_void};
 use std::fmt::Debug;
 
 pub const VPX_EFLAG_FORCE_KF: u32 = 0x00000001;
+
 pub type XmfVpxEncoder = c_void;
 pub type XmfVpxDecoder = c_void;
 pub type XmfVpxImage = c_void;
