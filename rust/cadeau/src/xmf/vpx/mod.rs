@@ -74,17 +74,16 @@ pub fn is_key_frame(buffer: &[u8]) -> bool {
 ///
 /// The [`VpxPacket`] may be invalidated as soon as the [`VpxEncoder`] which returned it is modified.
 ///
-/// To avoid memory corruptions, we ensure the encoder is not modified by binding a logical lifetime to the encoder ('encoder).
+/// To avoid memory corruptions, we ensure the encoder is not modified by binding a logical lifetime to the encoder (`'encoder`).
 ///
 /// For instance, this will not compile, as the encoder is used after the iterator is created.
 ///
 /// ```compile_fail
-///# fn example(encoder: &mut cadeau::xmf::vpx::VpxEncoder) -> Result<(), Box<dyn std::error::Error>> {
-/// let mut iterator = encoder.packet_iterator();
-/// let packet = iterator.next().unwrap();
-/// encoder.flush();
-///# Ok(())
-///# }
+/// fn example(encoder: &mut cadeau::xmf::vpx::VpxEncoder) {
+///     let mut iterator = encoder.packet_iterator();
+///     let packet = iterator.next().unwrap();
+///     encoder.flush();
+/// }
 /// ```
 pub struct VpxPacket<'a> {
     // INVARIANT: A valid pointer to a properly initialized XmfVpxPacket.
