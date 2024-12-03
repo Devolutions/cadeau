@@ -15,8 +15,8 @@ keywords = ["multimedia", "codec", "decoder", "image", "bindings"]
 rust-version = "1.74.0"
 
 [workspace.dependencies]
-cadeau = { version = "0.4", path = "./cadeau" }
-xmf-sys = { version = "0.2", path = "./xmf-sys" }
+cadeau = { version = "0.5", path = "./cadeau" }
+xmf-sys = { version = "0.3", path = "./xmf-sys" }
 
 [workspace.lints.rust]
 
