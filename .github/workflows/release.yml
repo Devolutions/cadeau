@@ -10,7 +10,7 @@ on:
         description: 'Build packages without publishing'
         required: true
         type: boolean
-        default: 'true'
+        default: true
 
 jobs:
   package:
@@ -100,7 +100,7 @@ jobs:
 
   publish:
     name: Publish packages
-    runs-on: ubuntu-20.04
+    runs-on: ubuntu-latest
     environment: publish-prod
     needs: package
     if: ${{ github.event.inputs.dry-run == 'false' }} 

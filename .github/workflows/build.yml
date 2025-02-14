@@ -11,7 +11,7 @@ env:
 jobs:
   preflight:
     name: Preflight
-    runs-on: ubuntu-20.04
+    runs-on: ubuntu-latest
     outputs:
       version: ${{ steps.get-version.outputs.version }}
 
@@ -49,7 +49,7 @@ jobs:
             runner: macos-14
             runner-arch: aarch64
           - os: linux
-            runner: ubuntu-20.04
+            runner: ubuntu-22.04
             runner-arch: x86_64
 
     steps:
@@ -93,7 +93,7 @@ jobs:
         shell: pwsh
         run: |
           $ClangLlvmVersion='14.0.6'
-          $ClangLlvmPlatform=@{'win'='windows';'osx'='macos';'linux'='ubuntu-20.04'}['${{matrix.os}}']
+          $ClangLlvmPlatform=@{'win'='windows';'osx'='macos';'linux'='ubuntu-22.04'}['${{matrix.os}}']
           $ClangLlvmBaseUrl="https://github.com/awakecoding/llvm-prebuilt/releases/download/v2023.1.0"
           $ClangLlvmName="clang+llvm-${ClangLlvmVersion}-${{matrix.runner-arch}}-${ClangLlvmPlatform}"
           wget -q "${ClangLlvmBaseUrl}/${ClangLlvmName}.tar.xz"
@@ -135,7 +135,7 @@ jobs:
         if: matrix.os == 'linux'
         shell: pwsh
         run: |
-          $CBakeVersion = "v2023.11.08.0"
+          $CBakeVersion = "v2025.02.14.0"
           $CBakeRepoUrl = "https://github.com/Devolutions/CBake"
           $CBakeDownloadUrl = "$CBakeRepoUrl/releases/download/$CBakeVersion"
           git clone -b $CBakeVersion "https://github.com/Devolutions/CBake" cbake
@@ -211,7 +211,7 @@ jobs:
 
   build-universal:
     name: Universal Build
-    runs-on: ubuntu-20.04
+    runs-on: ubuntu-latest
     needs: [preflight, build-native]
 
     steps:
@@ -220,10 +220,10 @@ jobs:
 
       - name: Configure runner
         run: |
-          wget -q https://github.com/awakecoding/llvm-prebuilt/releases/download/v2023.3.0/cctools-x86_64-ubuntu-20.04.tar.xz
-          tar -xf cctools-x86_64-ubuntu-20.04.tar.xz -C /tmp
-          sudo mv /tmp/cctools-x86_64-ubuntu-20.04/bin/lipo /usr/local/bin
-          sudo mv /tmp/cctools-x86_64-ubuntu-20.04/bin/install_name_tool /usr/local/bin
+          wget -q https://github.com/awakecoding/llvm-prebuilt/releases/download/v2023.3.0/cctools-x86_64-ubuntu-22.04.tar.xz
+          tar -xf cctools-x86_64-ubuntu-22.04.tar.xz -C /tmp
+          sudo mv /tmp/cctools-x86_64-ubuntu-22.04/bin/lipo /usr/local/bin
+          sudo mv /tmp/cctools-x86_64-ubuntu-22.04/bin/install_name_tool /usr/local/bin
 
       - name: Download native components
         uses: actions/download-artifact@v4
@@ -249,7 +249,7 @@ jobs:
 
   build-managed:
     name: Managed build
-    runs-on: windows-2022
+    runs-on: ubuntu-latest
     needs: [preflight, build-native, build-universal]
 
     steps:
