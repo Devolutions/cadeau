@@ -89,63 +89,27 @@ jobs:
           sudo apt update
           sudo apt install xz-utils ninja-build
 
-      - name: Install clang+llvm
-        shell: pwsh
-        run: |
-          $ClangLlvmVersion='14.0.6'
-          $ClangLlvmPlatform=@{'win'='windows';'osx'='macos';'linux'='ubuntu-22.04'}['${{matrix.os}}']
-          $ClangLlvmBaseUrl="https://github.com/awakecoding/llvm-prebuilt/releases/download/v2023.1.0"
-          $ClangLlvmName="clang+llvm-${ClangLlvmVersion}-${{matrix.runner-arch}}-${ClangLlvmPlatform}"
-          wget -q "${ClangLlvmBaseUrl}/${ClangLlvmName}.tar.xz"
-          if ($IsWindows) {
-            $LLVM_PREFIX="C:/llvm"
-            cmd.exe /c "7z.exe x ${ClangLlvmName}.tar.xz -so | 7z x -si -ttar -o`"C:/temp`""
-            mv "C:/temp/${ClangLlvmName}" $LLVM_PREFIX
-          } else {
-            $LLVM_PREFIX="/opt/llvm"
-            tar -xf "${ClangLlvmName}.tar.xz" -C /tmp
-            sudo mv "/tmp/${ClangLlvmName}" $LLVM_PREFIX
-          }
-          $LLVM_BIN_PATH="$LLVM_PREFIX/bin"
-          $LLVM_DIR="$LLVM_PREFIX/lib/cmake/llvm"
-          echo "LLVM_DIR=$LLVM_DIR" >> $Env:GITHUB_ENV
-          echo "PATH=$LLVM_BIN_PATH$([IO.Path]::PathSeparator)$Env:PATH" >> $Env:GITHUB_ENV
+      - name: Setup LLVM
+        uses: Devolutions/actions-public/setup-llvm@v1
+        with:
+          version: "14.0.6"
+          prebuilt_version: "v2023.1.0"
+          add_to_path: true
+          set_llvm_dir: true
 
-      - name: Install Halide
-        shell: pwsh
-        run: |
-          $HalideVersion='14.0.0'
-          $HalidePlatform=@{'win'='windows';'osx'='macos';'linux'='ubuntu-20.04'}['${{matrix.os}}']
-          $HalideBaseUrl="https://github.com/awakecoding/llvm-prebuilt/releases/download/v2023.1.0"
-          $HalideName="halide-${HalideVersion}-${{matrix.runner-arch}}-${HalidePlatform}"
-          wget -q "${HalideBaseUrl}/${HalideName}.tar.xz"
-          if ($IsWindows) {
-            $HalidePrefix="C:/halide"
-            cmd.exe /c "7z.exe x ${HalideName}.tar.xz -so | 7z x -si -ttar -o`"C:/temp`""
-            mv "C:/temp/${HalideName}" $HalidePrefix
-            mv $HalidePrefix/bin/*.dll $HalidePrefix/lib
-          } else {
-            $HalidePrefix="/opt/halide"
-            tar -xf "${HalideName}.tar.xz" -C /tmp
-            sudo mv "/tmp/${HalideName}" $HalidePrefix
-          }
-          echo "HALIDE_ROOT_DIR=$HalidePrefix" >> $Env:GITHUB_ENV
+      - name: Setup Halide
+        uses: Devolutions/actions-public/setup-halide@v1
+        with:
+          version: "14.0.0"
+          prebuilt_version: "v2023.1.0"
 
-      - name: Configure CBake
+      - name: Setup CBake
+        uses: Devolutions/actions-public/setup-cbake@v1
         if: matrix.os == 'linux'
-        shell: pwsh
-        run: |
-          $CBakeVersion = "v2025.02.14.0"
-          $CBakeRepoUrl = "https://github.com/Devolutions/CBake"
-          $CBakeDownloadUrl = "$CBakeRepoUrl/releases/download/$CBakeVersion"
-          git clone -b $CBakeVersion "https://github.com/Devolutions/CBake" cbake
-          @('ubuntu-20.04-amd64-sysroot.tar.xz', 'ubuntu-20.04-arm64-sysroot.tar.xz') | % {
-            curl -L --output "cbake/sysroots/$_" "$CBakeDownloadUrl/$_"
-            tar -C "cbake/sysroots" -xf "cbake/sysroots/$_"
-            Remove-Item "cbake/sysroots/$_" | Out-Null
-          }
-          $CBakeHome = Join-Path (Get-Location) 'cbake'
-          echo "CBAKE_HOME=$CBakeHome" >> $Env:GITHUB_ENV
+        with:
+          sysroots: |
+            - ubuntu-20.04-amd64
+            - ubuntu-20.04-arm64
 
       - name: Configure conan
         shell: pwsh
@@ -218,12 +182,8 @@ jobs:
       - name: Checkout ${{ github.repository }}
         uses: actions/checkout@v4
 
-      - name: Configure runner
-        run: |
-          wget -q https://github.com/awakecoding/llvm-prebuilt/releases/download/v2023.3.0/cctools-x86_64-ubuntu-22.04.tar.xz
-          tar -xf cctools-x86_64-ubuntu-22.04.tar.xz -C /tmp
-          sudo mv /tmp/cctools-x86_64-ubuntu-22.04/bin/lipo /usr/local/bin
-          sudo mv /tmp/cctools-x86_64-ubuntu-22.04/bin/install_name_tool /usr/local/bin
+      - name: Setup CCTools
+        uses: Devolutions/actions-public/setup-cctools@v1
 
       - name: Download native components
         uses: actions/download-artifact@v4
