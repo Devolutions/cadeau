@@ -4,6 +4,7 @@ using System.Net.WebSockets;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Threading;
+using System.Threading.Tasks;
 
 namespace Devolutions.Cadeau
 {
@@ -57,21 +58,9 @@ namespace Devolutions.Cadeau
             throw new NotImplementedException();
         }
 
-        protected override void Dispose(bool disposing)
+        public Task Close(CancellationToken? cancellationToken = null)
         {
-            if (disposing)
-            {
-                try
-                {
-                    this.ws.CloseAsync(WebSocketCloseStatus.NormalClosure, string.Empty, CancellationToken.None).Wait();
-                }
-                catch
-                {
-
-                }
-            }
-
-            base.Dispose(disposing);
+            return this.ws.CloseAsync(WebSocketCloseStatus.NormalClosure, string.Empty, cancellationToken.GetValueOrDefault(CancellationToken.None));
         }
     }
 }

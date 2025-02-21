@@ -8,6 +8,8 @@ using System.Net.WebSockets;
 using System.Security.Cryptography.X509Certificates;
 using System.Text;
 using System.Threading;
+using System.Threading.Tasks;
+using System.Xml.Linq;
 
 namespace Devolutions.Cadeau
 {
@@ -112,7 +114,7 @@ namespace Devolutions.Cadeau
         public bool ConnectOld(string scheme, string host, int port)
         {
             bool result = false;
-            
+
             if (scheme == "tcp")
             {
                 result = this.ConnectTcp(host, port);
@@ -124,7 +126,7 @@ namespace Devolutions.Cadeau
 
             if (!result)
             {
-                this.Disconnect();
+                this.Disconnect(null);
                 return false;
             }
 
@@ -132,7 +134,7 @@ namespace Devolutions.Cadeau
 
             if (!result)
             {
-                this.Disconnect();
+                this.Disconnect(null);
                 return false;
             }
 
@@ -213,20 +215,34 @@ namespace Devolutions.Cadeau
             return true;
         }
 
-        public void Disconnect()
+        public Task? Disconnect(CancellationToken? token)
         {
-            if (this.stream == null)
+            try
             {
-                return;
-            }
 
-            if (this.Connected && !this.IsRawData)
+                if (this.stream == null)
+                {
+                    return null;
+                }
+
+                if (this.Connected && !this.IsRawData)
+                {
+                    var type = new[] { ENDOFSTREAM_MESSAGE_ID };
+                    this.stream.Write(type, 0, 1);
+                }
+
+                if (this.stream is XmfWsStream wsStream)
+                {
+                    return wsStream.Close(token);
+                }
+
+                return null;
+            }
+            finally
             {
-                var type = new[] { ENDOFSTREAM_MESSAGE_ID };
-                this.stream.Write(type, 0, 1);
-            }
 
-            this.stream.Dispose();
+                this.stream.Dispose();
+            }
         }
 
         public bool SendClientHelloV2()
@@ -284,7 +300,7 @@ namespace Devolutions.Cadeau
             try
             {
                 this.stream.Write(BitConverter.GetBytes(this.DucVersion), 0, 4);
-                this.stream.Write(BitConverter.GetBytes((uint) 0), 0, 4);
+                this.stream.Write(BitConverter.GetBytes((uint)0), 0, 4);
 
                 this.stream.Write(BitConverter.GetBytes((ushort)this.streamType), 0, 2);
                 this.WriteStringOnStream(this.TargetHost);
@@ -562,7 +578,7 @@ namespace Devolutions.Cadeau
                     else
                     {
                         this.DucVersion = 1;
-                    }    
+                    }
                 }
             }
 
