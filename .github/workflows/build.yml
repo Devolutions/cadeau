@@ -8,6 +8,7 @@ on:
         required: true
 env:
   conan-version: 1.60.0
+  target-distro: "ubuntu-18.04"
 jobs:
   preflight:
     name: Preflight
@@ -44,13 +45,10 @@ jobs:
         include:
           - os: win
             runner: windows-2022
-            runner-arch: x86_64
           - os: osx
             runner: macos-14
-            runner-arch: aarch64
           - os: linux
             runner: ubuntu-22.04
-            runner-arch: x86_64
 
     steps:
       - name: Check out ${{ github.repository }}
@@ -108,8 +106,8 @@ jobs:
         if: matrix.os == 'linux'
         with:
           sysroots: |
-            - ubuntu-20.04-amd64
-            - ubuntu-20.04-arm64
+            - ${{env.target-distro}}-amd64
+            - ${{env.target-distro}}-arm64
 
       - name: Configure conan
         shell: pwsh
@@ -119,6 +117,9 @@ jobs:
           conan config install --type=git -sf settings https://github.com/Devolutions/conan-public
           conan remote clean
           conan remote add artifactory https://devolutions.jfrog.io/devolutions/api/conan/conan-local
+          if ($IsLinux) {
+            sed -i 's/^distro=.*/distro=${{env.target-distro}}/' ~/.conan/profiles/linux-base
+          }
 
       - name: Build cadeau (${{matrix.os}}-${{matrix.arch}})
         shell: pwsh
@@ -159,7 +160,7 @@ jobs:
           elseif ($DotNetOs -eq 'linux') {
             $LinuxArch = @{'x64'='amd64';'arm64'='arm64'}[$DotNetArch]
             $CMakeToolchainFile = Join-Path $Env:CBAKE_HOME "cmake/linux.toolchain.cmake"
-            $CMakeArgs += "-DSYSROOT_NAME=ubuntu-20.04-$LinuxArch"
+            $CMakeArgs += "-DSYSROOT_NAME=${{env.target-distro}}-$LinuxArch"
             $CMakeArgs += "-DCMAKE_TOOLCHAIN_FILE=$CMakeToolchainFile"
             cmake . -G Ninja -B $BuildDir $CMakeArgs
             cmake --build $BuildDir
