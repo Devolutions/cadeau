@@ -480,7 +480,7 @@ namespace Devolutions.Cadeau.Test
                 }
             }
 
-            streamer.Disconnect();
+            streamer.Disconnect(null);
         }
 
         static void TestStreamingV3()
@@ -559,7 +559,7 @@ namespace Devolutions.Cadeau.Test
                 }
             }
 
-            streamer.Disconnect();
+            streamer.Disconnect(null);
         }
 
         static void TestMuxer() {
@@ -572,7 +572,7 @@ namespace Devolutions.Cadeau.Test
             Console.WriteLine("media dir: {0}", mediaDir);
             Console.WriteLine("output file: {0}", outputFile);
             muxer.Remux(mediaFile, outputFile);
-            muxer.Free();
+            muxer.Cleanup();
         }
         static void Main(string[] args)
         {
