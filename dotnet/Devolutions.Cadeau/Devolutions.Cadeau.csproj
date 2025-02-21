@@ -2,7 +2,7 @@
 
   <PropertyGroup>
     <PackageId>Devolutions.Cadeau</PackageId>
-    <Version>2024.02.21.0</Version>
+    <Version>1.0.0.0</Version>
     <Authors>mamoreau@devolutions.net</Authors>
     <Company>Devolutions</Company>
     <TargetFramework>netstandard2.0</TargetFramework>
