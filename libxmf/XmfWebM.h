@@ -16,6 +16,7 @@ extern "C" {
 #endif
 
 int XmfWebM_Encode(XmfWebM* ctx, const uint8_t* srcData, uint16_t x, uint16_t y, uint16_t width, uint16_t height);
+int XmfWebM_EncodeXRGB(XmfWebM* ctx, const uint8_t* srcData, uint32_t srcStep, uint16_t x, uint16_t y, uint16_t width, uint16_t height);
 void XmfWebM_Finalize(XmfWebM* ctx);
 
 uint64_t XmfWebM_FrameCount(XmfWebM* ctx);

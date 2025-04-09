@@ -99,7 +99,7 @@ int XMF_API XmfRecorder_Update(XmfRecorder* ctx, const uint8_t* frameData, uint3
 
     if (ctx->webm)
     {
-        XmfWebM_Encode(ctx->webm, frameData, 0, 0, frameWidth, frameHeight);
+        XmfWebM_EncodeXRGB(ctx->webm, frameData, frameStep, 0, 0, frameWidth, frameHeight);
         ctx->lastUpdateTime = XmfTimeSource_Get(&ctx->ts);
     }
 

@@ -227,6 +227,11 @@ int XmfWebM_EncodeInternal(XmfWebM* ctx, bool force)
 
 int XMF_API XmfWebM_Encode(XmfWebM* ctx, const uint8_t* srcData, uint16_t x, uint16_t y, uint16_t width, uint16_t height)
 {
+    return XmfWebM_EncodeXRGB(ctx, srcData, width * 4, x, y, width, height);
+}
+
+int XMF_API XmfWebM_EncodeXRGB(XmfWebM* ctx, const uint8_t* srcData, uint32_t srcStep, uint16_t x, uint16_t y, uint16_t width, uint16_t height)
+{
     uint32_t step[3];
 
     if (!ctx->pending_frame)
@@ -245,7 +250,7 @@ convert_frame:
     step[1] = (uint32_t) ctx->img->stride[1];
     step[2] = (uint32_t) ctx->img->stride[2];
 
-    Xpp_RGBToYCbCr420_8u_P3AC4R(srcData, width * 4, ctx->img->planes, step, width, height);
+    Xpp_RGBToYCbCr420_8u_P3AC4R(srcData, srcStep, ctx->img->planes, step, width, height);
     ctx->frame_time = XmfTimeSource_Get(&ctx->ts);
     ctx->pending_frame = true;
 
