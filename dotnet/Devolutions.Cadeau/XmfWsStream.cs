@@ -1,8 +1,6 @@
 using System;
 using System.IO;
 using System.Net.WebSockets;
-using System.Runtime.CompilerServices;
-using System.Runtime.InteropServices;
 using System.Threading;
 using System.Threading.Tasks;
 
@@ -10,26 +8,25 @@ namespace Devolutions.Cadeau
 {
     public class XmfWsStream : Stream
     {
+        private readonly ClientWebSocket ws;
+
         public override bool CanRead => false;
+
         public override bool CanWrite => true;
+
         public override bool CanSeek => false;
 
-        public ClientWebSocket ws;
-
-        public XmfWsStream(ClientWebSocket webSocket)
+        internal XmfWsStream(ClientWebSocket webSocket)
         {
             this.ws = webSocket;
         }
 
-        public override long Length
-        {
-            get { throw new NotImplementedException(); }
-        }
+        public override long Length => throw new NotImplementedException();
 
         public override long Position
         {
-            get { throw new NotImplementedException(); }
-            set { throw new NotImplementedException(); }
+            get => throw new NotImplementedException();
+            set => throw new NotImplementedException();
         }
 
         public override long Seek(long offset, SeekOrigin origin)
@@ -46,6 +43,12 @@ namespace Devolutions.Cadeau
         {
             ArraySegment<byte> data = new ArraySegment<byte>(buffer, offset, count);
             this.ws.SendAsync(data, WebSocketMessageType.Binary, true, CancellationToken.None).Wait();
+        }
+
+        public override async Task WriteAsync(byte[] buffer, int offset, int count, CancellationToken cancellationToken)
+        {
+            ArraySegment<byte> data = new ArraySegment<byte>(buffer, offset, count);
+            await this.ws.SendAsync(data, WebSocketMessageType.Binary, true, cancellationToken);
         }
 
         public override void Flush()
