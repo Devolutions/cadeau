@@ -136,7 +136,7 @@ jobs:
           $InstallPath = ".\install-${DotNetRid}"
           New-Item -Path $InstallPath -ItemType Directory -ErrorAction SilentlyContinue | Out-Null
           
-          $CMakeArgs = @("-DCMAKE_BUILD_TYPE=Release")
+          $CMakeArgs = @("-DCMAKE_BUILD_TYPE=Debug")
           $CMakeArgs += @("-DCMAKE_INSTALL_PREFIX=$InstallPath")
           $CMakeArgs += @("-DHALIDE_ROOT_DIR=$($Env:HALIDE_ROOT_DIR)")
           $CMakeArgs += @("-DWITH_XMF=ON", "-DUSE_CONAN=ON")
@@ -145,8 +145,8 @@ jobs:
             $MsvcArch = @{'x64'='x64';'arm64'='ARM64'}[$DotNetArch]
             Enter-VsDevShell $MsvcArch
             cmake -G Ninja . -B $BuildDir $CMakeArgs
-            cmake --build $BuildDir --config Release
-            cmake --install $BuildDir --config Release
+            cmake --build $BuildDir --config Debug
+            cmake --install $BuildDir --config Debug
             Copy-Item "$BuildDir\lib\xmf.dll" "$NativeDir\xmf.dll" -Force
           }
           elseif ($DotNetOs -eq 'osx') {
