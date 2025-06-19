@@ -9,7 +9,6 @@ using System.Security.Cryptography.X509Certificates;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
-using System.Xml.Linq;
 
 namespace Devolutions.Cadeau
 {
@@ -81,6 +80,10 @@ namespace Devolutions.Cadeau
 
         private const byte PAYLOAD_MESSAGE_ID = 2;
 
+        private uint ducVersion = 2;
+
+        private int connectTimeout = 5000;
+
         private Stream stream;
 
         public bool Connected => this.stream?.CanWrite ?? false;
@@ -99,11 +102,7 @@ namespace Devolutions.Cadeau
 
         public Dictionary<string, string> metadata = new Dictionary<string, string>();
 
-        private uint DucVersion = 2;
-
-        private int connectTimeout = 5000;
-
-        public bool IsRawData { get { return this.DucVersion >= 2; } }
+        public bool IsRawData => this.ducVersion >= 2;
 
         public uint FrameWidth = 1024;
 
@@ -113,32 +112,17 @@ namespace Devolutions.Cadeau
 
         public bool ConnectOld(string scheme, string host, int port)
         {
-            bool result = false;
-
-            if (scheme == "tcp")
+            if (scheme == "tcp" ? this.ConnectTcp(host, port) : this.ConnectTls(host, port))
             {
-                result = this.ConnectTcp(host, port);
-            }
-            else
-            {
-                result = this.ConnectTls(host, port);
+                if (this.Handshake())
+                {
+                    return true;
+                }
             }
 
-            if (!result)
-            {
-                this.Disconnect(null);
-                return false;
-            }
+            this.Disconnect(CancellationToken.None);
 
-            result = this.Handshake();
-
-            if (!result)
-            {
-                this.Disconnect(null);
-                return false;
-            }
-
-            return result;
+            return false;
         }
 
         public bool ConnectV3(string destinationUrl)
@@ -148,8 +132,10 @@ namespace Devolutions.Cadeau
 
             try
             {
+                // todo dispose?
                 ClientWebSocket webSocket = new ClientWebSocket();
                 webSocket.Options.UseDefaultCredentials = false;
+                //async wait?
                 webSocket.ConnectAsync(url, CancellationToken.None).Wait(this.connectTimeout);
                 this.stream = new XmfWsStream(webSocket);
             }
@@ -170,7 +156,7 @@ namespace Devolutions.Cadeau
 
             if (destinationUrl.StartsWith("ws"))
             {
-                this.DucVersion = 3;
+                this.ducVersion = 3;
                 return this.ConnectV3(destinationUrl);
             }
 
@@ -185,7 +171,7 @@ namespace Devolutions.Cadeau
                 return false;
             }
 
-            if (this.DucVersion == 2)
+            if (this.ducVersion == 2)
             {
                 if (!this.SendClientHelloV2())
                 {
@@ -208,14 +194,17 @@ namespace Devolutions.Cadeau
 
                 foreach (KeyValuePair<string, string> elem in this.metadata)
                 {
-                    this.SendMetadata(elem.Key, elem.Value);
+                    if (!this.SendMetadata(elem.Key, elem.Value))
+                    {
+                        return false;
+                    }
                 }
             }
 
             return true;
         }
 
-        public Task? Disconnect(CancellationToken? token)
+        public Task Disconnect(CancellationToken token)
         {
             try
             {
@@ -227,8 +216,8 @@ namespace Devolutions.Cadeau
 
                 if (this.Connected && !this.IsRawData)
                 {
-                    var type = new[] { ENDOFSTREAM_MESSAGE_ID };
-                    this.stream.Write(type, 0, 1);
+                    byte[] type = new[] { ENDOFSTREAM_MESSAGE_ID };
+                    this.stream?.Write(type, 0, 1);
                 }
 
                 if (this.stream is XmfWsStream wsStream)
@@ -241,7 +230,8 @@ namespace Devolutions.Cadeau
             finally
             {
 
-                this.stream.Dispose();
+                this.stream?.Dispose();
+                this.stream = null;
             }
         }
 
@@ -273,9 +263,9 @@ namespace Devolutions.Cadeau
 
             try
             {
-                this.stream.Write(BitConverter.GetBytes(this.DucVersion), 0, 4);
-                this.stream.Write(BitConverter.GetBytes(data.Length), 0, 4);
-                this.stream.Write(data, 0, data.Length);
+                this.stream?.Write(BitConverter.GetBytes(this.ducVersion), 0, 4);
+                this.stream?.Write(BitConverter.GetBytes(data.Length), 0, 4);
+                this.stream?.Write(data, 0, data.Length);
             }
             catch (Exception e)
             {
@@ -299,10 +289,10 @@ namespace Devolutions.Cadeau
 
             try
             {
-                this.stream.Write(BitConverter.GetBytes(this.DucVersion), 0, 4);
-                this.stream.Write(BitConverter.GetBytes((uint)0), 0, 4);
+                this.stream?.Write(BitConverter.GetBytes(this.ducVersion), 0, 4);
+                this.stream?.Write(BitConverter.GetBytes((uint)0), 0, 4);
 
-                this.stream.Write(BitConverter.GetBytes((ushort)this.streamType), 0, 2);
+                this.stream?.Write(BitConverter.GetBytes((ushort)this.streamType), 0, 2);
                 this.WriteStringOnStream(this.TargetHost);
                 this.WriteStringOnStream(this.AuthToken);
             }
@@ -318,7 +308,7 @@ namespace Devolutions.Cadeau
         public byte ReceiveServerStatus()
         {
             byte[] status = new byte[1];
-            var read = this.stream.Read(status, 0, status.Length);
+            int read = this.stream.Read(status, 0, status.Length);
             return read != status.Length ? (byte)0 : status[0];
         }
 
@@ -329,19 +319,21 @@ namespace Devolutions.Cadeau
                 return false;
             }
 
-            if (!this.IsRawData)
+            if (this.IsRawData)
             {
-                var type = new[] { KEEPALIVE_MESSAGE_ID };
+                return true;
+            }
 
-                try
-                {
-                    this.stream.Write(type, 0, 1);
-                }
-                catch (Exception e)
-                {
-                    this.OnError?.Invoke(e);
-                    return false;
-                }
+            byte[] type = { KEEPALIVE_MESSAGE_ID };
+
+            try
+            {
+                this.stream?.Write(type, 0, 1);
+            }
+            catch (Exception e)
+            {
+                this.OnError?.Invoke(e);
+                return false;
             }
 
             return true;
@@ -354,11 +346,11 @@ namespace Devolutions.Cadeau
                 return false;
             }
 
-            var type = new[] { METADATA_MESSAGE_ID };
+            byte[] type = { METADATA_MESSAGE_ID };
 
             try
             {
-                this.stream.Write(type, 0, 1);
+                this.stream?.Write(type, 0, 1);
 
                 this.WriteStringOnStream(name);
                 this.WriteStringOnStream(value);
@@ -372,7 +364,22 @@ namespace Devolutions.Cadeau
             return true;
         }
 
-        public unsafe bool SendRawData(byte[] buffer, int offset, int count)
+        public Task SendRawDataAsync(byte[] buffer, int offset, int count)
+        {
+            if (!this.Connected)
+            {
+                throw new InvalidOperationException("stream is not connected");
+            }
+
+            if (!this.IsRawData)
+            {
+                throw new InvalidOperationException("stream is not in raw data mode");
+            }
+
+            return this.stream?.WriteAsync(buffer, offset, count);
+        }
+
+        public bool SendRawData(byte[] buffer, int offset, int count)
         {
             if (!this.Connected)
             {
@@ -386,7 +393,7 @@ namespace Devolutions.Cadeau
 
             try
             {
-                this.stream.Write(buffer, offset, count);
+                this.stream?.Write(buffer, offset, count);
             }
             catch (Exception e)
             {
@@ -397,12 +404,14 @@ namespace Devolutions.Cadeau
             return true;
         }
 
-        (uint ts_sec, uint ts_usec) GetPcapTimestamp(DateTime timestamp)
+        private (uint ts_sec, uint ts_usec) GetPcapTimestamp(DateTime timestamp)
         {
-            var unixEpoch = new DateTime(1970, 1, 1, 0, 0, 0, DateTimeKind.Utc);
+            DateTime unixEpoch = new DateTime(1970, 1, 1, 0, 0, 0, DateTimeKind.Utc);
+
             uint ts_sec = (uint)timestamp.Subtract(unixEpoch).TotalSeconds;
             uint ts_usec = (uint)(timestamp.Subtract(unixEpoch).TotalMilliseconds -
                 (uint)(timestamp.Subtract(unixEpoch).TotalSeconds * 1000)) * 1000;
+
             return (ts_sec, ts_usec);
         }
 
@@ -413,35 +422,36 @@ namespace Devolutions.Cadeau
                 return false;
             }
 
-            var type = new[] { PAYLOAD_MESSAGE_ID };
-            var record = new byte[16];
+            byte[] type = { PAYLOAD_MESSAGE_ID };
+            byte[] record = new byte[16];
 
             try
             {
                 (uint ts_sec, uint ts_usec) = this.GetPcapTimestamp(timestamp);
 
-                this.stream.Write(type, 0, 1);
+                this.stream?.Write(type, 0, 1);
 
-                using (var ms = new MemoryStream())
+                using (MemoryStream ms = new MemoryStream())
                 {
-                    using (var ums = new UnmanagedMemoryStream((byte*)payload.ToPointer(), length))
+                    using (UnmanagedMemoryStream ums = new UnmanagedMemoryStream((byte*)payload.ToPointer(), length))
                     {
-                        using (var zip = new GZipStream(ms, CompressionLevel.Fastest))
+                        using (GZipStream zip = new GZipStream(ms, CompressionLevel.Fastest))
                         {
                             ums.CopyTo(zip);
                         }
                     }
 
-                    var zippedPayload = ms.GetBuffer();
+                    // FIXME: GetBuffer returns the full buffer which is probably overallocated. Use ms.Length instead of zippedPayload.Length.
+                    byte[] zippedPayload = ms.GetBuffer();
 
                     ts_sec.CopyToByteArray(record, 0);
                     ts_usec.CopyToByteArray(record, 4);
                     zippedPayload.Length.CopyToByteArray(record, 8);
                     length.CopyToByteArray(record, 12);
 
-                    this.stream.Write(BitConverter.GetBytes(record.Length + zippedPayload.Length), 0, 4);
-                    this.stream.Write(record, 0, record.Length);
-                    this.stream.Write(zippedPayload, 0, zippedPayload.Length);
+                    this.stream?.Write(BitConverter.GetBytes(record.Length + zippedPayload.Length), 0, 4);
+                    this.stream?.Write(record, 0, record.Length);
+                    this.stream?.Write(zippedPayload, 0, zippedPayload.Length);
                 }
             }
             catch (Exception e)
@@ -460,32 +470,33 @@ namespace Devolutions.Cadeau
                 return false;
             }
 
-            var type = new[] { PAYLOAD_MESSAGE_ID };
-            var record = new byte[16];
+            byte[] type = { PAYLOAD_MESSAGE_ID };
+            byte[] record = new byte[16];
 
             try
             {
                 (uint ts_sec, uint ts_usec) = this.GetPcapTimestamp(timestamp);
 
-                this.stream.Write(type, 0, 1);
+                this.stream?.Write(type, 0, 1);
 
-                using (var ms = new MemoryStream())
+                using (MemoryStream ms = new MemoryStream())
                 {
-                    using (var zip = new GZipStream(ms, CompressionLevel.Fastest))
+                    using (GZipStream zip = new GZipStream(ms, CompressionLevel.Fastest, true))
                     {
                         zip.Write(payload, 0, payload.Length);
                     }
 
-                    var zippedPayload = ms.GetBuffer();
+                    // FIXME:
+                    byte[] zippedPayload = ms.GetBuffer();
 
                     ts_sec.CopyToByteArray(record, 0);
                     ts_usec.CopyToByteArray(record, 4);
                     zippedPayload.Length.CopyToByteArray(record, 8);
                     payload.Length.CopyToByteArray(record, 12);
 
-                    this.stream.Write(BitConverter.GetBytes(record.Length + zippedPayload.Length), 0, 4);
-                    this.stream.Write(record, 0, record.Length);
-                    this.stream.Write(zippedPayload, 0, zippedPayload.Length);
+                    this.stream?.Write(BitConverter.GetBytes(record.Length + zippedPayload.Length), 0, 4);
+                    this.stream?.Write(record, 0, record.Length);
+                    this.stream?.Write(zippedPayload, 0, zippedPayload.Length);
                 }
             }
             catch (Exception e)
@@ -499,16 +510,16 @@ namespace Devolutions.Cadeau
 
         private void WriteStringOnStream(string source)
         {
-            var bytes = Encoding.UTF8.GetBytes(source);
-            this.stream.Write(BitConverter.GetBytes(bytes.Length), 0, 4);
-            this.stream.Write(bytes, 0, bytes.Length);
+            byte[] bytes = Encoding.UTF8.GetBytes(source);
+            this.stream?.Write(BitConverter.GetBytes(bytes.Length), 0, 4);
+            this.stream?.Write(bytes, 0, bytes.Length);
         }
 
         private bool ConnectTcp(string host, int port)
         {
             try
             {
-                var client = new TcpClient();
+                TcpClient client = new TcpClient();
                 client.Connect(host, port);
 
                 this.stream = client.GetStream();
@@ -526,10 +537,10 @@ namespace Devolutions.Cadeau
         {
             try
             {
-                var client = new TcpClient();
+                TcpClient client = new TcpClient();
                 client.Connect(host, port);
 
-                var clientStream = client.GetStream();
+                NetworkStream clientStream = client.GetStream();
 
                 RemoteCertificateValidationCallback certificateValidationCallback = null;
 
@@ -557,7 +568,7 @@ namespace Devolutions.Cadeau
         {
             byte[] hello = new byte[8];
 
-            var read = this.stream.Read(hello, 0, 8);
+            int read = this.stream.Read(hello, 0, 8);
 
             if (read != 8)
             {
@@ -571,13 +582,13 @@ namespace Devolutions.Cadeau
                     uint ducVersion = *((uint*)&ptr[0]);
                     //uint ducReserved = *((uint*)&ptr[4]);
 
-                    if ((ducVersion >= 2) && (this.DucVersion >= 2))
+                    if ((ducVersion >= 2) && (this.ducVersion >= 2))
                     {
-                        this.DucVersion = 2;
+                        this.ducVersion = 2;
                     }
                     else
                     {
-                        this.DucVersion = 1;
+                        this.ducVersion = 1;
                     }
                 }
             }
