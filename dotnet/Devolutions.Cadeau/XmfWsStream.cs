@@ -12,22 +12,19 @@ namespace Devolutions.Cadeau
         public override bool CanWrite => true;
         public override bool CanSeek => false;
 
-        public ClientWebSocket ws;
+        private ClientWebSocket ws;
 
         public XmfWsStream(ClientWebSocket webSocket)
         {
             this.ws = webSocket;
         }
 
-        public override long Length
-        {
-            get { throw new NotImplementedException(); }
-        }
+        public override long Length => throw new NotImplementedException();
 
         public override long Position
         {
-            get { throw new NotImplementedException(); }
-            set { throw new NotImplementedException(); }
+            get => throw new NotImplementedException();
+            set => throw new NotImplementedException();
         }
 
         public override long Seek(long offset, SeekOrigin origin)
@@ -50,6 +47,13 @@ namespace Devolutions.Cadeau
             ArraySegment<byte> data = new ArraySegment<byte>(buffer, offset, count);
             return this.ws.SendAsync(data, WebSocketMessageType.Binary, true, cancellationToken);
         }
+
+#if NETSTANDARD2_1 || NETCOREAPP2_1_OR_GREATER
+        public override ValueTask WriteAsync(ReadOnlyMemory<byte> buffer, CancellationToken cancellationToken = default)
+        {
+            return this.ws.SendAsync(buffer, WebSocketMessageType.Binary, true, cancellationToken);
+        }
+#endif
 
         public override void Flush()
         {
