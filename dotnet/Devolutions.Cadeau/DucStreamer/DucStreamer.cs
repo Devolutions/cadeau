@@ -210,18 +210,29 @@ namespace Devolutions.Cadeau
             switch (streamer)
             {
                 case DucStreamerV1Backend legacy:
+                {
                     writeAsync = (buffer, offset, count, cancellationToken) =>
                         legacy.WriteAsync(DateTime.Now, buffer, offset, count, cancellationToken);
 
                     writeIntPtrAsync = (ptr, length, cancellationToken) =>
                         legacy.WriteAsync(DateTime.Now, ptr, length, cancellationToken);
+
                     break;
+                }
 
                 case DucStreamerV3Backend v3:
+                {
                     writeAsync = (buffer, offset, count, cancellationToken) =>
                         v3.WriteAsync(new ReadOnlyMemory<byte>(buffer, offset, count), cancellationToken);
-                    writeIntPtrAsync = (_, _, _) => throw new NotSupportedException();
+
+                    writeIntPtrAsync = (buffer, length, cancellationToken) =>
+                    {
+                        using UnmanagedMemoryManager umm = new UnmanagedMemoryManager(buffer, length);
+                        return v3.WriteAsync(umm.Memory, cancellationToken);
+                    };
+
                     break;
+                }
 
                 default:
                     throw new NotImplementedException("unsupported streamer type");
