@@ -480,7 +480,7 @@ namespace Devolutions.Cadeau.Test
                 }
             }
 
-            streamer.Disconnect(null);
+            streamer.Disconnect(CancellationToken.None);
         }
 
         static void TestStreamingV3()
@@ -559,7 +559,7 @@ namespace Devolutions.Cadeau.Test
                 }
             }
 
-            streamer.Disconnect(null);
+            streamer.Disconnect(CancellationToken.None);
         }
 
         static void TestMuxer() {
