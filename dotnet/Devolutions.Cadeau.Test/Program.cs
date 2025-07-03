@@ -1,13 +1,8 @@
 ﻿using System;
-using System.IO;
-using System.Text;
-using System.Threading;
-using System.Threading.Tasks;
-using System.Net.WebSockets;
 using System.Collections.Generic;
-using System.Runtime.InteropServices;
-
-using Devolutions.Cadeau;
+using System.IO;
+using System.Net.WebSockets;
+using System.Threading;
 
 namespace Devolutions.Cadeau.Test
 {
@@ -403,14 +398,14 @@ namespace Devolutions.Cadeau.Test
 
             streamer.AuthToken = streamAuthToken;
             streamer.TargetHost = streamTargetHost;
-            streamer.streamType = streamType;
+            streamer.StreamType = streamType;
             streamer.FrameWidth = frameWidth;
             streamer.FrameHeight = frameHeight;
             streamer.FrameRate = frameRate;
-            streamer.metadata.Add("ConnectionID", connectionId);
-            streamer.metadata.Add("RepositoryID", repositoryId);
-            streamer.metadata.Add("ConnectionLogID", connectionLogId);
-            streamer.metadata.Add("ConnectionType", "1");
+            streamer.Metadata.Add("ConnectionID", connectionId);
+            streamer.Metadata.Add("RepositoryID", repositoryId);
+            streamer.Metadata.Add("ConnectionLogID", connectionLogId);
+            streamer.Metadata.Add("ConnectionType", "1");
 
             if (!streamer.ConnectUrl(destination))
             {

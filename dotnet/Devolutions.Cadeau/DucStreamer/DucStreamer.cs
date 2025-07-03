@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.IO;
+using System.Net.NetworkInformation;
 using System.Net.Security;
 using System.Security.Cryptography.X509Certificates;
 using System.Threading;
@@ -43,6 +44,8 @@ namespace Devolutions.Cadeau
         [Obsolete("Use Metadata instead.")] public Dictionary<string, string> metadata = new();
 
         public string AuthToken { get; set; }
+
+        public TimeSpan ConnectTimeout { get; set; } = TimeSpan.FromSeconds(5);
 
         public bool Connected => this.Streamer?.Connected ?? false;
 
@@ -95,11 +98,22 @@ namespace Devolutions.Cadeau
         {
             if (IsV3Address(destination))
             {
-                this.Streamer = new DucStreamerV3Backend();
+                this.Streamer = CreateV3Backend();
                 return this.Streamer.Connect(destination);
             }
 
             return this.ConnectOld(destination.Scheme, destination.Host, destination.Port);
+        }
+
+        public async Task ConnectUrlAsync(Uri destination, CancellationToken cancellationToken = default)
+        {
+            if (!IsV3Address(destination))
+            {
+                throw new NotSupportedException("Only V3 addresses are supported for async connection.");
+            }
+
+            this.Streamer = CreateV3Backend();
+            await ((DucStreamerV3Backend) this.Streamer).ConnectAsync(destination, cancellationToken);
         }
 
         public static bool IsV3Address(Uri destination) => destination.Scheme.StartsWith("ws");
@@ -141,6 +155,16 @@ namespace Devolutions.Cadeau
 
         public Task WriteAsync(IntPtr buffer, int length, CancellationToken cancellationToken = default) => this.writeAdaptor?.WriteAsync(buffer, length, cancellationToken);
 #endif
+
+        private DucStreamerV3Backend CreateV3Backend()
+        {
+            DucStreamerV3Backend v3 = new DucStreamerV3Backend();
+            v3.ConnectTimeout = ConnectTimeout;
+            v3.OnError = this.OnError;
+            v3.OnValidateCertificate = this.OnValidateCertificate;
+
+            return v3;
+        }
 
         private bool ConnectOld(string scheme, string host, int port)
         {
