@@ -11,8 +11,6 @@ namespace Devolutions.Cadeau
 
         internal abstract bool KeepAlives { get; }
 
-        protected TimeSpan ConnectTimeout { get; set; }
-
         protected Stream Stream { get; set; }
 
         public bool Connected => this.Stream?.CanWrite ?? false;
