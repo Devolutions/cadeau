@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.IO;
+using System.Net;
 using System.Net.NetworkInformation;
 using System.Net.Security;
 using System.Security.Cryptography.X509Certificates;
@@ -70,6 +71,8 @@ namespace Devolutions.Cadeau
         public OnError OnError { get; set; }
 
         public OnValidateCertificate OnValidateCertificate { get; set; }
+
+        public IWebProxy Proxy { get; set; } = null;
 
         public DucStreamType StreamType
         {
@@ -160,6 +163,7 @@ namespace Devolutions.Cadeau
         {
             DucStreamerV3Backend v3 = new DucStreamerV3Backend();
             v3.ConnectTimeout = ConnectTimeout;
+            v3.Proxy = this.Proxy;
             v3.OnError = this.OnError;
             v3.OnValidateCertificate = this.OnValidateCertificate;
 
