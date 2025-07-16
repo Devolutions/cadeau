@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Net;
 using System.Net.WebSockets;
 using System.Runtime.InteropServices;
 using System.Threading;
@@ -19,6 +20,8 @@ namespace Devolutions.Cadeau
 
         internal override bool KeepAlives => false;
 
+        internal IWebProxy Proxy { get; set; } = null;
+
         internal OnValidateCertificate OnValidateCertificate { get; set; }
 
         public override bool IsRawData => true;
@@ -33,6 +36,11 @@ namespace Devolutions.Cadeau
                 this.OnValidateCertificate?.Invoke(sender, certificate, chain, sslPolicyErrors) ?? false;
             webSocket.Options.RemoteCertificateValidationCallback = CertificateValidationCallback;
 #endif
+
+            if (this.Proxy != null)
+            {
+                webSocket.Options.Proxy = this.Proxy;
+            }
 
             using CancellationTokenSource timeout = new CancellationTokenSource(this.ConnectTimeout);
             using CancellationTokenSource linkedCts = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken, timeout.Token);
