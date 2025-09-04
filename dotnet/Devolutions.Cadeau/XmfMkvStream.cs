@@ -6,14 +6,32 @@ namespace Devolutions.Cadeau
     public class XmfMkvStream : Stream
     {
         public override bool CanRead => true;
+
         public override bool CanWrite => false;
+
         public override bool CanSeek => false;
 
-        public XmfBipBuffer bb;
+        [Obsolete("Use BipBuffer property instead")]
+        public XmfBipBuffer bb => this.BipBuffer;
+
+        private XmfBipBuffer bipBuffer = new();
+
+        public XmfBipBuffer BipBuffer
+        {
+            get => this.bipBuffer;
+            private set => this.bipBuffer = value;
+        }
 
         public XmfMkvStream()
         {
-            bb = new XmfBipBuffer();
+        }
+
+        protected override void Dispose(bool disposing)
+        {
+            this.BipBuffer?.Dispose();
+            this.BipBuffer = null;
+
+            base.Dispose(disposing);
         }
 
         public override long Length
@@ -51,8 +69,8 @@ namespace Devolutions.Cadeau
         {
             unsafe {
                 fixed (byte* ptr = buffer) {
-                    IntPtr data = new IntPtr(&ptr[offset]);
-                    return bb.Read(data, (nuint) count);
+                    IntPtr data = new(&ptr[offset]);
+                    return this.BipBuffer.Read(data, (nuint) count);
                 }
             }
         }

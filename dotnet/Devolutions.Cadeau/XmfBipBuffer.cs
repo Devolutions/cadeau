@@ -1,95 +1,148 @@
+using Microsoft.Win32.SafeHandles;
 using System;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 
 namespace Devolutions.Cadeau
 {
-    public class XmfBipBuffer
+    public sealed class XmfBipBufferHandle : SafeHandleZeroOrMinusOneIsInvalid
     {
-        private IntPtr ffh;
+        private XmfBipBufferHandle() : base(ownsHandle: true) { }
 
-        private class ffi
+        protected override bool ReleaseHandle()
         {
-            [DllImport("xmf", EntryPoint="XmfBipBuffer_Read")]
-            public static extern int Read(IntPtr ffh, IntPtr data, nuint size);
-
-            [DllImport("xmf", EntryPoint="XmfBipBuffer_Write")]
-            public static extern int Write(IntPtr ffh, IntPtr data, nuint size);
-
-            [DllImport("xmf", EntryPoint="XmfBipBuffer_UsedSize")]
-            public static extern nuint GetUsedSize(IntPtr ffh);
-
-            [DllImport("xmf", EntryPoint="XmfBipBuffer_BufferSize")]
-            public static extern nuint GetBufferSize(IntPtr ffh);
-
-            [DllImport("xmf", EntryPoint="XmfBipBuffer_GetSignaledState")]
-            [return: MarshalAs(UnmanagedType.U1)]
-            public static extern bool GetSignaledState(IntPtr ffh);
-
-            [DllImport("xmf", EntryPoint="XmfBipBuffer_Grow")]
-            [return: MarshalAs(UnmanagedType.U1)]
-            public static extern bool Grow(IntPtr ffh, nuint size);
-
-            [DllImport("xmf", EntryPoint="XmfBipBuffer_Clear")]
-            public static extern void Clear(IntPtr ffh);
-
-            [DllImport("xmf", EntryPoint="XmfBipBuffer_New")]
-            public static extern IntPtr New(nuint size);
-
-            [DllImport("xmf", EntryPoint="XmfBipBuffer_Free")]
-            public static extern void Free(IntPtr ffh);
+            Ffi.Free(handle);
+            return true;
         }
 
-        public IntPtr Handle { get { return ffh; } }
+        internal static class Ffi
+        {
+            private const string Lib = "xmf";
+
+            [DllImport(Lib, EntryPoint = "XmfBipBuffer_New")]
+            internal static extern XmfBipBufferHandle New(nuint size);
+
+            [DllImport(Lib, EntryPoint = "XmfBipBuffer_Free")]
+            internal static extern void Free(IntPtr h);
+        }
+    }
+
+    public class XmfBipBuffer : IDisposable
+    {
+        private readonly XmfBipBufferHandle h;
+
+        private bool disposed;
+
+        private class Ffi
+        {
+            private const string Lib = "xmf";
+
+            [DllImport(Lib, EntryPoint="XmfBipBuffer_Read")]
+            public static extern int Read(XmfBipBufferHandle ffh, IntPtr data, nuint size);
+
+            [DllImport(Lib, EntryPoint="XmfBipBuffer_Write")]
+            public static extern int Write(XmfBipBufferHandle ffh, IntPtr data, nuint size);
+
+            [DllImport(Lib, EntryPoint="XmfBipBuffer_UsedSize")]
+            public static extern nuint GetUsedSize(XmfBipBufferHandle ffh);
+
+            [DllImport(Lib, EntryPoint="XmfBipBuffer_BufferSize")]
+            public static extern nuint GetBufferSize(XmfBipBufferHandle ffh);
+
+            [DllImport(Lib, EntryPoint="XmfBipBuffer_GetSignaledState")]
+            [return: MarshalAs(UnmanagedType.U1)]
+            public static extern bool GetSignaledState(XmfBipBufferHandle ffh);
+
+            [DllImport(Lib, EntryPoint="XmfBipBuffer_Grow")]
+            [return: MarshalAs(UnmanagedType.U1)]
+            public static extern bool Grow(XmfBipBufferHandle ffh, nuint size);
+
+            [DllImport(Lib, EntryPoint="XmfBipBuffer_Clear")]
+            public static extern void Clear(XmfBipBufferHandle ffh);
+        }
+
+        public XmfBipBufferHandle Handle => this.h;
 
         public XmfBipBuffer(nuint size)
         {
-            ffh = ffi.New(size);
+            this.h = XmfBipBufferHandle.Ffi.New(size) ?? throw new InvalidOperationException("XmfBipBuffer_New failed");
+
+            if (this.h.IsInvalid)
+            {
+                throw new InvalidOperationException("Invalid XmfBipBuffer handle");
+            }
         }
 
-        public XmfBipBuffer()
-        {
-            ffh = ffi.New(1024*1024*16);
-        }
+        public XmfBipBuffer() : this((nuint)(1024u * 1024u * 16u)) {}
 
-        ~XmfBipBuffer()
+        public void Dispose()
         {
-            ffi.Free(ffh);
+            if (this.disposed)
+            {
+                return;
+            }
+
+            this.disposed = true;
+
+            this.h?.Dispose();
+            GC.SuppressFinalize(this);
         }
 
         public int Read(IntPtr data, nuint size)
         {
-            return ffi.Read(ffh, data, size);
+            this.CheckDisposed();
+
+            return Ffi.Read(this.h, data, size);
         }
 
         public int Write(IntPtr data, nuint size)
         {
-            return ffi.Write(ffh, data, size);
+            this.CheckDisposed();
+
+            return Ffi.Write(this.h, data, size);
         }
 
         public nuint GetUsedSize()
         {
-            return ffi.GetUsedSize(ffh);
+            this.CheckDisposed();
+
+            return Ffi.GetUsedSize(this.h);
         }
 
         public nuint GetBufferSize()
         {
-            return ffi.GetBufferSize(ffh);
+            this.CheckDisposed();
+
+            return Ffi.GetBufferSize(this.h);
         }
 
         public bool GetSignaledState()
         {
-            return ffi.GetSignaledState(ffh);
+            this.CheckDisposed();
+
+            return Ffi.GetSignaledState(this.h);
         }
 
         public bool Grow(nuint size)
         {
-            return ffi.Grow(ffh, size);
+            this.CheckDisposed();
+
+            return Ffi.Grow(this.h, size);
         }
 
         public void Clear()
         {
-            ffi.Clear(ffh);
+            this.CheckDisposed();
+
+            Ffi.Clear(this.h);
+        }
+
+        private void CheckDisposed()
+        {
+            if (this.disposed)
+            {
+                throw new ObjectDisposedException(nameof(XmfBipBuffer));
+            }
         }
     }
 }
