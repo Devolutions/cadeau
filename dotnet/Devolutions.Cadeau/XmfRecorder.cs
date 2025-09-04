@@ -1,146 +1,216 @@
+using Microsoft.Win32.SafeHandles;
 using System;
-using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 
 namespace Devolutions.Cadeau
 {
-    public class XmfRecorder
+    public sealed class XmfRecorderHandle : SafeHandleZeroOrMinusOneIsInvalid
     {
-        private IntPtr ffh;
+        private XmfRecorderHandle() : base(ownsHandle: true) { }
 
-        private class ffi
+        protected override bool ReleaseHandle()
         {
-            [DllImport("xmf", EntryPoint="XmfRecorder_Init")]
-            [return: MarshalAs(UnmanagedType.U1)]
-            public static extern bool Init(IntPtr ffh);
-
-            [DllImport("xmf", EntryPoint="XmfRecorder_Uninit")]
-            public static extern void Uninit(IntPtr ffh);
-
-            [DllImport("xmf", EntryPoint="XmfRecorder_SetFileName")]
-            public static extern void SetFileName(IntPtr ffh,
-                [MarshalAs(UnmanagedType.LPStr)] string filename);
-
-            [DllImport("xmf", EntryPoint="XmfRecorder_SetBipBuffer")]
-            public static extern void SetBipBuffer(IntPtr ffh,
-                IntPtr bb);
-
-            [DllImport("xmf", EntryPoint="XmfRecorder_SetFrameSize")]
-            public static extern void SetFrameSize(IntPtr ffh,
-                UInt32 frameWidth, UInt32 frameHeight);
-
-            [DllImport("xmf", EntryPoint="XmfRecorder_GetFrameRate")]
-            public static extern UInt32 GetFrameRate(IntPtr ffh);
-
-            [DllImport("xmf", EntryPoint="XmfRecorder_SetFrameRate")]
-            public static extern void SetFrameRate(IntPtr ffh,
-                UInt32 frameRate);
-
-            [DllImport("xmf", EntryPoint="XmfRecorder_SetVideoQuality")]
-            public static extern UInt32 SetVideoQuality(IntPtr ffh,
-                UInt32 videoQuality);
-
-            [DllImport("xmf", EntryPoint="XmfRecorder_SetCurrentTime")]
-            public static extern void SetCurrentTime(IntPtr ffh,
-                UInt64 currentTime);
-
-            [DllImport("xmf", EntryPoint="XmfRecorder_GetCurrentTime")]
-            public static extern UInt64 GetCurrentTime(IntPtr ffh);
-
-            [DllImport("xmf", EntryPoint="XmfRecorder_GetTimeout")]
-            public static extern UInt32 GetTimeout(IntPtr ffh);
-
-            [DllImport("xmf", EntryPoint="XmfRecorder_Timeout")]
-            public static extern void Timeout(IntPtr ffh);
-
-            [DllImport("xmf", EntryPoint="XmfRecorder_UpdateFrame")]
-            public static extern void UpdateFrame(IntPtr ffh,
-                IntPtr buffer, UInt32 updateX, UInt32 updateY,
-                UInt32 updateWidth, UInt32 updateHeight, UInt32 surfaceStep);
-
-            [DllImport("xmf", EntryPoint="XmfRecorder_New")]
-            public static extern IntPtr New();
-
-            [DllImport("xmf", EntryPoint="XmfRecorder_Free")]
-            public static extern void Free(IntPtr ffh);
+            Ffi.Free(this.handle);
+            return true;
         }
 
-        public IntPtr Handle { get { return ffh; } }
+        internal static class Ffi
+        {
+            private const string Lib = "xmf";
+
+            [DllImport(Lib, EntryPoint = "XmfRecorder_New")]
+            internal static extern XmfRecorderHandle New();
+
+            [DllImport(Lib, EntryPoint = "XmfRecorder_Free")]
+            internal static extern void Free(IntPtr ffh);
+        }
+    }
+
+    public class XmfRecorder : IDisposable
+    {
+        private readonly XmfRecorderHandle h;
+
+        private readonly object gate = new();
+
+        private bool disposed;
+
+        private class Ffi
+        {
+            private const string Lib = "xmf";
+
+            [DllImport(Lib, EntryPoint = "XmfRecorder_Init")]
+            [return: MarshalAs(UnmanagedType.U1)]
+            public static extern bool Init(XmfRecorderHandle ffh);
+
+            [DllImport(Lib, EntryPoint = "XmfRecorder_Uninit")]
+            public static extern void Uninit(XmfRecorderHandle ffh);
+
+            [DllImport(Lib, EntryPoint = "XmfRecorder_SetFileName")]
+            public static extern void SetFileName(XmfRecorderHandle ffh, [MarshalAs(UnmanagedType.LPStr)] string filename);
+
+            [DllImport(Lib, EntryPoint = "XmfRecorder_SetBipBuffer")]
+            public static extern void SetBipBuffer(XmfRecorderHandle ffh, IntPtr bb);
+
+            [DllImport(Lib, EntryPoint = "XmfRecorder_SetFrameSize")]
+            public static extern void SetFrameSize(XmfRecorderHandle ffh, uint frameWidth, uint frameHeight);
+
+            [DllImport(Lib, EntryPoint = "XmfRecorder_GetFrameRate")]
+            public static extern uint GetFrameRate(XmfRecorderHandle ffh);
+
+            [DllImport(Lib, EntryPoint = "XmfRecorder_SetFrameRate")]
+            public static extern void SetFrameRate(XmfRecorderHandle ffh, uint frameRate);
+
+            [DllImport(Lib, EntryPoint = "XmfRecorder_SetVideoQuality")]
+            public static extern uint SetVideoQuality(XmfRecorderHandle ffh,
+                uint videoQuality);
+
+            [DllImport(Lib, EntryPoint = "XmfRecorder_SetCurrentTime")]
+            public static extern void SetCurrentTime(XmfRecorderHandle ffh,
+                ulong currentTime);
+
+            [DllImport(Lib, EntryPoint = "XmfRecorder_GetCurrentTime")]
+            public static extern ulong GetCurrentTime(XmfRecorderHandle ffh);
+
+            [DllImport(Lib, EntryPoint = "XmfRecorder_GetTimeout")]
+            public static extern uint GetTimeout(XmfRecorderHandle ffh);
+
+            [DllImport(Lib, EntryPoint = "XmfRecorder_Timeout")]
+            public static extern void Timeout(XmfRecorderHandle ffh);
+
+            [DllImport(Lib, EntryPoint = "XmfRecorder_UpdateFrame")]
+            public static extern void UpdateFrame(XmfRecorderHandle ffh,
+                IntPtr buffer, uint updateX, uint updateY,
+                uint updateWidth, uint updateHeight, uint surfaceStep);
+        }
+
+        public XmfRecorderHandle Handle => this.h;
 
         public XmfRecorder()
         {
-            ffh = ffi.New();
+            this.h = XmfRecorderHandle.Ffi.New() ?? throw new InvalidOperationException("Failed to create XmfRecorderHandle");
+
+            if (this.h.IsInvalid)
+            {
+                throw new InvalidOperationException("Invalid XmfRecorderHandle");
+            }
         }
 
-        ~XmfRecorder()
+        private XmfRecorder(XmfRecorderHandle handle)
         {
-            ffi.Free(ffh);
+            this.h = handle;
         }
 
-        public bool Init()
+        public static bool TryCreate(out XmfRecorder recorder)
         {
-            return ffi.Init(ffh);
+            recorder = null;
+
+            XmfRecorderHandle handle;
+
+            try
+            {
+                handle = XmfRecorderHandle.Ffi.New();
+            }
+            catch
+            {
+                return false;
+            }
+
+            if (handle == null || handle.IsInvalid)
+            {
+                handle?.Dispose();
+                return false;
+            }
+
+            recorder = new XmfRecorder(handle);
+            return true;
         }
 
-        public void Uninit()
+        public void Dispose()
         {
-            ffi.Uninit(ffh);
+            if (this.disposed)
+            {
+                return;
+            }
+
+            this.disposed = true;
+
+            lock (this.gate)
+            {
+                try
+                {
+                    if (!this.h.IsInvalid)
+                    {
+                        Ffi.Uninit(this.h);
+                    }
+                }
+                catch
+                {
+                    // miam
+                }
+            }
+
+            this.h.Dispose();
+            GC.SuppressFinalize(this);
         }
 
-        public void SetFileName(string filename)
+        public bool Init() => Call(Ffi.Init);
+
+        public void Uninit() => Call(Ffi.Uninit);
+
+        public void SetFileName(string filename) => Call(h => Ffi.SetFileName(h, filename));
+
+        [Obsolete("Use SetBipBuffer with XmfBipBuffer instead")]
+        public void SetBipBuffer(IntPtr bb) => Call(h => Ffi.SetBipBuffer(h, bb));
+
+        public void SetBipBuffer(XmfBipBuffer bb) => Call(h => Ffi.SetBipBuffer(h, bb.Handle.DangerousGetHandle()));
+
+        public void SetFrameSize(uint frameWidth, uint frameHeight) => Call(h => Ffi.SetFrameSize(h, frameWidth, frameHeight));
+
+        public uint GetFrameRate() => Call(Ffi.GetFrameRate);
+
+
+        public void SetFrameRate(uint frameRate) => Call(h => Ffi.SetFrameRate(h, frameRate));
+
+        public void SetVideoQuality(uint videoQuality) => Call(h => Ffi.SetVideoQuality(h, videoQuality));
+
+        public void SetCurrentTime(ulong currentTime) => Call(h => Ffi.SetCurrentTime(h, currentTime));
+
+        public ulong GetCurrentTime() => Call(Ffi.GetCurrentTime);
+
+        public uint GetTimeout() => Call(Ffi.GetTimeout);
+
+        public void Timeout() => Call(Ffi.Timeout);
+
+        public void UpdateFrame(IntPtr buffer, uint updateX, uint updateY,
+                uint updateWidth, uint updateHeight, uint surfaceStep) => 
+            Call(h => Ffi.UpdateFrame(h, buffer, updateX, updateY, updateWidth, updateHeight, surfaceStep));
+
+        private T Call<T>(Func<XmfRecorderHandle, T> func)
         {
-            ffi.SetFileName(ffh, filename);
+            this.CheckDisposed();
+
+            lock (this.gate)
+            {
+                return func(this.h);
+            }
         }
 
-        public void SetBipBuffer(IntPtr bb)
+        private void Call(Action<XmfRecorderHandle> action)
         {
-            ffi.SetBipBuffer(ffh, bb);
+            this.CheckDisposed();
+
+            lock (this.gate)
+            {
+                action(this.h);
+            }
         }
 
-        public void SetFrameSize(UInt32 frameWidth, UInt32 frameHeight)
+        private void CheckDisposed()
         {
-            ffi.SetFrameSize(ffh, frameWidth, frameHeight);
-        }
-
-        public UInt32 GetFrameRate()
-        {
-            return ffi.GetFrameRate(ffh);
-        }
-
-        public void SetFrameRate(UInt32 frameRate)
-        {
-            ffi.SetFrameRate(ffh, frameRate);
-        }
-
-        public void SetVideoQuality(UInt32 videoQuality)
-        {
-            ffi.SetVideoQuality(ffh, videoQuality);
-        }
-
-        public void SetCurrentTime(UInt64 currentTime)
-        {
-            ffi.SetCurrentTime(ffh, currentTime);
-        }
-
-        public UInt64 GetCurrentTime()
-        {
-            return ffi.GetCurrentTime(ffh);
-        }
-
-        public UInt32 GetTimeout()
-        {
-            return ffi.GetTimeout(ffh);
-        }
-
-        public void Timeout()
-        {
-            ffi.Timeout(ffh);
-        }
-
-        public void UpdateFrame(IntPtr buffer, UInt32 updateX, UInt32 updateY,
-                UInt32 updateWidth, UInt32 updateHeight, UInt32 surfaceStep)
-        {
-            ffi.UpdateFrame(ffh, buffer, updateX, updateY, updateWidth, updateHeight, surfaceStep);
+            if (this.disposed)
+            {
+                throw new ObjectDisposedException(nameof(XmfRecorder));
+            }
         }
     }
 }
