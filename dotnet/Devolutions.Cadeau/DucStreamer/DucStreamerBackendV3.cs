@@ -28,19 +28,7 @@ namespace Devolutions.Cadeau
 
         public async Task ConnectAsync(Uri destination, CancellationToken cancellationToken = default)
         {
-            ClientWebSocket webSocket = new ClientWebSocket();
-            webSocket.Options.UseDefaultCredentials = false;
-
-#if NETSTANDARD2_1 || NETCOREAPP2_1_OR_GREATER
-            bool CertificateValidationCallback(object sender, X509Certificate certificate, X509Chain chain, SslPolicyErrors sslPolicyErrors) => 
-                this.OnValidateCertificate?.Invoke(sender, certificate, chain, sslPolicyErrors) ?? false;
-            webSocket.Options.RemoteCertificateValidationCallback = CertificateValidationCallback;
-#endif
-
-            if (this.Proxy != null)
-            {
-                webSocket.Options.Proxy = this.Proxy;
-            }
+            ClientWebSocket webSocket = this.CreateWebSocket();
 
             using CancellationTokenSource timeout = new CancellationTokenSource(this.ConnectTimeout);
             using CancellationTokenSource linkedCts = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken, timeout.Token);
@@ -54,8 +42,7 @@ namespace Devolutions.Cadeau
 
             try
             {
-                ClientWebSocket webSocket = new ClientWebSocket();
-                webSocket.Options.UseDefaultCredentials = false;
+                ClientWebSocket webSocket = this.CreateWebSocket();
                 webSocket.ConnectAsync(destination, CancellationToken.None).Wait(this.ConnectTimeout);
                 this.Stream = new XmfWsStream(webSocket);
             }
@@ -128,5 +115,24 @@ namespace Devolutions.Cadeau
             await this.Stream.WriteAsync(buffer, cancellationToken);
         }
 #endif
+
+        private ClientWebSocket CreateWebSocket()
+        {
+            ClientWebSocket webSocket = new ClientWebSocket();
+            webSocket.Options.UseDefaultCredentials = false;
+
+#if NETSTANDARD2_1 || NETCOREAPP2_1_OR_GREATER
+            bool CertificateValidationCallback(object sender, X509Certificate certificate, X509Chain chain, SslPolicyErrors sslPolicyErrors) =>
+                this.OnValidateCertificate?.Invoke(sender, certificate, chain, sslPolicyErrors) ?? sslPolicyErrors == SslPolicyErrors.None;
+            webSocket.Options.RemoteCertificateValidationCallback += CertificateValidationCallback;
+#endif
+
+            if (this.Proxy != null)
+            {
+                webSocket.Options.Proxy = this.Proxy;
+            }
+
+            return webSocket;
+        }
     }
 }
