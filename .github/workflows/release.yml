@@ -17,7 +17,7 @@ jobs:
     name: Build Packages
     runs-on: windows-2022
     environment: publish-prod
-    
+
     steps:
       - name: Clone project
         uses: actions/checkout@v4
@@ -38,7 +38,7 @@ jobs:
               ConvertFrom-Json | Where-Object { ($_.status -eq 'completed') -and ($_.conclusion -eq 'success') } |
               Select-Object -First 1 -ExpandProperty databaseId
           }
-          
+
           New-Item -Path "package" -ItemType Directory -ErrorAction SilentlyContinue | Out-Null
           Push-Location "package"
 
@@ -46,7 +46,7 @@ jobs:
           & gh run download $RunId -n 'cadeau-nupkg'
           $NupkgFile = Get-Item .\Devolutions.Cadeau.*.nupkg
           $NugetName = $NupkgFile.BaseName
-          
+
           $Version = $NugetName -Replace 'Devolutions.Cadeau.', ''
           if ($Version.Split('.').Count -eq 3) { $Version += ".0" }
           Set-Content -Path .\VERSION -Value $Version -NoNewLine -Force
@@ -103,7 +103,9 @@ jobs:
     runs-on: ubuntu-latest
     environment: publish-prod
     needs: package
-    if: ${{ github.event.inputs.dry-run == 'false' }} 
+    if: ${{ github.event.inputs.dry-run == 'false' }}
+    permissions:
+      id-token: write
 
     steps:
       - name: Download packages
@@ -112,10 +114,16 @@ jobs:
           name: cadeau-libs
           path: package
 
+      - name: NuGet login (OIDC)
+        id: nuget-login
+        uses: NuGet/login@v1
+        with:
+          user: ${{ secrets.NUGET_BOT_USERNAME }}
+
       - name: Publish to nuget.org
         shell: pwsh
         run: |
-          $NugetApiKey = '${{ secrets.NUGET_API_KEY }}'
+          $NugetApiKey = '${{ steps.nuget-login.outputs.NUGET_API_KEY }}'
           $NugetSource = 'https://api.nuget.org/v3/index.json'
           Get-ChildItem .\package\*.nupkg | ForEach-Object {
             & dotnet nuget push $_.FullName --api-key $NugetApiKey --source $NugetSource --skip-duplicate
