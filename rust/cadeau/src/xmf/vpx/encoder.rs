@@ -6,6 +6,13 @@ use xmf_sys::{
 
 use crate::xmf::vpx::{VpxCodec, VpxError, VpxImage, VpxPacket};
 
+#[derive(Debug, Clone, Copy)]
+pub enum VpxEncoderPreset {
+    Default,
+    Sane,
+    BestPerformance,
+}
+
 pub struct VpxEncoderBuilder {
     codec: VpxCodec,
     width: u32,
@@ -14,6 +21,8 @@ pub struct VpxEncoderBuilder {
     timebase_num: i32,
     timebase_den: i32,
     threads: u32,
+    preset: VpxEncoderPreset,
+    log_effective: bool,
 }
 
 pub struct VpxEncoder {
@@ -160,6 +169,8 @@ impl VpxEncoderBuilder {
             timebase_num: 0,
             timebase_den: 0,
             threads: 0,
+            preset: VpxEncoderPreset::BestPerformance,
+            log_effective: false,
         }
     }
 
@@ -205,7 +216,25 @@ impl VpxEncoderBuilder {
         self
     }
 
+    #[must_use]
+    pub fn preset(mut self, preset: VpxEncoderPreset) -> Self {
+        self.preset = preset;
+        self
+    }
+
+    #[must_use]
+    pub fn log_effective(mut self, enabled: bool) -> Self {
+        self.log_effective = enabled;
+        self
+    }
+
     pub fn build(self) -> Result<VpxEncoder, VpxError> {
+        let preset = match self.preset {
+            VpxEncoderPreset::Default => xmf_sys::XmfVpxEncoderPreset::Default,
+            VpxEncoderPreset::Sane => xmf_sys::XmfVpxEncoderPreset::Sane,
+            VpxEncoderPreset::BestPerformance => xmf_sys::XmfVpxEncoderPreset::BestPerformance,
+        };
+
         let config = XmfVpxEncoderConfig {
             codec: self.codec.into(),
             width: self.width,
@@ -214,6 +243,8 @@ impl VpxEncoderBuilder {
             timebase_num: self.timebase_num,
             timebase_den: self.timebase_den,
             threads: self.threads,
+            preset,
+            log_effective: u32::from(self.log_effective),
         };
 
         // SAFETY: FFI call with no outstanding precondition.

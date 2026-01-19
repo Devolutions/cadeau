@@ -101,6 +101,16 @@ pub struct XmfVpxEncoderConfig {
     pub timebase_num: i32,
     pub timebase_den: i32,
     pub threads: u32,
+    pub preset: XmfVpxEncoderPreset,
+    pub log_effective: u32,
+}
+
+#[repr(C)]
+#[derive(Debug, Clone, Copy)]
+pub enum XmfVpxEncoderPreset {
+    Default = 0,
+    Sane = 1,
+    BestPerformance = 2,
 }
 
 #[repr(C)]

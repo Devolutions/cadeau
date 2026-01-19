@@ -15,6 +15,30 @@ typedef enum
     VP9
 } XmfVpxCodecType;
 
+typedef enum
+{
+    /**
+     * Default profile: realtime-friendly but conservative.
+     *
+     * Intended for general-purpose use where stability is the priority.
+     */
+    XMF_VPX_PRESET_DEFAULT = 0,
+
+    /**
+     * Sane profile: realtime oriented.
+     *
+     * Trades quality for speed, but avoids the most aggressive settings.
+     */
+    XMF_VPX_PRESET_SANE = 1,
+
+    /**
+     * Best performance profile: maximum realtime throughput.
+     *
+     * Strongly prioritizes speed and low latency over quality/bitrate efficiency.
+     */
+    XMF_VPX_PRESET_BEST_PERFORMANCE = 2,
+} XmfVpxEncoderPreset;
+
 typedef struct
 {
     XmfVpxCodecType codec;
@@ -24,6 +48,17 @@ typedef struct
     int32_t timebase_num;
     int32_t timebase_den;
     uint32_t threads;
+    /**
+     * Realtime preset selection.
+     *
+     * This is the supported way to tune encoder performance.
+     * The library does not rely on environment variables for behavior changes.
+     */
+    XmfVpxEncoderPreset preset;
+    /**
+     * If non-zero, print the effective configuration to stderr for diagnostics.
+     */
+    uint32_t log_effective;
 } XmfVpxEncoderConfig;
 
 typedef enum
