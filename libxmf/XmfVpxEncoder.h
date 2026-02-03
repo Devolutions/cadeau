@@ -55,10 +55,6 @@ typedef struct
      * The library does not rely on environment variables for behavior changes.
      */
     XmfVpxEncoderPreset preset;
-    /**
-     * If non-zero, print the effective configuration to stderr for diagnostics.
-     */
-    uint32_t log_effective;
 } XmfVpxEncoderConfig;
 
 typedef enum

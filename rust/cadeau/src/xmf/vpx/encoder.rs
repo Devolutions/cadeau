@@ -22,7 +22,6 @@ pub struct VpxEncoderBuilder {
     timebase_den: i32,
     threads: u32,
     preset: VpxEncoderPreset,
-    log_effective: bool,
 }
 
 pub struct VpxEncoder {
@@ -169,8 +168,7 @@ impl VpxEncoderBuilder {
             timebase_num: 0,
             timebase_den: 0,
             threads: 0,
-            preset: VpxEncoderPreset::BestPerformance,
-            log_effective: false,
+            preset: VpxEncoderPreset::Default,
         }
     }
 
@@ -222,12 +220,6 @@ impl VpxEncoderBuilder {
         self
     }
 
-    #[must_use]
-    pub fn log_effective(mut self, enabled: bool) -> Self {
-        self.log_effective = enabled;
-        self
-    }
-
     pub fn build(self) -> Result<VpxEncoder, VpxError> {
         let preset = match self.preset {
             VpxEncoderPreset::Default => xmf_sys::XmfVpxEncoderPreset::Default,
@@ -244,7 +236,6 @@ impl VpxEncoderBuilder {
             timebase_den: self.timebase_den,
             threads: self.threads,
             preset,
-            log_effective: u32::from(self.log_effective),
         };
 
         // SAFETY: FFI call with no outstanding precondition.

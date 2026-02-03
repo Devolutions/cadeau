@@ -1,6 +1,4 @@
 #include "XmfVpxEncoder.h"
-#include <ctype.h>
-#include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 #include <vpx/vpx_encoder.h>
@@ -64,72 +62,6 @@ static uint32_t xmf_u32_clamp(uint32_t value, uint32_t min, uint32_t max)
 		return max;
 	}
 	return value;
-}
-
-static void xmf_log_effective_vpx_settings_if_enabled(
-	const XmfVpxEncoder *encoder,
-	int cpuused_value,
-	int screen_content_mode_value,
-	int enable_auto_altref_value,
-	int dropframe_thresh_value,
-	int lag_in_frames_value,
-	int threads_value,
-	int arnr_maxframes_value,
-	int arnr_strength_value,
-	int arnr_type_value,
-	int row_mt_value,
-	int tile_columns_log2_value,
-	int tile_rows_log2_value,
-	int tune_content_value,
-	int frame_parallel_decoding_value)
-{
-	if (encoder->cfg.g_w == 0 || encoder->cfg.g_h == 0)
-	{
-		/* Nothing useful to log. */
-		return;
-	}
-
-	fprintf(
-		stderr,
-		"[LibVPx-Performance-Hypothesis][XMF] effective cfg codec=%s w=%u h=%u threads=%u bitrate=%u timebase=%u/%u dropframe_thresh=%u lag_in_frames=%u error_resilient=%u kf_mode=%d kf_min=%u kf_max=%u\n",
-		encoder->codec_type == VP8 ? "VP8" : (encoder->codec_type == VP9 ? "VP9" : "UNKNOWN"),
-		encoder->cfg.g_w,
-		encoder->cfg.g_h,
-		encoder->cfg.g_threads,
-		encoder->cfg.rc_target_bitrate,
-		encoder->cfg.g_timebase.num,
-		encoder->cfg.g_timebase.den,
-		encoder->cfg.rc_dropframe_thresh,
-		encoder->cfg.g_lag_in_frames,
-		encoder->cfg.g_error_resilient,
-		encoder->cfg.kf_mode,
-		encoder->cfg.kf_min_dist,
-		encoder->cfg.kf_max_dist);
-
-	fprintf(stderr, "[LibVPx-Performance-Hypothesis][XMF] preset cpuused=%d\n", cpuused_value);
-	fprintf(stderr, "[LibVPx-Performance-Hypothesis][XMF] preset threads=%d\n", threads_value);
-	fprintf(stderr, "[LibVPx-Performance-Hypothesis][XMF] preset dropframe_thresh=%d\n", dropframe_thresh_value);
-	fprintf(stderr, "[LibVPx-Performance-Hypothesis][XMF] preset lag_in_frames=%d\n", lag_in_frames_value);
-	fprintf(stderr, "[LibVPx-Performance-Hypothesis][XMF] preset enable_auto_altref=%d\n", enable_auto_altref_value);
-	fprintf(stderr, "[LibVPx-Performance-Hypothesis][XMF] preset arnr_maxframes=%d\n", arnr_maxframes_value);
-	fprintf(stderr, "[LibVPx-Performance-Hypothesis][XMF] preset arnr_strength=%d\n", arnr_strength_value);
-	fprintf(stderr, "[LibVPx-Performance-Hypothesis][XMF] preset arnr_type=%d\n", arnr_type_value);
-
-	if (encoder->codec_type == VP8)
-	{
-		fprintf(stderr, "[LibVPx-Performance-Hypothesis][XMF] preset vp8_screen_content_mode=%d\n", screen_content_mode_value);
-	}
-
-	if (encoder->codec_type == VP9)
-	{
-		fprintf(stderr, "[LibVPx-Performance-Hypothesis][XMF] preset vp9_row_mt=%d\n", row_mt_value);
-		fprintf(stderr, "[LibVPx-Performance-Hypothesis][XMF] preset vp9_tile_columns_log2=%d\n", tile_columns_log2_value);
-		fprintf(stderr, "[LibVPx-Performance-Hypothesis][XMF] preset vp9_tile_rows_log2=%d\n", tile_rows_log2_value);
-		fprintf(stderr, "[LibVPx-Performance-Hypothesis][XMF] preset vp9_tune_content=%d\n", tune_content_value);
-		fprintf(stderr, "[LibVPx-Performance-Hypothesis][XMF] preset vp9_frame_parallel_decoding=%d\n", frame_parallel_decoding_value);
-	}
-
-	fflush(stderr);
 }
 
 XmfVpxEncoder *XmfVpxEncoder_Create(XmfVpxEncoderConfig config)
@@ -343,26 +275,6 @@ XmfVpxEncoder *XmfVpxEncoder_Create(XmfVpxEncoderConfig config)
 			return NULL;
 		}
 #endif
-	}
-
-	if (config.log_effective != 0)
-	{
-		xmf_log_effective_vpx_settings_if_enabled(
-			encoder,
-			cpuused_value,
-			screen_content_mode_value,
-			enable_auto_altref_value,
-			dropframe_thresh_value,
-			lag_in_frames_value,
-			threads_value,
-			arnr_maxframes_value,
-			arnr_strength_value,
-			arnr_type_value,
-			row_mt_value,
-			tile_columns_log2_value,
-			tile_rows_log2_value,
-			tune_content_value,
-			frame_parallel_decoding_value);
 	}
 
 	return encoder;
