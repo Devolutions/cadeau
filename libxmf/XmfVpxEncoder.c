@@ -6,6 +6,8 @@
 #include "XmfVpxPacket.h"
 
 #ifndef VP9E_CONTENT_SCREEN
+// Doc: VP9E_SET_TUNE_CONTENT values (SCREEN = 1)
+// https://chromium.googlesource.com/webm/libvpx/+/refs/heads/main/vpx/vp8cx.h#426
 #define VP9E_CONTENT_SCREEN 1
 #endif
 
@@ -64,6 +66,102 @@ static uint32_t xmf_u32_clamp(uint32_t value, uint32_t min, uint32_t max)
 	return value;
 }
 
+/*
+ * Calculate tile_columns_log2 based on thread count and frame width.
+ *
+ * VP9 tiles enable parallel encode/decode. Each tile is independent,
+ * so we want roughly 1 tile per thread for maximum parallelism.
+ *
+ * tile_columns_log2 = 0 -> 1 tile
+ * tile_columns_log2 = 1 -> 2 tiles
+ * tile_columns_log2 = 2 -> 4 tiles
+ * tile_columns_log2 = 3 -> 8 tiles
+ *
+ * Doc: tile width is limited to 256..4096 pixels.
+ * https://chromium.googlesource.com/webm/libvpx/+/refs/heads/main/vpx/vp8cx.h#310
+ */
+static int xmf_vpx_calc_tile_columns_log2(int threads, uint32_t width)
+{
+	int desired_tiles = 1;
+	int min_tiles_by_width = 1;
+	int max_tiles_by_width = 1;
+	int candidates[] = { 1, 2, 4, 8 };
+	int candidate_count = (int)(sizeof(candidates) / sizeof(candidates[0]));
+	int best_tiles = 1;
+	int best_distance = 1000000;
+	int i = 0;
+
+	if (threads >= 8)
+	{
+		desired_tiles = 8;
+	}
+	else if (threads >= 4)
+	{
+		desired_tiles = 4;
+	}
+	else if (threads >= 2)
+	{
+		desired_tiles = 2;
+	}
+
+	max_tiles_by_width = (int)(width / 256);
+	if (max_tiles_by_width < 1)
+	{
+		max_tiles_by_width = 1;
+	}
+
+	min_tiles_by_width = (int)((width + 4095) / 4096);
+	if (min_tiles_by_width < 1)
+	{
+		min_tiles_by_width = 1;
+	}
+
+	for (i = 0; i < candidate_count; i++)
+	{
+		int tiles = candidates[i];
+		int distance = tiles - desired_tiles;
+
+		if (tiles < min_tiles_by_width || tiles > max_tiles_by_width)
+		{
+			continue;
+		}
+
+		if (distance < 0)
+		{
+			distance = -distance;
+		}
+
+		if (distance < best_distance)
+		{
+			best_distance = distance;
+			best_tiles = tiles;
+		}
+	}
+
+	if (best_tiles < min_tiles_by_width)
+	{
+		best_tiles = min_tiles_by_width;
+	}
+	if (best_tiles > max_tiles_by_width)
+	{
+		best_tiles = max_tiles_by_width;
+	}
+
+	if (best_tiles >= 8)
+	{
+		return 3;
+	}
+	if (best_tiles >= 4)
+	{
+		return 2;
+	}
+	if (best_tiles >= 2)
+	{
+		return 1;
+	}
+	return 0;
+}
+
 XmfVpxEncoder *XmfVpxEncoder_Create(XmfVpxEncoderConfig config)
 {
 	XmfVpxEncoder *encoder = (XmfVpxEncoder *)malloc(sizeof(XmfVpxEncoder));
@@ -95,12 +193,24 @@ XmfVpxEncoder *XmfVpxEncoder_Create(XmfVpxEncoderConfig config)
 	}
 
 	// Set encoding parameters
+	// Doc: vpx_codec_enc_cfg_t::g_w / g_h (frame width/height in pixels)
+	// https://chromium.googlesource.com/webm/libvpx/+/refs/heads/main/vpx/vpx_encoder.h#383
 	encoder->cfg.g_w = config.width;
 	encoder->cfg.g_h = config.height;
+
+	// Doc: vpx_codec_enc_cfg_t::rc_target_bitrate (kilobits per second)
+	// https://chromium.googlesource.com/webm/libvpx/+/refs/heads/main/vpx/vpx_encoder.h#451
 	encoder->cfg.rc_target_bitrate = config.bitrate;
+
+	// Doc: vpx_codec_enc_cfg_t::g_timebase (timebase for pts)
+	// https://chromium.googlesource.com/webm/libvpx/+/refs/heads/main/vpx/vpx_encoder.h#314
 	encoder->cfg.g_timebase.num = config.timebase_num;
 	encoder->cfg.g_timebase.den = config.timebase_den;
-	encoder->cfg.g_error_resilient = 1;
+
+	// Doc: vpx_codec_enc_cfg_t::g_error_resilient + VPX_ERROR_RESILIENT_DEFAULT
+	// https://chromium.googlesource.com/webm/libvpx/+/refs/heads/main/vpx/vpx_encoder.h#323
+	// https://chromium.googlesource.com/webm/libvpx/+/refs/heads/main/vpx/vpx_encoder.h#103
+	encoder->cfg.g_error_resilient = VPX_ERROR_RESILIENT_DEFAULT;
 
 	int cpuused_value = 0;
 	int screen_content_mode_value = 0;
@@ -117,6 +227,10 @@ XmfVpxEncoder *XmfVpxEncoder_Create(XmfVpxEncoderConfig config)
 	int tune_content_value = 0;
 	int frame_parallel_decoding_value = 0;
 
+	// Doc: vpx_codec_enc_cfg_t::rc_end_usage (rate control mode)
+	// https://chromium.googlesource.com/webm/libvpx/+/refs/heads/main/vpx/vpx_encoder.h#399
+	encoder->cfg.rc_end_usage = VPX_CBR;
+
 	/*
 	 * Threading:
 	 * - The caller provides a desired thread count via config.threads.
@@ -124,6 +238,8 @@ XmfVpxEncoder *XmfVpxEncoder_Create(XmfVpxEncoderConfig config)
 	 * - IMPORTANT: VP9 row-mt is disabled for threads>1 due to crashes on our libvpx build.
 	 */
 	threads_value = (int)xmf_u32_clamp(config.threads, 1, 8);
+	// Doc: vpx_codec_enc_cfg_t::g_threads (maximum number of threads)
+	// https://chromium.googlesource.com/webm/libvpx/+/refs/heads/main/vpx/vpx_encoder.h#267
 	encoder->cfg.g_threads = (unsigned int)threads_value;
 
 	/*
@@ -133,23 +249,17 @@ XmfVpxEncoder *XmfVpxEncoder_Create(XmfVpxEncoderConfig config)
 	 * - enable_auto_alt_ref and ARNR are quality features that add work/latency; we disable them.
 	 */
 	lag_in_frames_value = 0;
+	// Doc: vpx_codec_enc_cfg_t::g_lag_in_frames (lookahead/lag; 0 disables)
+	// https://chromium.googlesource.com/webm/libvpx/+/refs/heads/main/vpx/vpx_encoder.h#339
 	encoder->cfg.g_lag_in_frames = (unsigned int)lag_in_frames_value;
 
 	// allow keyframes at any time
+	// Doc: vpx_codec_enc_cfg_t::kf_mode / kf_min_dist / kf_max_dist
+	// https://chromium.googlesource.com/webm/libvpx/+/refs/heads/main/vpx/vpx_encoder.h#540
 	encoder->cfg.kf_mode = VPX_KF_AUTO;
 	encoder->cfg.kf_min_dist = 0;
 	encoder->cfg.kf_max_dist = 9999;
 
-	// Initialize codec
-	res = vpx_codec_enc_init(&encoder->codec, iface, &encoder->cfg, 0);
-	if (res != VPX_CODEC_OK)
-	{
-		free(encoder);
-		return NULL; // Failed to initialize codec
-	}
-
-	encoder->pts = 0;
-	encoder->lastError.code = NO_ERROR;
 	encoder->codec_type = config.codec;
 
 	/*
@@ -164,15 +274,19 @@ XmfVpxEncoder *XmfVpxEncoder_Create(XmfVpxEncoderConfig config)
 	default:
 		dropframe_thresh_value = 0;
 		cpuused_value = encoder->codec_type == VP9 ? 4 : 6;
-		tile_columns_log2_value = 0;
+		tile_columns_log2_value = encoder->codec_type == VP9
+			? xmf_vpx_calc_tile_columns_log2(threads_value, config.width)
+			: 0;
 		tile_rows_log2_value = 0;
-		tune_content_value = 0;
+		tune_content_value = encoder->codec_type == VP9 ? VP9E_CONTENT_SCREEN : 0;
 		screen_content_mode_value = 1;
 		break;
 	case XMF_VPX_PRESET_SANE:
 		dropframe_thresh_value = 5;
 		cpuused_value = encoder->codec_type == VP9 ? 6 : 8;
-		tile_columns_log2_value = encoder->codec_type == VP9 ? 1 : 0;
+		tile_columns_log2_value = encoder->codec_type == VP9
+			? xmf_vpx_calc_tile_columns_log2(threads_value, config.width)
+			: 0;
 		tile_rows_log2_value = 0;
 		tune_content_value = encoder->codec_type == VP9 ? VP9E_CONTENT_SCREEN : 0;
 		screen_content_mode_value = 1;
@@ -180,16 +294,33 @@ XmfVpxEncoder *XmfVpxEncoder_Create(XmfVpxEncoderConfig config)
 	case XMF_VPX_PRESET_BEST_PERFORMANCE:
 		dropframe_thresh_value = 10;
 		cpuused_value = encoder->codec_type == VP9 ? 9 : 12;
-		tile_columns_log2_value = encoder->codec_type == VP9 ? 2 : 0;
+		tile_columns_log2_value = encoder->codec_type == VP9
+			? xmf_vpx_calc_tile_columns_log2(threads_value, config.width)
+			: 0;
 		tile_rows_log2_value = 0;
 		tune_content_value = encoder->codec_type == VP9 ? VP9E_CONTENT_SCREEN : 0;
-		screen_content_mode_value = 1;
+		screen_content_mode_value = 2;
 		break;
 	}
 
+	// Doc: vpx_codec_enc_cfg_t::rc_dropframe_thresh
+	// https://chromium.googlesource.com/webm/libvpx/+/refs/heads/main/vpx/vpx_encoder.h#468
 	encoder->cfg.rc_dropframe_thresh = (unsigned int)dropframe_thresh_value;
 
+	// Initialize codec
+	res = vpx_codec_enc_init(&encoder->codec, iface, &encoder->cfg, 0);
+	if (res != VPX_CODEC_OK)
+	{
+		free(encoder);
+		return NULL; // Failed to initialize codec
+	}
+
+	encoder->pts = 0;
+	encoder->lastError.code = NO_ERROR;
+
 	// Note: VP8E_SET_CPUUSED is used for both VP8 and VP9 in libvpx.
+	// Doc: VP8E_SET_CPUUSED valid range (VP8: -16..16, VP9: -9..9)
+	// https://chromium.googlesource.com/webm/libvpx/+/refs/heads/main/vpx/vp8cx.h#144
 	if (xmf_vpx_apply_control(encoder, VP8E_SET_CPUUSED, cpuused_value) != 0)
 	{
 		XmfVpxEncoder_Destroy(encoder);
@@ -200,6 +331,8 @@ XmfVpxEncoder *XmfVpxEncoder_Create(XmfVpxEncoderConfig config)
 	// This can improve quality but adds complexity/latency, which we do not want in realtime streaming.
 	// Default is disabled for all presets.
 	enable_auto_altref_value = 0;
+	// Doc: VP8E_SET_ENABLEAUTOALTREF
+	// https://chromium.googlesource.com/webm/libvpx/+/refs/heads/main/vpx/vp8cx.h#157
 	if (xmf_vpx_apply_control(encoder, VP8E_SET_ENABLEAUTOALTREF, enable_auto_altref_value) != 0)
 	{
 		XmfVpxEncoder_Destroy(encoder);
@@ -209,6 +342,8 @@ XmfVpxEncoder *XmfVpxEncoder_Create(XmfVpxEncoderConfig config)
 	if (encoder->codec_type == VP8)
 	{
 		// VP8 screen content mode tunes the encoder for UI/desktop content.
+		// Doc: VP8E_SET_SCREEN_CONTENT_MODE
+		// https://chromium.googlesource.com/webm/libvpx/+/refs/heads/main/vpx/vp8cx.h#289
 		if (xmf_vpx_apply_control(encoder, VP8E_SET_SCREEN_CONTENT_MODE, screen_content_mode_value) != 0)
 		{
 			XmfVpxEncoder_Destroy(encoder);
@@ -221,6 +356,8 @@ XmfVpxEncoder *XmfVpxEncoder_Create(XmfVpxEncoderConfig config)
 		arnr_strength_value = 0;
 		arnr_type_value = 0;
 
+		// Doc: VP8E_SET_ARNR_MAXFRAMES / VP8E_SET_ARNR_STRENGTH / VP8E_SET_ARNR_TYPE
+		// https://chromium.googlesource.com/webm/libvpx/+/refs/heads/main/vpx/vp8cx.h#206
 		if (xmf_vpx_apply_control(encoder, VP8E_SET_ARNR_MAXFRAMES, arnr_maxframes_value) != 0)
 		{
 			XmfVpxEncoder_Destroy(encoder);
@@ -242,24 +379,32 @@ XmfVpxEncoder *XmfVpxEncoder_Create(XmfVpxEncoderConfig config)
 	{
 		// VP9 row-multithreading (row-mt) is forced OFF for stability (see note above).
 		row_mt_value = 0;
+		// Doc: VP9E_SET_ROW_MT
+		// https://chromium.googlesource.com/webm/libvpx/+/refs/heads/main/vpx/vp8cx.h#512
 		if (xmf_vpx_apply_control(encoder, VP9E_SET_ROW_MT, row_mt_value) != 0)
 		{
 			XmfVpxEncoder_Destroy(encoder);
 			return NULL;
 		}
 
+		// Doc: VP9E_SET_TILE_COLUMNS (log2 of tile columns; tile width 256..4096)
+		// https://chromium.googlesource.com/webm/libvpx/+/refs/heads/main/vpx/vp8cx.h#310
 		if (xmf_vpx_apply_control(encoder, VP9E_SET_TILE_COLUMNS, tile_columns_log2_value) != 0)
 		{
 			XmfVpxEncoder_Destroy(encoder);
 			return NULL;
 		}
 
+		// Doc: VP9E_SET_TILE_ROWS (log2 of tile rows)
+		// https://chromium.googlesource.com/webm/libvpx/+/refs/heads/main/vpx/vp8cx.h#333
 		if (xmf_vpx_apply_control(encoder, VP9E_SET_TILE_ROWS, tile_rows_log2_value) != 0)
 		{
 			XmfVpxEncoder_Destroy(encoder);
 			return NULL;
 		}
 
+		// Doc: VP9E_SET_TUNE_CONTENT (content type: DEFAULT/SCREEN/FILM)
+		// https://chromium.googlesource.com/webm/libvpx/+/refs/heads/main/vpx/vp8cx.h#426
 		if (xmf_vpx_apply_control(encoder, VP9E_SET_TUNE_CONTENT, tune_content_value) != 0)
 		{
 			XmfVpxEncoder_Destroy(encoder);
@@ -269,6 +414,8 @@ XmfVpxEncoder *XmfVpxEncoder_Create(XmfVpxEncoderConfig config)
 #ifdef VP9E_SET_FRAME_PARALLEL_DECODING
 		// Keep frame-parallel decoding enabled for better decoder parallelism.
 		frame_parallel_decoding_value = 1;
+		// Doc: VP9E_SET_FRAME_PARALLEL_DECODING
+		// https://chromium.googlesource.com/webm/libvpx/+/refs/heads/main/vpx/vp8cx.h#352
 		if (xmf_vpx_apply_control(encoder, VP9E_SET_FRAME_PARALLEL_DECODING, frame_parallel_decoding_value) != 0)
 		{
 			XmfVpxEncoder_Destroy(encoder);
