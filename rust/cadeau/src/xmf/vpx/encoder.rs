@@ -1,7 +1,7 @@
 use xmf_sys::{
     XmfVpxEncoder, XmfVpxEncoderConfig, XmfVpxEncoder_Create, XmfVpxEncoder_Destroy, XmfVpxEncoder_EncodeFrame,
-    XmfVpxEncoder_Flush, XmfVpxEncoder_FreeEncodedFrame, XmfVpxEncoder_GetEncodedFrame, XmfVpxEncoder_GetLastError,
-    XmfVpxEncoder_GetPacket,
+    XmfVpxEncoder_Flush, XmfVpxEncoder_FreeEncodedFrame, XmfVpxEncoder_GetEncodedFrame, XmfVpxEncoder_GetLastCreateError,
+    XmfVpxEncoder_GetLastError, XmfVpxEncoder_GetPacket, XmfVpxEncoderErrorCode,
 };
 
 use crate::xmf::vpx::{VpxCodec, VpxError, VpxImage, VpxPacket};
@@ -242,7 +242,11 @@ impl VpxEncoderBuilder {
         let ptr = unsafe { XmfVpxEncoder_Create(config) };
 
         if ptr.is_null() {
-            return Err(VpxError::Internal("XmfVpxEncoder_Create returned null"));
+            let error = unsafe { XmfVpxEncoder_GetLastCreateError() };
+            if matches!(error.code, XmfVpxEncoderErrorCode::NoError) {
+                return Err(VpxError::Internal("XmfVpxEncoder_Create returned null"));
+            }
+            return Err(error.into());
         }
 
         Ok(VpxEncoder { ptr })

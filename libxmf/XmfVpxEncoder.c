@@ -20,6 +20,15 @@ struct xmf_vpx_encoder
 	XmfVpxCodecType codec_type;
 };
 
+static XmfVpxEncoderError xmf_vpx_last_create_error = { NO_ERROR };
+
+static void xmf_vpx_set_last_create_error(XmfVpxEncoderErrorCode code, vpx_codec_err_t vpx_error)
+{
+	xmf_vpx_last_create_error.code = code;
+	xmf_vpx_last_create_error.detail.vpx_error.error_code = vpx_error;
+}
+
+
 /*
  * XMF libvpx realtime presets.
  *
@@ -164,9 +173,12 @@ static int xmf_vpx_calc_tile_columns_log2(int threads, uint32_t width)
 
 XmfVpxEncoder *XmfVpxEncoder_Create(XmfVpxEncoderConfig config)
 {
+	xmf_vpx_set_last_create_error(NO_ERROR, VPX_CODEC_OK);
+
 	XmfVpxEncoder *encoder = (XmfVpxEncoder *)malloc(sizeof(XmfVpxEncoder));
 	if (!encoder)
 	{
+		xmf_vpx_set_last_create_error(MEMORY_ERROR, VPX_CODEC_OK);
 		return NULL;
 	}
 
@@ -182,6 +194,7 @@ XmfVpxEncoder *XmfVpxEncoder_Create(XmfVpxEncoderConfig config)
 	else
 	{
 		free(encoder);
+		xmf_vpx_set_last_create_error(INVALID_PARAM, VPX_CODEC_OK);
 		return NULL; // Invalid codec parameter
 	}
 
@@ -189,6 +202,7 @@ XmfVpxEncoder *XmfVpxEncoder_Create(XmfVpxEncoderConfig config)
 	if (res != VPX_CODEC_OK)
 	{
 		free(encoder);
+		xmf_vpx_set_last_create_error(VPX_ERROR, res);
 		return NULL; // Failed to get default config
 	}
 
@@ -312,6 +326,7 @@ XmfVpxEncoder *XmfVpxEncoder_Create(XmfVpxEncoderConfig config)
 	if (res != VPX_CODEC_OK)
 	{
 		free(encoder);
+		xmf_vpx_set_last_create_error(VPX_ERROR, res);
 		return NULL; // Failed to initialize codec
 	}
 
@@ -323,6 +338,7 @@ XmfVpxEncoder *XmfVpxEncoder_Create(XmfVpxEncoderConfig config)
 	// https://chromium.googlesource.com/webm/libvpx/+/refs/heads/main/vpx/vp8cx.h#144
 	if (xmf_vpx_apply_control(encoder, VP8E_SET_CPUUSED, cpuused_value) != 0)
 	{
+		xmf_vpx_set_last_create_error(encoder->lastError.code, encoder->lastError.detail.vpx_error.error_code);
 		XmfVpxEncoder_Destroy(encoder);
 		return NULL;
 	}
@@ -335,6 +351,7 @@ XmfVpxEncoder *XmfVpxEncoder_Create(XmfVpxEncoderConfig config)
 	// https://chromium.googlesource.com/webm/libvpx/+/refs/heads/main/vpx/vp8cx.h#157
 	if (xmf_vpx_apply_control(encoder, VP8E_SET_ENABLEAUTOALTREF, enable_auto_altref_value) != 0)
 	{
+		xmf_vpx_set_last_create_error(encoder->lastError.code, encoder->lastError.detail.vpx_error.error_code);
 		XmfVpxEncoder_Destroy(encoder);
 		return NULL;
 	}
@@ -346,6 +363,7 @@ XmfVpxEncoder *XmfVpxEncoder_Create(XmfVpxEncoderConfig config)
 		// https://chromium.googlesource.com/webm/libvpx/+/refs/heads/main/vpx/vp8cx.h#289
 		if (xmf_vpx_apply_control(encoder, VP8E_SET_SCREEN_CONTENT_MODE, screen_content_mode_value) != 0)
 		{
+			xmf_vpx_set_last_create_error(encoder->lastError.code, encoder->lastError.detail.vpx_error.error_code);
 			XmfVpxEncoder_Destroy(encoder);
 			return NULL;
 		}
@@ -354,22 +372,25 @@ XmfVpxEncoder *XmfVpxEncoder_Create(XmfVpxEncoderConfig config)
 		// Keep it disabled for realtime performance.
 		arnr_maxframes_value = 0;
 		arnr_strength_value = 0;
-		arnr_type_value = 0;
+		arnr_type_value = 1;
 
 		// Doc: VP8E_SET_ARNR_MAXFRAMES / VP8E_SET_ARNR_STRENGTH / VP8E_SET_ARNR_TYPE
 		// https://chromium.googlesource.com/webm/libvpx/+/refs/heads/main/vpx/vp8cx.h#206
 		if (xmf_vpx_apply_control(encoder, VP8E_SET_ARNR_MAXFRAMES, arnr_maxframes_value) != 0)
 		{
+			xmf_vpx_set_last_create_error(encoder->lastError.code, encoder->lastError.detail.vpx_error.error_code);
 			XmfVpxEncoder_Destroy(encoder);
 			return NULL;
 		}
 		if (xmf_vpx_apply_control(encoder, VP8E_SET_ARNR_STRENGTH, arnr_strength_value) != 0)
 		{
+			xmf_vpx_set_last_create_error(encoder->lastError.code, encoder->lastError.detail.vpx_error.error_code);
 			XmfVpxEncoder_Destroy(encoder);
 			return NULL;
 		}
 		if (xmf_vpx_apply_control(encoder, VP8E_SET_ARNR_TYPE, arnr_type_value) != 0)
 		{
+			xmf_vpx_set_last_create_error(encoder->lastError.code, encoder->lastError.detail.vpx_error.error_code);
 			XmfVpxEncoder_Destroy(encoder);
 			return NULL;
 		}
@@ -383,6 +404,7 @@ XmfVpxEncoder *XmfVpxEncoder_Create(XmfVpxEncoderConfig config)
 		// https://chromium.googlesource.com/webm/libvpx/+/refs/heads/main/vpx/vp8cx.h#512
 		if (xmf_vpx_apply_control(encoder, VP9E_SET_ROW_MT, row_mt_value) != 0)
 		{
+			xmf_vpx_set_last_create_error(encoder->lastError.code, encoder->lastError.detail.vpx_error.error_code);
 			XmfVpxEncoder_Destroy(encoder);
 			return NULL;
 		}
@@ -391,6 +413,7 @@ XmfVpxEncoder *XmfVpxEncoder_Create(XmfVpxEncoderConfig config)
 		// https://chromium.googlesource.com/webm/libvpx/+/refs/heads/main/vpx/vp8cx.h#310
 		if (xmf_vpx_apply_control(encoder, VP9E_SET_TILE_COLUMNS, tile_columns_log2_value) != 0)
 		{
+			xmf_vpx_set_last_create_error(encoder->lastError.code, encoder->lastError.detail.vpx_error.error_code);
 			XmfVpxEncoder_Destroy(encoder);
 			return NULL;
 		}
@@ -399,6 +422,7 @@ XmfVpxEncoder *XmfVpxEncoder_Create(XmfVpxEncoderConfig config)
 		// https://chromium.googlesource.com/webm/libvpx/+/refs/heads/main/vpx/vp8cx.h#333
 		if (xmf_vpx_apply_control(encoder, VP9E_SET_TILE_ROWS, tile_rows_log2_value) != 0)
 		{
+			xmf_vpx_set_last_create_error(encoder->lastError.code, encoder->lastError.detail.vpx_error.error_code);
 			XmfVpxEncoder_Destroy(encoder);
 			return NULL;
 		}
@@ -407,6 +431,7 @@ XmfVpxEncoder *XmfVpxEncoder_Create(XmfVpxEncoderConfig config)
 		// https://chromium.googlesource.com/webm/libvpx/+/refs/heads/main/vpx/vp8cx.h#426
 		if (xmf_vpx_apply_control(encoder, VP9E_SET_TUNE_CONTENT, tune_content_value) != 0)
 		{
+			xmf_vpx_set_last_create_error(encoder->lastError.code, encoder->lastError.detail.vpx_error.error_code);
 			XmfVpxEncoder_Destroy(encoder);
 			return NULL;
 		}
@@ -418,6 +443,7 @@ XmfVpxEncoder *XmfVpxEncoder_Create(XmfVpxEncoderConfig config)
 		// https://chromium.googlesource.com/webm/libvpx/+/refs/heads/main/vpx/vp8cx.h#352
 		if (xmf_vpx_apply_control(encoder, VP9E_SET_FRAME_PARALLEL_DECODING, frame_parallel_decoding_value) != 0)
 		{
+			xmf_vpx_set_last_create_error(encoder->lastError.code, encoder->lastError.detail.vpx_error.error_code);
 			XmfVpxEncoder_Destroy(encoder);
 			return NULL;
 		}
@@ -552,3 +578,11 @@ XmfVpxEncoderError XmfVpxEncoder_GetLastError(const XmfVpxEncoder *encoder)
 		return err;
 	}
 }
+
+XmfVpxEncoderError XmfVpxEncoder_GetLastCreateError(void)
+{
+	return xmf_vpx_last_create_error;
+}
+
+
+

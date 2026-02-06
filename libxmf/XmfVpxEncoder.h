@@ -144,6 +144,13 @@ extern "C"
     XMF_EXPORT XmfVpxEncoderError XmfVpxEncoder_GetLastError(const XmfVpxEncoder *encoder);
 
     /**
+     * Retrieves the last error that occurred during encoder creation.
+     *
+     * @return The last create error code and details.
+     */
+    XMF_EXPORT XmfVpxEncoderError XmfVpxEncoder_GetLastCreateError(void);
+
+    /**
      * Retrieves the next packet from the encoder.
      * @param encoder Pointer to the encoder instance.
      *
