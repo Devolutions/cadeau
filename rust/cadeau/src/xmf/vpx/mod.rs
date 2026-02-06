@@ -12,7 +12,7 @@ mod decoder;
 mod encoder;
 
 pub use decoder::{VpxDecoder, VpxDecoderBuilder};
-pub use encoder::{PacketIterator, VpxEncoder, VpxEncoderBuilder};
+pub use encoder::{PacketIterator, VpxEncoder, VpxEncoderBuilder, VpxEncoderPreset};
 
 #[derive(Debug, Clone, Copy)]
 pub enum VpxCodec {
