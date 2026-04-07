@@ -18,7 +18,7 @@ jobs:
 
     steps:
       - name: Checkout ${{ github.repository }}
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
 
       - name: Get version
         id: get-version
@@ -52,7 +52,7 @@ jobs:
 
     steps:
       - name: Check out ${{ github.repository }}
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
 
       - name: Prepare environment
         shell: pwsh
@@ -62,7 +62,7 @@ jobs:
           Set-Content -Path .\VERSION -Value $Version -NoNewLine -Force
 
       - name: Setup Python
-        uses: actions/setup-python@v5
+        uses: actions/setup-python@v6
         with:
           python-version: '3.10'
 
@@ -169,7 +169,7 @@ jobs:
           }
 
       - name: Upload native components (${{matrix.os}}-${{matrix.arch}})
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: runtimes-${{matrix.os}}-${{matrix.arch}}
           path: runtimes
@@ -181,13 +181,13 @@ jobs:
 
     steps:
       - name: Checkout ${{ github.repository }}
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
 
       - name: Setup CCTools
         uses: Devolutions/actions-public/setup-cctools@v1
 
       - name: Download native components
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@v8
         with:
           pattern: runtimes-*-*
           merge-multiple: true
@@ -203,7 +203,7 @@ jobs:
           & 'lipo' '-create' @ThinLibraries '-output' "$OutputPath/$LibraryName.dylib"
 
       - name: Upload native components
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: runtimes-all
           path: runtimes
@@ -215,10 +215,10 @@ jobs:
 
     steps:
       - name: Check out ${{ github.repository }}
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
 
       - name: Download native components
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@v8
         with:
           name: runtimes-all
           path: runtimes
@@ -230,7 +230,7 @@ jobs:
           & dotnet pack .\dotnet\Devolutions.Cadeau -o package /p:Version=$Version
 
       - name: Upload managed components
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: cadeau-nupkg
           path: package/*.nupkg
