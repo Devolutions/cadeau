@@ -234,15 +234,11 @@ int XMF_API XmfWebM_EncodeXRGB(XmfWebM* ctx, const uint8_t* srcData, uint32_t sr
 {
     uint32_t step[3];
 
-    if (!ctx->pending_frame)
+    if (ctx->pending_frame)
     {
-        ctx->first_encode_time = XmfTimeSource_Get(&ctx->ts);
-        goto convert_frame;
+        XmfWebM_EncodeInternal(ctx, !srcData);
     }
 
-    XmfWebM_EncodeInternal(ctx, !srcData);
-
-convert_frame:
     if (!srcData)
         return 0;
 
@@ -252,7 +248,21 @@ convert_frame:
 
     Xpp_RGBToYCbCr420_8u_P3AC4R(srcData, srcStep, ctx->img->planes, step, width, height);
     ctx->frame_time = XmfTimeSource_Get(&ctx->ts);
-    ctx->pending_frame = true;
+
+    if (ctx->frame_count == 0)
+    {
+        /* [DVLS-14562] Emit the first frame immediately so the WebM stream starts on the first
+         * submitted frame instead of waiting for a second frame to trigger encoding (which delays
+         * the first streamed bytes and can trip the consumer's first-byte timeout). A single frame
+         * interval is used as a provisional duration. */
+        ctx->first_encode_time = ctx->frame_time;
+        XmfWebM_EncodeImage(ctx, ctx->img, ctx->pts, 1000 / ctx->frame_rate);
+        ctx->pending_frame = false;
+    }
+    else
+    {
+        ctx->pending_frame = true;
+    }
 
     return 1;
 }
