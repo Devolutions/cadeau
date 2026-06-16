@@ -233,8 +233,11 @@ int XMF_API XmfWebM_Encode(XmfWebM* ctx, const uint8_t* srcData, uint16_t x, uin
 int XMF_API XmfWebM_EncodeXRGB(XmfWebM* ctx, const uint8_t* srcData, uint32_t srcStep, uint16_t x, uint16_t y, uint16_t width, uint16_t height)
 {
     uint32_t step[3];
+    bool had_pending_frame;
 
-    if (ctx->pending_frame)
+    had_pending_frame = ctx->pending_frame;
+
+    if (had_pending_frame)
     {
         XmfWebM_EncodeInternal(ctx, !srcData);
     }
@@ -261,6 +264,9 @@ int XMF_API XmfWebM_EncodeXRGB(XmfWebM* ctx, const uint8_t* srcData, uint32_t sr
     }
     else
     {
+        if (!had_pending_frame)
+            ctx->last_encode_time = ctx->frame_time;
+
         ctx->pending_frame = true;
     }
 
