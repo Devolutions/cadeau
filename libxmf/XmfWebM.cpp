@@ -32,6 +32,7 @@ struct xmf_webm
     uint32_t frame_rate;
     uint64_t frame_count;
     uint64_t frame_time;
+    uint64_t pending_frame_start_time;
     uint64_t first_encode_time;
     uint64_t last_encode_time;
     vpx_codec_pts_t pts;
@@ -206,21 +207,26 @@ int XmfWebM_EncodeImage(XmfWebM* ctx, vpx_image_t* img, vpx_codec_pts_t start, u
     return got_pkts;
 }
 
-int XmfWebM_EncodeInternal(XmfWebM* ctx, bool force)
+int XmfWebM_EncodePendingFrame(XmfWebM* ctx, bool force)
 {
     uint32_t ms_per_frame;
+    uint64_t now;
     uint64_t ms_since_last_encode;
+    uint64_t duration;
 
     ms_per_frame = 1000 / ctx->frame_rate;
-    ms_since_last_encode = XmfTimeSource_Get(&ctx->ts) - ctx->last_encode_time;
+    now = XmfTimeSource_Get(&ctx->ts);
+    ms_since_last_encode = now - ctx->last_encode_time;
 
     if (!force && ms_since_last_encode < ms_per_frame)
         return 0;
 
-    if (ctx->pts == 0)
-        ms_since_last_encode = XmfTimeSource_Get(&ctx->ts) - ctx->frame_time;
+    duration = now - ctx->pending_frame_start_time;
 
-    XmfWebM_EncodeImage(ctx, ctx->img, ctx->pts, ms_since_last_encode);
+    if (XmfWebM_EncodeImage(ctx, ctx->img, ctx->pts, duration) < 0)
+        return -1;
+
+    ctx->pending_frame = false;
 
     return 1;
 }
@@ -233,13 +239,10 @@ int XMF_API XmfWebM_Encode(XmfWebM* ctx, const uint8_t* srcData, uint16_t x, uin
 int XMF_API XmfWebM_EncodeXRGB(XmfWebM* ctx, const uint8_t* srcData, uint32_t srcStep, uint16_t x, uint16_t y, uint16_t width, uint16_t height)
 {
     uint32_t step[3];
-    bool had_pending_frame;
 
-    had_pending_frame = ctx->pending_frame;
-
-    if (had_pending_frame)
+    if (ctx->pending_frame)
     {
-        XmfWebM_EncodeInternal(ctx, !srcData);
+        XmfWebM_EncodePendingFrame(ctx, !srcData);
     }
 
     if (!srcData)
@@ -261,8 +264,8 @@ int XMF_API XmfWebM_EncodeXRGB(XmfWebM* ctx, const uint8_t* srcData, uint32_t sr
     }
     else
     {
-        if (!had_pending_frame)
-            ctx->last_encode_time = ctx->frame_time;
+        if (!ctx->pending_frame)
+            ctx->pending_frame_start_time = ctx->frame_time;
 
         ctx->pending_frame = true;
     }
