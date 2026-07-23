@@ -21,3 +21,31 @@ Media foundation library built on top of the core performance primitives that su
  * WebM: libvpx + libwebm
 
 libxmf is built as a shared library to faciliate importing all dependencies at once, but also to make it possible to load it as an optional runtime component. Advanced users may prefer to link everything statically into their application and that's fine too, it's just a bit more work.
+
+## Conan 1 / Conan 2 migration workflow
+
+Cadeau now supports Conan 1 and Conan 2 side by side while the dependency chain migrates.
+
+1. Create local versioned Conan commands:
+
+```powershell
+pwsh -ExecutionPolicy Bypass -File .\scripts\setup-conan-venvs.ps1
+conan1 --version
+conan2 --version
+```
+
+2. Build with Conan 1 (default lane):
+
+```powershell
+cmake -S . -B build -G Ninja -DUSE_CONAN=ON -DCADEAU_CONAN_MAJOR=1
+cmake --build build --config Release
+```
+
+3. Build with Conan 2 (migration lane):
+
+```powershell
+cmake -S . -B build -G Ninja -DUSE_CONAN=ON -DCADEAU_CONAN_MAJOR=2
+cmake --build build --config Release
+```
+
+Use explicit `conan1`/`conan2` commands when working on dependency setup to avoid mixing Conan 1 and Conan 2 state.
