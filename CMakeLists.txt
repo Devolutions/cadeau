@@ -16,6 +16,8 @@ option(WITH_HALIDE "Use Halide optimization" ON)
 
 option(WITH_XMF "Build Media Foundation library (XMF)" ON)
 option(USE_CONAN "Use conan package manager" ${WITH_XMF})
+set(CADEAU_CONAN_MAJOR "1" CACHE STRING "Conan major version to use (1 or 2)")
+set_property(CACHE CADEAU_CONAN_MAJOR PROPERTY STRINGS "1" "2")
 
 option(CADEAU_INSTALL "Generate cmake installation script" ON)
 

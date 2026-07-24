@@ -6,8 +6,17 @@ on:
         description: 'build version number'
         default: "latest"
         required: true
+      conan_major_version:
+        description: 'Conan major version to build with'
+        required: true
+        default: '1'
+        type: choice
+        options:
+          - '1'
+          - '2'
 env:
-  conan-version: 1.60.0
+  conan1_version: 1.66.0
+  conan2_version: '>=2,<3'
   target-distro: "ubuntu-18.04"
 jobs:
   preflight:
@@ -112,13 +121,31 @@ jobs:
       - name: Configure conan
         shell: pwsh
         run: |
-          pip3 install conan==${{env.conan-version}} --upgrade
-          conan config init
-          conan config install --type=git -sf settings https://github.com/Devolutions/conan-public
-          conan remote clean
-          conan remote add artifactory https://devolutions.jfrog.io/devolutions/api/conan/conan-local
-          if ($IsLinux) {
-            sed -i 's/^distro=.*/distro=${{env.target-distro}}/' ~/.conan/profiles/linux-base
+          $ConanMajorVersion = '${{ github.event.inputs.conan_major_version }}'
+          if ([string]::IsNullOrWhiteSpace($ConanMajorVersion)) {
+            $ConanMajorVersion = '1'
+          }
+          echo "CADEAU_CONAN_MAJOR=$ConanMajorVersion" >> $Env:GITHUB_ENV
+
+          $SetupArgs = @{
+            VenvRoot = "$Env:RUNNER_TEMP\conan-venvs"
+            ShimDir = "$Env:RUNNER_TEMP\conan-bin"
+            NoUserPathUpdate = $true
+          }
+
+          if ($ConanMajorVersion -eq '2') {
+            .\scripts\setup-conan-venvs.ps1 @SetupArgs -Conan2Version "${{ env.conan2_version }}" -SkipConan1
+            conan2 profile detect --force
+            conan2 remote add artifactory https://devolutions.jfrog.io/devolutions/api/conan/conan-local --force
+          } else {
+            .\scripts\setup-conan-venvs.ps1 @SetupArgs -Conan1Version "${{ env.conan1_version }}" -SkipConan2
+            conan1 config init
+            conan1 config install --type=git -sf settings https://github.com/Devolutions/conan-public
+            conan1 remote clean
+            conan1 remote add artifactory https://devolutions.jfrog.io/devolutions/api/conan/conan-local
+            if ($IsLinux) {
+              sed -i 's/^distro=.*/distro=${{env.target-distro}}/' ~/.conan/profiles/linux-base
+            }
           }
 
       - name: Build cadeau (${{matrix.os}}-${{matrix.arch}})
@@ -139,6 +166,7 @@ jobs:
           $CMakeArgs = @("-DCMAKE_BUILD_TYPE=Release")
           $CMakeArgs += @("-DCMAKE_INSTALL_PREFIX=$InstallPath")
           $CMakeArgs += @("-DHALIDE_ROOT_DIR=$($Env:HALIDE_ROOT_DIR)")
+          $CMakeArgs += @("-DCADEAU_CONAN_MAJOR=$($Env:CADEAU_CONAN_MAJOR)")
           $CMakeArgs += @("-DWITH_XMF=ON", "-DUSE_CONAN=ON")
 
           if ($DotNetOs -eq 'win') {
