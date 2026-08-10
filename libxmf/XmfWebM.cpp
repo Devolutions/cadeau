@@ -32,7 +32,6 @@ struct xmf_webm
     uint32_t frame_rate;
     uint64_t frame_count;
     uint64_t frame_time;
-    uint64_t pending_frame_start_time;
     uint64_t first_encode_time;
     uint64_t last_encode_time;
     vpx_codec_pts_t pts;
@@ -186,12 +185,14 @@ int XmfWebM_EncodeImage(XmfWebM* ctx, vpx_image_t* img, vpx_codec_pts_t start, u
     if (ctx->frame_count % keyframe_every == 0)
         flags |= VPX_EFLAG_FORCE_KF;
 
-    ctx->last_encode_time = XmfTimeSource_Get(&ctx->ts);
-
     res = vpx_codec_encode(&ctx->codec, img, start, duration, flags, VPX_DL_REALTIME);
 
     if (res != VPX_CODEC_OK)
         return -1;
+
+    /* Durations are measured from this clock, so a failed encode must not advance it,
+     * otherwise the un-covered time span silently disappears from the timeline. */
+    ctx->last_encode_time = XmfTimeSource_Get(&ctx->ts);
 
     while ((pkt = vpx_codec_get_cx_data(&ctx->codec, &iter)) != NULL)
     {
@@ -212,7 +213,6 @@ int XmfWebM_EncodePendingFrame(XmfWebM* ctx, bool force)
     uint32_t ms_per_frame;
     uint64_t now;
     uint64_t ms_since_last_encode;
-    uint64_t duration;
 
     ms_per_frame = 1000 / ctx->frame_rate;
     now = XmfTimeSource_Get(&ctx->ts);
@@ -221,9 +221,12 @@ int XmfWebM_EncodePendingFrame(XmfWebM* ctx, bool force)
     if (!force && ms_since_last_encode < ms_per_frame)
         return 0;
 
-    duration = now - ctx->pending_frame_start_time;
+    /* libvpx rejects frames with duration 0, and no wall-clock time has passed to cover;
+     * keep the frame pending so a later flush emits it with a real duration. */
+    if (ms_since_last_encode == 0)
+        return 0;
 
-    if (XmfWebM_EncodeImage(ctx, ctx->img, ctx->pts, duration) < 0)
+    if (XmfWebM_EncodeImage(ctx, ctx->img, ctx->pts, ms_since_last_encode) < 0)
         return -1;
 
     ctx->pending_frame = false;
@@ -264,9 +267,6 @@ int XMF_API XmfWebM_EncodeXRGB(XmfWebM* ctx, const uint8_t* srcData, uint32_t sr
     }
     else
     {
-        if (!ctx->pending_frame)
-            ctx->pending_frame_start_time = ctx->frame_time;
-
         ctx->pending_frame = true;
     }
 
