@@ -31,7 +31,6 @@ struct xmf_webm
     char filename[XMF_MAX_PATH];
     uint32_t frame_rate;
     uint64_t frame_count;
-    uint64_t frame_time;
     uint64_t first_encode_time;
     uint64_t last_encode_time;
     vpx_codec_pts_t pts;
@@ -254,14 +253,14 @@ int XMF_API XmfWebM_EncodeXRGB(XmfWebM* ctx, const uint8_t* srcData, uint32_t sr
     step[2] = (uint32_t) ctx->img->stride[2];
 
     Xpp_RGBToYCbCr420_8u_P3AC4R(srcData, srcStep, ctx->img->planes, step, width, height);
-    ctx->frame_time = XmfTimeSource_Get(&ctx->ts);
 
     if (ctx->frame_count == 0)
     {
         /* Eagerly emit the first frame so the Gateway receives a frame even on a static recording, preventing a recording policy violation. */
-        ctx->first_encode_time = ctx->frame_time;
+        uint64_t now = XmfTimeSource_Get(&ctx->ts);
+        ctx->first_encode_time = now;
         if (XmfWebM_EncodeImage(ctx, ctx->img, ctx->pts, 1000 / ctx->frame_rate) >= 0)
-            ctx->last_encode_time = ctx->frame_time;
+            ctx->last_encode_time = now;
 
         ctx->pending_frame = false;
     }
