@@ -174,6 +174,7 @@ void XmfWebM_WriteFileFooter(XmfWebM* ctx)
 int XmfWebM_EncodeImage(XmfWebM* ctx, vpx_image_t* img, vpx_codec_pts_t start, uint64_t duration)
 {
     vpx_codec_pts_t keyframe_every;
+    uint64_t encode_time;
     vpx_codec_err_t res;
     vpx_codec_iter_t iter = NULL;
     const vpx_codec_cx_pkt_t* pkt = NULL;
@@ -185,14 +186,16 @@ int XmfWebM_EncodeImage(XmfWebM* ctx, vpx_image_t* img, vpx_codec_pts_t start, u
     if (ctx->frame_count % keyframe_every == 0)
         flags |= VPX_EFLAG_FORCE_KF;
 
+    encode_time = XmfTimeSource_Get(&ctx->ts);
+
     res = vpx_codec_encode(&ctx->codec, img, start, duration, flags, VPX_DL_REALTIME);
 
     if (res != VPX_CODEC_OK)
         return -1;
 
-    /* Durations are measured from this clock, so a failed encode must not advance it,
-     * otherwise the un-covered time span silently disappears from the timeline. */
-    ctx->last_encode_time = XmfTimeSource_Get(&ctx->ts);
+    /* Stamp the pre-encode time, but commit it only on success: the encode latency must stay
+     * inside the next frame's duration, and a failed encode must not swallow the un-covered span. */
+    ctx->last_encode_time = encode_time;
 
     while ((pkt = vpx_codec_get_cx_data(&ctx->codec, &iter)) != NULL)
     {
@@ -216,14 +219,15 @@ int XmfWebM_EncodePendingFrame(XmfWebM* ctx, bool force)
 
     ms_per_frame = 1000 / ctx->frame_rate;
     now = XmfTimeSource_Get(&ctx->ts);
+
+    /* A stalled or backward clock leaves no wall time to cover (and libvpx rejects duration 0);
+     * keep the frame pending so a later flush emits it with a real duration. */
+    if (now <= ctx->last_encode_time)
+        return 0;
+
     ms_since_last_encode = now - ctx->last_encode_time;
 
     if (!force && ms_since_last_encode < ms_per_frame)
-        return 0;
-
-    /* libvpx rejects frames with duration 0, and no wall-clock time has passed to cover;
-     * keep the frame pending so a later flush emits it with a real duration. */
-    if (ms_since_last_encode == 0)
         return 0;
 
     if (XmfWebM_EncodeImage(ctx, ctx->img, ctx->pts, ms_since_last_encode) < 0)
