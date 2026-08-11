@@ -174,7 +174,6 @@ void XmfWebM_WriteFileFooter(XmfWebM* ctx)
 int XmfWebM_EncodeImage(XmfWebM* ctx, vpx_image_t* img, vpx_codec_pts_t start, uint64_t duration)
 {
     vpx_codec_pts_t keyframe_every;
-    uint64_t encode_time;
     vpx_codec_err_t res;
     vpx_codec_iter_t iter = NULL;
     const vpx_codec_cx_pkt_t* pkt = NULL;
@@ -186,16 +185,10 @@ int XmfWebM_EncodeImage(XmfWebM* ctx, vpx_image_t* img, vpx_codec_pts_t start, u
     if (ctx->frame_count % keyframe_every == 0)
         flags |= VPX_EFLAG_FORCE_KF;
 
-    encode_time = XmfTimeSource_Get(&ctx->ts);
-
     res = vpx_codec_encode(&ctx->codec, img, start, duration, flags, VPX_DL_REALTIME);
 
     if (res != VPX_CODEC_OK)
         return -1;
-
-    /* Stamp the pre-encode time, but commit it only on success: the encode latency must stay
-     * inside the next frame's duration, and a failed encode must not swallow the un-covered span. */
-    ctx->last_encode_time = encode_time;
 
     while ((pkt = vpx_codec_get_cx_data(&ctx->codec, &iter)) != NULL)
     {
@@ -220,8 +213,8 @@ int XmfWebM_EncodePendingFrame(XmfWebM* ctx, bool force)
     ms_per_frame = 1000 / ctx->frame_rate;
     now = XmfTimeSource_Get(&ctx->ts);
 
-    /* A stalled or backward clock leaves no wall time to cover (and libvpx rejects duration 0);
-     * keep the frame pending so a later flush emits it with a real duration. */
+    /* No wall time has passed (stalled or backward clock) and libvpx rejects zero durations,
+     * so keep the frame pending until a later flush can give it a real one. */
     if (now <= ctx->last_encode_time)
         return 0;
 
@@ -233,6 +226,7 @@ int XmfWebM_EncodePendingFrame(XmfWebM* ctx, bool force)
     if (XmfWebM_EncodeImage(ctx, ctx->img, ctx->pts, ms_since_last_encode) < 0)
         return -1;
 
+    ctx->last_encode_time = now;
     ctx->pending_frame = false;
 
     return 1;
@@ -266,7 +260,9 @@ int XMF_API XmfWebM_EncodeXRGB(XmfWebM* ctx, const uint8_t* srcData, uint32_t sr
     {
         /* Eagerly emit the first frame so the Gateway receives a frame even on a static recording, preventing a recording policy violation. */
         ctx->first_encode_time = ctx->frame_time;
-        XmfWebM_EncodeImage(ctx, ctx->img, ctx->pts, 1000 / ctx->frame_rate);
+        if (XmfWebM_EncodeImage(ctx, ctx->img, ctx->pts, 1000 / ctx->frame_rate) >= 0)
+            ctx->last_encode_time = ctx->frame_time;
+
         ctx->pending_frame = false;
     }
     else
@@ -285,8 +281,16 @@ void XMF_API XmfWebM_Finalize(XmfWebM* ctx)
     ref.img = *ctx->img;
     vpx_codec_control(&ctx->codec, VP8_SET_REFERENCE, &ref);
 
-    XmfWebM_Encode(ctx, NULL, 0, 0, 0, 0);
-    ctx->pending_frame = false;
+    /* The flush is skipped when no wall time has passed since the last encode; emit the
+     * final frame with a token 1ms duration rather than dropping its content. */
+    if (ctx->pending_frame && XmfWebM_EncodePendingFrame(ctx, true) == 0)
+    {
+        if (XmfWebM_EncodeImage(ctx, ctx->img, ctx->pts, 1) >= 0)
+        {
+            ctx->last_encode_time++;
+            ctx->pending_frame = false;
+        }
+    }
 
     while (true)
     {
