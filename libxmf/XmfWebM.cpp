@@ -31,8 +31,6 @@ struct xmf_webm
     char filename[XMF_MAX_PATH];
     uint32_t frame_rate;
     uint64_t frame_count;
-    uint64_t frame_time;
-    uint64_t pending_frame_start_time;
     uint64_t first_encode_time;
     uint64_t last_encode_time;
     vpx_codec_pts_t pts;
@@ -186,8 +184,6 @@ int XmfWebM_EncodeImage(XmfWebM* ctx, vpx_image_t* img, vpx_codec_pts_t start, u
     if (ctx->frame_count % keyframe_every == 0)
         flags |= VPX_EFLAG_FORCE_KF;
 
-    ctx->last_encode_time = XmfTimeSource_Get(&ctx->ts);
-
     res = vpx_codec_encode(&ctx->codec, img, start, duration, flags, VPX_DL_REALTIME);
 
     if (res != VPX_CODEC_OK)
@@ -212,20 +208,24 @@ int XmfWebM_EncodePendingFrame(XmfWebM* ctx, bool force)
     uint32_t ms_per_frame;
     uint64_t now;
     uint64_t ms_since_last_encode;
-    uint64_t duration;
 
     ms_per_frame = 1000 / ctx->frame_rate;
     now = XmfTimeSource_Get(&ctx->ts);
+
+    /* No wall time has passed (stalled or backward clock) and libvpx rejects zero durations,
+     * so keep the frame pending until a later flush can give it a real one. */
+    if (now <= ctx->last_encode_time)
+        return 0;
+
     ms_since_last_encode = now - ctx->last_encode_time;
 
     if (!force && ms_since_last_encode < ms_per_frame)
         return 0;
 
-    duration = now - ctx->pending_frame_start_time;
-
-    if (XmfWebM_EncodeImage(ctx, ctx->img, ctx->pts, duration) < 0)
+    if (XmfWebM_EncodeImage(ctx, ctx->img, ctx->pts, ms_since_last_encode) < 0)
         return -1;
 
+    ctx->last_encode_time = now;
     ctx->pending_frame = false;
 
     return 1;
@@ -253,20 +253,21 @@ int XMF_API XmfWebM_EncodeXRGB(XmfWebM* ctx, const uint8_t* srcData, uint32_t sr
     step[2] = (uint32_t) ctx->img->stride[2];
 
     Xpp_RGBToYCbCr420_8u_P3AC4R(srcData, srcStep, ctx->img->planes, step, width, height);
-    ctx->frame_time = XmfTimeSource_Get(&ctx->ts);
 
     if (ctx->frame_count == 0)
     {
         /* Eagerly emit the first frame so the Gateway receives a frame even on a static recording, preventing a recording policy violation. */
-        ctx->first_encode_time = ctx->frame_time;
-        XmfWebM_EncodeImage(ctx, ctx->img, ctx->pts, 1000 / ctx->frame_rate);
+        uint64_t now = XmfTimeSource_Get(&ctx->ts);
+        if (XmfWebM_EncodeImage(ctx, ctx->img, ctx->pts, 1000 / ctx->frame_rate) >= 0)
+        {
+            ctx->first_encode_time = now;
+            ctx->last_encode_time = now;
+        }
+
         ctx->pending_frame = false;
     }
     else
     {
-        if (!ctx->pending_frame)
-            ctx->pending_frame_start_time = ctx->frame_time;
-
         ctx->pending_frame = true;
     }
 
@@ -277,12 +278,20 @@ void XMF_API XmfWebM_Finalize(XmfWebM* ctx)
 {
     vpx_ref_frame_t ref;
 
+    /* The flush is skipped when no wall time has passed since the last encode; emit the
+     * final frame with a token 1ms duration rather than dropping its content. */
+    if (ctx->pending_frame && XmfWebM_EncodePendingFrame(ctx, true) == 0)
+    {
+        if (XmfWebM_EncodeImage(ctx, ctx->img, ctx->pts, 1) >= 0)
+        {
+            ctx->last_encode_time++;
+            ctx->pending_frame = false;
+        }
+    }
+
     ref.frame_type = VP8_LAST_FRAME;
     ref.img = *ctx->img;
     vpx_codec_control(&ctx->codec, VP8_SET_REFERENCE, &ref);
-
-    XmfWebM_Encode(ctx, NULL, 0, 0, 0, 0);
-    ctx->pending_frame = false;
 
     while (true)
     {
