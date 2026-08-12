@@ -4,8 +4,8 @@ use xmf_sys::{
     XmfVpxCodecType, XmfVpxDecoderError, XmfVpxEncoder, XmfVpxEncoderError, XmfVpxFrame, XmfVpxFrame_Destroy,
     XmfVpxFrame_GetBuffer, XmfVpxFrame_GetDuration, XmfVpxFrame_GetFlags, XmfVpxFrame_GetHeight,
     XmfVpxFrame_GetPartitionId, XmfVpxFrame_GetPts, XmfVpxFrame_GetSize, XmfVpxFrame_GetSpatialLayerEncoded,
-    XmfVpxFrame_GetWidth, XmfVpxImage, XmfVpxImage_Destroy, XmfVpxPacket, XmfVpxPacketKind, XmfVpxPacket_Destroy,
-    XmfVpxPacket_GetFrame, XmfVpxPacket_GetKind, XmfVpxPacket_IsEmpty,
+    XmfVpxFrame_GetWidth, XmfVpxImage, XmfVpxImage_Destroy, XmfVpxImage_GetHeight, XmfVpxImage_GetWidth, XmfVpxPacket,
+    XmfVpxPacketKind, XmfVpxPacket_Destroy, XmfVpxPacket_GetFrame, XmfVpxPacket_GetKind, XmfVpxPacket_IsEmpty,
 };
 
 mod decoder;
@@ -21,10 +21,10 @@ pub enum VpxCodec {
 }
 
 pub struct VpxImage<'decoder> {
-    // INVARIANT: A valid pointer to a properly initialized XmfVpxPacket.
+    // INVARIANT: A valid pointer to a properly initialized XmfVpxImage.
     // INVARIANT: The pointer is owned.
     ptr: *mut XmfVpxImage,
-    // Logically holds a reference to the VpxEncoder.
+    // Logically holds a reference to the VpxDecoder.
     _marker: std::marker::PhantomData<&'decoder VpxDecoder>,
 }
 
@@ -37,6 +37,16 @@ impl VpxImage<'_> {
             ptr,
             _marker: std::marker::PhantomData,
         }
+    }
+
+    pub fn width(&self) -> u32 {
+        // SAFETY: Pointer is valid as the lifetime is bound to the associated decoder.
+        unsafe { XmfVpxImage_GetWidth(self.ptr) }
+    }
+
+    pub fn height(&self) -> u32 {
+        // SAFETY: Pointer is valid as the lifetime is bound to the associated decoder.
+        unsafe { XmfVpxImage_GetHeight(self.ptr) }
     }
 }
 

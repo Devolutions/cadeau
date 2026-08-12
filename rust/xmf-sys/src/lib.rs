@@ -87,6 +87,8 @@ pub mod raw {
 
             // VPX Image
             fn XmfVpxImage_Destroy(ctx: *mut XmfVpxImage) -> (),
+            fn XmfVpxImage_GetWidth(image: *const XmfVpxImage) -> u32,
+            fn XmfVpxImage_GetHeight(image: *const XmfVpxImage) -> u32,
 
             // VPX Packet
             fn XmfVpxPacket_Destroy(packet: *mut XmfVpxPacket) -> (),
