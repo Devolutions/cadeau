@@ -258,9 +258,11 @@ int XMF_API XmfWebM_EncodeXRGB(XmfWebM* ctx, const uint8_t* srcData, uint32_t sr
     {
         /* Eagerly emit the first frame so the Gateway receives a frame even on a static recording, preventing a recording policy violation. */
         uint64_t now = XmfTimeSource_Get(&ctx->ts);
-        ctx->first_encode_time = now;
         if (XmfWebM_EncodeImage(ctx, ctx->img, ctx->pts, 1000 / ctx->frame_rate) >= 0)
+        {
+            ctx->first_encode_time = now;
             ctx->last_encode_time = now;
+        }
 
         ctx->pending_frame = false;
     }
@@ -276,10 +278,6 @@ void XMF_API XmfWebM_Finalize(XmfWebM* ctx)
 {
     vpx_ref_frame_t ref;
 
-    ref.frame_type = VP8_LAST_FRAME;
-    ref.img = *ctx->img;
-    vpx_codec_control(&ctx->codec, VP8_SET_REFERENCE, &ref);
-
     /* The flush is skipped when no wall time has passed since the last encode; emit the
      * final frame with a token 1ms duration rather than dropping its content. */
     if (ctx->pending_frame && XmfWebM_EncodePendingFrame(ctx, true) == 0)
@@ -290,6 +288,10 @@ void XMF_API XmfWebM_Finalize(XmfWebM* ctx)
             ctx->pending_frame = false;
         }
     }
+
+    ref.frame_type = VP8_LAST_FRAME;
+    ref.img = *ctx->img;
+    vpx_codec_control(&ctx->codec, VP8_SET_REFERENCE, &ref);
 
     while (true)
     {
