@@ -17,6 +17,8 @@ extern "C"
     vpx_image_t *XmfVpxImage_GetData(const XmfVpxImage *image);
 
     XMF_EXPORT void XmfVpxImage_Destroy(XmfVpxImage *image);
+    XMF_EXPORT unsigned int XmfVpxImage_GetWidth(const XmfVpxImage *image);
+    XMF_EXPORT unsigned int XmfVpxImage_GetHeight(const XmfVpxImage *image);
 
 #ifdef __cplusplus
 }

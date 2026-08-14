@@ -37,3 +37,13 @@ vpx_image_t *XmfVpxImage_GetData(const XmfVpxImage *image)
 {
     return image ? image->img : NULL;
 }
+
+unsigned int XmfVpxImage_GetWidth(const XmfVpxImage *image)
+{
+    return image && image->img ? image->img->d_w : 0;
+}
+
+unsigned int XmfVpxImage_GetHeight(const XmfVpxImage *image)
+{
+    return image && image->img ? image->img->d_h : 0;
+}
