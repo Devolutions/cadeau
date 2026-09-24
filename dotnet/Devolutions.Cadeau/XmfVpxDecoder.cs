@@ -70,6 +70,8 @@ namespace Devolutions.Cadeau
     {
         private readonly XmfVpxDecoderHandle h;
 
+        private int generation;
+
         private bool disposed;
 
         private class Ffi
@@ -118,6 +120,8 @@ namespace Devolutions.Cadeau
         {
             this.CheckDisposed();
 
+            // A new decode call reuses the buffers that earlier images read from.
+            this.generation++;
             return Ffi.Decode(this.h, data, size) == 0;
         }
 
@@ -140,26 +144,33 @@ namespace Devolutions.Cadeau
         }
 
         /// <summary>
-        /// Returns a copy of the next decoded frame, or null when none is left. The copy does not depend on this
-        /// decoder, so it stays valid after later decode calls and after the decoder is disposed.
+        /// Returns the next decoded frame without copying it, or null when none is left. The image reads this
+        /// decoder's buffers and is usable only until the next <see cref="Decode(IntPtr, uint)"/> call or until the
+        /// decoder is disposed; call <see cref="XmfVpxImage.Copy"/> to keep the pixels longer.
         /// </summary>
         public XmfVpxImage GetNextFrame()
         {
             this.CheckDisposed();
 
-            // The frame's planes live in the decoder's buffers, so keep the decoder alive while copying them out.
             bool addedReference = false;
             this.h.DangerousAddRef(ref addedReference);
             try
             {
-                using (XmfVpxImageHandle image = Ffi.GetNextFrame(this.h))
+                XmfVpxImageHandle image = Ffi.GetNextFrame(this.h);
+                if (image == null || image.IsInvalid)
                 {
-                    if (image == null || image.IsInvalid)
-                    {
-                        return null;
-                    }
+                    image?.Dispose();
+                    return null;
+                }
 
-                    return XmfVpxImage.CopyFrom(image);
+                try
+                {
+                    return new XmfVpxImage(image, this, this.generation);
+                }
+                catch
+                {
+                    image.Dispose();
+                    throw;
                 }
             }
             finally
@@ -169,6 +180,11 @@ namespace Devolutions.Cadeau
                     this.h.DangerousRelease();
                 }
             }
+        }
+
+        internal bool IsCurrentGeneration(int imageGeneration)
+        {
+            return !this.disposed && imageGeneration == this.generation;
         }
 
         public XmfVpxDecoderError GetLastError()

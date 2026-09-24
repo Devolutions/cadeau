@@ -37,55 +37,41 @@ namespace Devolutions.Cadeau
         Full = 1,
     }
 
-    /// <summary>
-    /// One plane of a decoded image. Rows are tightly packed: row r starts at r * <see cref="Stride"/>.
-    /// </summary>
-    public sealed class XmfVpxImagePlane
+    public enum XmfVpxPlane
     {
-        internal XmfVpxImagePlane(byte[] data, int width, int height, int stride)
-        {
-            this.Data = data;
-            this.Width = width;
-            this.Height = height;
-            this.Stride = stride;
-        }
-
-        public byte[] Data { get; }
-
-        /// <summary>Samples per row.</summary>
-        public int Width { get; }
-
-        /// <summary>Number of rows.</summary>
-        public int Height { get; }
-
-        /// <summary>Bytes per row: Width for 8-bit formats, Width * 2 for 16-bit formats.</summary>
-        public int Stride { get; }
+        Y = 0,
+        U = 1,
+        V = 2,
+        Alpha = 3,
     }
 
     /// <summary>
-    /// A decoded frame copied out of the decoder, so it stays valid after later decode calls and after the
-    /// decoder is disposed.
+    /// A decoded frame as returned by <see cref="XmfVpxDecoder.GetNextFrame"/>. Like the native API, it reads the
+    /// decoder's own buffers without copying, so it is usable only until the next <see cref="XmfVpxDecoder.Decode(IntPtr, uint)"/>
+    /// call or until the decoder is disposed; after that, <see cref="GetPlane"/>, <see cref="GetStride"/> and
+    /// <see cref="Copy"/> throw. Call <see cref="Copy"/> to keep the pixels longer.
     /// </summary>
-    public sealed class XmfVpxImage
+    public sealed class XmfVpxImage : IDisposable
     {
-        private XmfVpxImage(
-            uint width,
-            uint height,
-            XmfVpxImageFormat format,
-            XmfVpxColorSpace colorSpace,
-            XmfVpxColorRange colorRange,
-            XmfVpxImagePlane y,
-            XmfVpxImagePlane u,
-            XmfVpxImagePlane v)
+        private readonly XmfVpxImageHandle h;
+
+        // Holding the decoder keeps it from being finalized while this view can still read its buffers.
+        private readonly XmfVpxDecoder owner;
+
+        private readonly int generation;
+
+        private bool disposed;
+
+        internal XmfVpxImage(XmfVpxImageHandle h, XmfVpxDecoder owner, int generation)
         {
-            this.Width = width;
-            this.Height = height;
-            this.Format = format;
-            this.ColorSpace = colorSpace;
-            this.ColorRange = colorRange;
-            this.Y = y;
-            this.U = u;
-            this.V = v;
+            this.h = h;
+            this.owner = owner;
+            this.generation = generation;
+            this.Width = Ffi.GetWidth(h);
+            this.Height = Ffi.GetHeight(h);
+            this.Format = (XmfVpxImageFormat)Ffi.GetFormat(h);
+            this.ColorSpace = (XmfVpxColorSpace)Ffi.GetColorSpace(h);
+            this.ColorRange = (XmfVpxColorRange)Ffi.GetColorRange(h);
         }
 
         public uint Width { get; }
@@ -103,48 +89,90 @@ namespace Devolutions.Cadeau
         /// <summary>Color range reported by the decoder. VP8 reports <see cref="XmfVpxColorRange.Studio"/>.</summary>
         public XmfVpxColorRange ColorRange { get; }
 
-        public XmfVpxImagePlane Y { get; }
-
-        public XmfVpxImagePlane U { get; }
-
-        public XmfVpxImagePlane V { get; }
-
-        // The caller keeps the owning decoder alive while this runs, because the planes live in its buffers.
-        internal static XmfVpxImage CopyFrom(XmfVpxImageHandle image)
+        /// <summary>
+        /// Returns the start of a plane in decoder memory, or <see cref="IntPtr.Zero"/> when the plane is unavailable.
+        /// The pointer must not be used after the next decode call or after the decoder is disposed.
+        /// </summary>
+        public IntPtr GetPlane(XmfVpxPlane plane)
         {
-            uint width = Ffi.GetWidth(image);
-            uint height = Ffi.GetHeight(image);
-            XmfVpxImageFormat format = (XmfVpxImageFormat)Ffi.GetFormat(image);
-            if (!TryGetLayout(format, out int xShift, out int yShift, out int bytesPerSample))
+            this.CheckUsable();
+
+            return Ffi.GetPlane(this.h, (int)plane);
+        }
+
+        /// <summary>
+        /// Returns the distance in bytes between rows of a plane, or 0 when the plane is unavailable.
+        /// </summary>
+        public int GetStride(XmfVpxPlane plane)
+        {
+            this.CheckUsable();
+
+            return Ffi.GetStride(this.h, (int)plane);
+        }
+
+        /// <summary>
+        /// Copies the Y, U and V planes into managed memory. The copy stays valid after later decode calls and after
+        /// the decoder is disposed. Supports 8- and 16-bit I420, YV12, I422, I440 and I444.
+        /// </summary>
+        public XmfVpxImageCopy Copy()
+        {
+            this.CheckUsable();
+
+            if (!TryGetLayout(this.Format, out int xShift, out int yShift, out int bytesPerSample))
             {
-                throw new NotSupportedException($"XMF returned an unsupported VPX image format {format}");
+                throw new NotSupportedException($"XMF returned an unsupported VPX image format {this.Format}");
             }
 
-            if (width == 0 || height == 0 || width > int.MaxValue / 4 || height > int.MaxValue)
+            if (this.Width == 0 || this.Height == 0 || this.Width > int.MaxValue / 4 || this.Height > int.MaxValue)
             {
-                throw new InvalidOperationException($"XMF returned an invalid VPX image size {width}x{height}");
+                throw new InvalidOperationException($"XMF returned an invalid VPX image size {this.Width}x{this.Height}");
             }
 
-            int lumaWidth = (int)width;
-            int lumaHeight = (int)height;
+            int lumaWidth = (int)this.Width;
+            int lumaHeight = (int)this.Height;
             int chromaWidth = (lumaWidth + (1 << xShift) - 1) >> xShift;
             int chromaHeight = (lumaHeight + (1 << yShift) - 1) >> yShift;
 
-            return new XmfVpxImage(
-                width,
-                height,
-                format,
-                (XmfVpxColorSpace)Ffi.GetColorSpace(image),
-                (XmfVpxColorRange)Ffi.GetColorRange(image),
-                CopyPlane(image, 0, lumaWidth, lumaHeight, bytesPerSample),
-                CopyPlane(image, 1, chromaWidth, chromaHeight, bytesPerSample),
-                CopyPlane(image, 2, chromaWidth, chromaHeight, bytesPerSample));
+            bool addedReference = false;
+            this.owner.Handle.DangerousAddRef(ref addedReference);
+            try
+            {
+                return new XmfVpxImageCopy(
+                    this.Width,
+                    this.Height,
+                    this.Format,
+                    this.ColorSpace,
+                    this.ColorRange,
+                    this.CopyPlane(XmfVpxPlane.Y, lumaWidth, lumaHeight, bytesPerSample),
+                    this.CopyPlane(XmfVpxPlane.U, chromaWidth, chromaHeight, bytesPerSample),
+                    this.CopyPlane(XmfVpxPlane.V, chromaWidth, chromaHeight, bytesPerSample));
+            }
+            finally
+            {
+                if (addedReference)
+                {
+                    this.owner.Handle.DangerousRelease();
+                }
+            }
         }
 
-        private static XmfVpxImagePlane CopyPlane(XmfVpxImageHandle image, int plane, int width, int height, int bytesPerSample)
+        public void Dispose()
         {
-            IntPtr source = Ffi.GetPlane(image, plane);
-            int sourceStride = Ffi.GetStride(image, plane);
+            if (this.disposed)
+            {
+                return;
+            }
+
+            this.disposed = true;
+
+            this.h?.Dispose();
+            GC.SuppressFinalize(this);
+        }
+
+        private XmfVpxImagePlane CopyPlane(XmfVpxPlane plane, int width, int height, int bytesPerSample)
+        {
+            IntPtr source = Ffi.GetPlane(this.h, (int)plane);
+            int sourceStride = Ffi.GetStride(this.h, (int)plane);
             int rowBytes = checked(width * bytesPerSample);
             if (source == IntPtr.Zero || sourceStride < rowBytes)
             {
@@ -158,6 +186,20 @@ namespace Devolutions.Cadeau
             }
 
             return new XmfVpxImagePlane(data, width, height, rowBytes);
+        }
+
+        private void CheckUsable()
+        {
+            if (this.disposed)
+            {
+                throw new ObjectDisposedException(nameof(XmfVpxImage));
+            }
+
+            if (!this.owner.IsCurrentGeneration(this.generation))
+            {
+                throw new InvalidOperationException(
+                    "The decoded image is no longer valid: its decoder has decoded again or was disposed. Copy it first to keep the pixels.");
+            }
         }
 
         private static bool TryGetLayout(XmfVpxImageFormat format, out int xShift, out int yShift, out int bytesPerSample)
@@ -214,6 +256,73 @@ namespace Devolutions.Cadeau
             [DllImport(Lib, EntryPoint = "XmfVpxImage_GetColorRange")]
             public static extern int GetColorRange(XmfVpxImageHandle image);
         }
+    }
+
+    /// <summary>
+    /// One plane of an <see cref="XmfVpxImageCopy"/>. Rows are tightly packed: row r starts at r * <see cref="Stride"/>.
+    /// </summary>
+    public sealed class XmfVpxImagePlane
+    {
+        internal XmfVpxImagePlane(byte[] data, int width, int height, int stride)
+        {
+            this.Data = data;
+            this.Width = width;
+            this.Height = height;
+            this.Stride = stride;
+        }
+
+        public byte[] Data { get; }
+
+        /// <summary>Samples per row.</summary>
+        public int Width { get; }
+
+        /// <summary>Number of rows.</summary>
+        public int Height { get; }
+
+        /// <summary>Bytes per row: Width for 8-bit formats, Width * 2 for 16-bit formats.</summary>
+        public int Stride { get; }
+    }
+
+    /// <summary>
+    /// A decoded frame copied into managed memory by <see cref="XmfVpxImage.Copy"/>. It does not depend on the decoder.
+    /// </summary>
+    public sealed class XmfVpxImageCopy
+    {
+        internal XmfVpxImageCopy(
+            uint width,
+            uint height,
+            XmfVpxImageFormat format,
+            XmfVpxColorSpace colorSpace,
+            XmfVpxColorRange colorRange,
+            XmfVpxImagePlane y,
+            XmfVpxImagePlane u,
+            XmfVpxImagePlane v)
+        {
+            this.Width = width;
+            this.Height = height;
+            this.Format = format;
+            this.ColorSpace = colorSpace;
+            this.ColorRange = colorRange;
+            this.Y = y;
+            this.U = u;
+            this.V = v;
+        }
+
+        public uint Width { get; }
+
+        public uint Height { get; }
+
+        public XmfVpxImageFormat Format { get; }
+
+        public XmfVpxColorSpace ColorSpace { get; }
+
+        public XmfVpxColorRange ColorRange { get; }
+
+        public XmfVpxImagePlane Y { get; }
+
+        public XmfVpxImagePlane U { get; }
+
+        public XmfVpxImagePlane V { get; }
     }
 
     internal sealed class XmfVpxImageHandle : SafeHandleZeroOrMinusOneIsInvalid
