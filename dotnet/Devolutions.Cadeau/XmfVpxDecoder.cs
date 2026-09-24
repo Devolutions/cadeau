@@ -140,21 +140,35 @@ namespace Devolutions.Cadeau
         }
 
         /// <summary>
-        /// Returns the next decoded frame, or null when none is left. The frame is valid only until the
-        /// next call on this decoder.
+        /// Returns a copy of the next decoded frame, or null when none is left. The copy does not depend on this
+        /// decoder, so it stays valid after later decode calls and after the decoder is disposed.
         /// </summary>
         public XmfVpxImage GetNextFrame()
         {
             this.CheckDisposed();
 
-            XmfVpxImageHandle image = Ffi.GetNextFrame(this.h);
-            if (image == null || image.IsInvalid)
+            // The frame's planes live in the decoder's buffers, so keep the decoder alive while copying them out.
+            bool addedReference = false;
+            this.h.DangerousAddRef(ref addedReference);
+            try
             {
-                image?.Dispose();
-                return null;
-            }
+                using (XmfVpxImageHandle image = Ffi.GetNextFrame(this.h))
+                {
+                    if (image == null || image.IsInvalid)
+                    {
+                        return null;
+                    }
 
-            return new XmfVpxImage(image);
+                    return XmfVpxImage.CopyFrom(image);
+                }
+            }
+            finally
+            {
+                if (addedReference)
+                {
+                    this.h.DangerousRelease();
+                }
+            }
         }
 
         public XmfVpxDecoderError GetLastError()

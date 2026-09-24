@@ -37,44 +37,159 @@ namespace Devolutions.Cadeau
         Full = 1,
     }
 
-    public enum XmfVpxPlane
+    /// <summary>
+    /// One plane of a decoded image. Rows are tightly packed: row r starts at r * <see cref="Stride"/>.
+    /// </summary>
+    public sealed class XmfVpxImagePlane
     {
-        Y = 0,
-        U = 1,
-        V = 2,
-        Alpha = 3,
-    }
-
-    public sealed class XmfVpxImageHandle : SafeHandleZeroOrMinusOneIsInvalid
-    {
-        private XmfVpxImageHandle() : base(ownsHandle: true) { }
-
-        protected override bool ReleaseHandle()
+        internal XmfVpxImagePlane(byte[] data, int width, int height, int stride)
         {
-            Ffi.Destroy(handle);
-            return true;
+            this.Data = data;
+            this.Width = width;
+            this.Height = height;
+            this.Stride = stride;
         }
 
-        internal static class Ffi
-        {
-            private const string Lib = "xmf";
+        public byte[] Data { get; }
 
-            [DllImport(Lib, EntryPoint = "XmfVpxImage_Destroy")]
-            internal static extern void Destroy(IntPtr image);
-        }
+        /// <summary>Samples per row.</summary>
+        public int Width { get; }
+
+        /// <summary>Number of rows.</summary>
+        public int Height { get; }
+
+        /// <summary>Bytes per row: Width for 8-bit formats, Width * 2 for 16-bit formats.</summary>
+        public int Stride { get; }
     }
 
     /// <summary>
-    /// A frame returned by <see cref="XmfVpxDecoder.GetNextFrame"/>. Its planes point into decoder-owned
-    /// memory that stays valid only until the next call on that decoder.
+    /// A decoded frame copied out of the decoder, so it stays valid after later decode calls and after the
+    /// decoder is disposed.
     /// </summary>
-    public class XmfVpxImage : IDisposable
+    public sealed class XmfVpxImage
     {
-        private readonly XmfVpxImageHandle h;
+        private XmfVpxImage(
+            uint width,
+            uint height,
+            XmfVpxImageFormat format,
+            XmfVpxColorSpace colorSpace,
+            XmfVpxColorRange colorRange,
+            XmfVpxImagePlane y,
+            XmfVpxImagePlane u,
+            XmfVpxImagePlane v)
+        {
+            this.Width = width;
+            this.Height = height;
+            this.Format = format;
+            this.ColorSpace = colorSpace;
+            this.ColorRange = colorRange;
+            this.Y = y;
+            this.U = u;
+            this.V = v;
+        }
 
-        private bool disposed;
+        public uint Width { get; }
 
-        private class Ffi
+        public uint Height { get; }
+
+        public XmfVpxImageFormat Format { get; }
+
+        /// <summary>
+        /// Color space reported by the decoder. VP8 carries no color metadata and reports
+        /// <see cref="XmfVpxColorSpace.Unknown"/>.
+        /// </summary>
+        public XmfVpxColorSpace ColorSpace { get; }
+
+        /// <summary>Color range reported by the decoder. VP8 reports <see cref="XmfVpxColorRange.Studio"/>.</summary>
+        public XmfVpxColorRange ColorRange { get; }
+
+        public XmfVpxImagePlane Y { get; }
+
+        public XmfVpxImagePlane U { get; }
+
+        public XmfVpxImagePlane V { get; }
+
+        // The caller keeps the owning decoder alive while this runs, because the planes live in its buffers.
+        internal static XmfVpxImage CopyFrom(XmfVpxImageHandle image)
+        {
+            uint width = Ffi.GetWidth(image);
+            uint height = Ffi.GetHeight(image);
+            XmfVpxImageFormat format = (XmfVpxImageFormat)Ffi.GetFormat(image);
+            if (!TryGetLayout(format, out int xShift, out int yShift, out int bytesPerSample))
+            {
+                throw new NotSupportedException($"XMF returned an unsupported VPX image format {format}");
+            }
+
+            if (width == 0 || height == 0 || width > int.MaxValue / 4 || height > int.MaxValue)
+            {
+                throw new InvalidOperationException($"XMF returned an invalid VPX image size {width}x{height}");
+            }
+
+            int lumaWidth = (int)width;
+            int lumaHeight = (int)height;
+            int chromaWidth = (lumaWidth + (1 << xShift) - 1) >> xShift;
+            int chromaHeight = (lumaHeight + (1 << yShift) - 1) >> yShift;
+
+            return new XmfVpxImage(
+                width,
+                height,
+                format,
+                (XmfVpxColorSpace)Ffi.GetColorSpace(image),
+                (XmfVpxColorRange)Ffi.GetColorRange(image),
+                CopyPlane(image, 0, lumaWidth, lumaHeight, bytesPerSample),
+                CopyPlane(image, 1, chromaWidth, chromaHeight, bytesPerSample),
+                CopyPlane(image, 2, chromaWidth, chromaHeight, bytesPerSample));
+        }
+
+        private static XmfVpxImagePlane CopyPlane(XmfVpxImageHandle image, int plane, int width, int height, int bytesPerSample)
+        {
+            IntPtr source = Ffi.GetPlane(image, plane);
+            int sourceStride = Ffi.GetStride(image, plane);
+            int rowBytes = checked(width * bytesPerSample);
+            if (source == IntPtr.Zero || sourceStride < rowBytes)
+            {
+                throw new InvalidOperationException($"XMF returned an incomplete VPX image plane {plane}");
+            }
+
+            byte[] data = new byte[checked(rowBytes * height)];
+            for (int row = 0; row < height; row++)
+            {
+                Marshal.Copy(IntPtr.Add(source, checked(row * sourceStride)), data, row * rowBytes, rowBytes);
+            }
+
+            return new XmfVpxImagePlane(data, width, height, rowBytes);
+        }
+
+        private static bool TryGetLayout(XmfVpxImageFormat format, out int xShift, out int yShift, out int bytesPerSample)
+        {
+            bytesPerSample = ((int)format & 0x800) != 0 ? 2 : 1;
+            switch ((XmfVpxImageFormat)((int)format & ~0x800))
+            {
+                case XmfVpxImageFormat.I420:
+                case XmfVpxImageFormat.Yv12:
+                    xShift = 1;
+                    yShift = 1;
+                    return true;
+                case XmfVpxImageFormat.I422:
+                    xShift = 1;
+                    yShift = 0;
+                    return true;
+                case XmfVpxImageFormat.I440:
+                    xShift = 0;
+                    yShift = 1;
+                    return true;
+                case XmfVpxImageFormat.I444:
+                    xShift = 0;
+                    yShift = 0;
+                    return true;
+                default:
+                    xShift = 0;
+                    yShift = 0;
+                    return false;
+            }
+        }
+
+        private static class Ffi
         {
             private const string Lib = "xmf";
 
@@ -99,96 +214,24 @@ namespace Devolutions.Cadeau
             [DllImport(Lib, EntryPoint = "XmfVpxImage_GetColorRange")]
             public static extern int GetColorRange(XmfVpxImageHandle image);
         }
+    }
 
-        internal XmfVpxImage(XmfVpxImageHandle h)
+    internal sealed class XmfVpxImageHandle : SafeHandleZeroOrMinusOneIsInvalid
+    {
+        private XmfVpxImageHandle() : base(ownsHandle: true) { }
+
+        protected override bool ReleaseHandle()
         {
-            this.h = h;
+            Ffi.Destroy(handle);
+            return true;
         }
 
-        public XmfVpxImageHandle Handle => this.h;
-
-        public void Dispose()
+        private static class Ffi
         {
-            if (this.disposed)
-            {
-                return;
-            }
+            private const string Lib = "xmf";
 
-            this.disposed = true;
-
-            this.h?.Dispose();
-            GC.SuppressFinalize(this);
-        }
-
-        public uint GetWidth()
-        {
-            this.CheckDisposed();
-
-            return Ffi.GetWidth(this.h);
-        }
-
-        public uint GetHeight()
-        {
-            this.CheckDisposed();
-
-            return Ffi.GetHeight(this.h);
-        }
-
-        public XmfVpxImageFormat GetFormat()
-        {
-            this.CheckDisposed();
-
-            return (XmfVpxImageFormat)Ffi.GetFormat(this.h);
-        }
-
-        /// <summary>
-        /// Returns the start of a plane, or <see cref="IntPtr.Zero"/> when the plane is unavailable.
-        /// For I420, the chroma planes have (width + 1) / 2 columns and (height + 1) / 2 rows.
-        /// </summary>
-        public IntPtr GetPlane(XmfVpxPlane plane)
-        {
-            this.CheckDisposed();
-
-            return Ffi.GetPlane(this.h, (int)plane);
-        }
-
-        /// <summary>
-        /// Returns the distance in bytes between rows of a plane, or 0 when the plane is unavailable.
-        /// </summary>
-        public int GetStride(XmfVpxPlane plane)
-        {
-            this.CheckDisposed();
-
-            return Ffi.GetStride(this.h, (int)plane);
-        }
-
-        /// <summary>
-        /// Returns the color space reported by the decoder. VP8 carries no color metadata and reports
-        /// <see cref="XmfVpxColorSpace.Unknown"/>.
-        /// </summary>
-        public XmfVpxColorSpace GetColorSpace()
-        {
-            this.CheckDisposed();
-
-            return (XmfVpxColorSpace)Ffi.GetColorSpace(this.h);
-        }
-
-        /// <summary>
-        /// Returns the color range reported by the decoder. VP8 reports <see cref="XmfVpxColorRange.Studio"/>.
-        /// </summary>
-        public XmfVpxColorRange GetColorRange()
-        {
-            this.CheckDisposed();
-
-            return (XmfVpxColorRange)Ffi.GetColorRange(this.h);
-        }
-
-        private void CheckDisposed()
-        {
-            if (this.disposed)
-            {
-                throw new ObjectDisposedException(nameof(XmfVpxImage));
-            }
+            [DllImport(Lib, EntryPoint = "XmfVpxImage_Destroy")]
+            public static extern void Destroy(IntPtr image);
         }
     }
 }
