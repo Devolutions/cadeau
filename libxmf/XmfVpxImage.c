@@ -47,3 +47,28 @@ unsigned int XmfVpxImage_GetHeight(const XmfVpxImage *image)
 {
     return image && image->img ? image->img->d_h : 0;
 }
+
+int XmfVpxImage_GetFormat(const XmfVpxImage *image)
+{
+    return image && image->img ? (int)image->img->fmt : VPX_IMG_FMT_NONE;
+}
+
+const uint8_t *XmfVpxImage_GetPlane(const XmfVpxImage *image, int plane)
+{
+    return image && image->img && plane >= VPX_PLANE_Y && plane <= VPX_PLANE_ALPHA ? image->img->planes[plane] : NULL;
+}
+
+int XmfVpxImage_GetStride(const XmfVpxImage *image, int plane)
+{
+    return image && image->img && plane >= VPX_PLANE_Y && plane <= VPX_PLANE_ALPHA ? image->img->stride[plane] : 0;
+}
+
+int XmfVpxImage_GetColorSpace(const XmfVpxImage *image)
+{
+    return image && image->img ? (int)image->img->cs : VPX_CS_UNKNOWN;
+}
+
+int XmfVpxImage_GetColorRange(const XmfVpxImage *image)
+{
+    return image && image->img ? (int)image->img->range : VPX_CR_STUDIO_RANGE;
+}

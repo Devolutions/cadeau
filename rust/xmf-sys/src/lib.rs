@@ -89,6 +89,11 @@ pub mod raw {
             fn XmfVpxImage_Destroy(ctx: *mut XmfVpxImage) -> (),
             fn XmfVpxImage_GetWidth(image: *const XmfVpxImage) -> u32,
             fn XmfVpxImage_GetHeight(image: *const XmfVpxImage) -> u32,
+            fn XmfVpxImage_GetFormat(image: *const XmfVpxImage) -> c_int,
+            fn XmfVpxImage_GetPlane(image: *const XmfVpxImage, plane: c_int) -> *const u8,
+            fn XmfVpxImage_GetStride(image: *const XmfVpxImage, plane: c_int) -> c_int,
+            fn XmfVpxImage_GetColorSpace(image: *const XmfVpxImage) -> c_int,
+            fn XmfVpxImage_GetColorRange(image: *const XmfVpxImage) -> c_int,
 
             // VPX Packet
             fn XmfVpxPacket_Destroy(packet: *mut XmfVpxPacket) -> (),

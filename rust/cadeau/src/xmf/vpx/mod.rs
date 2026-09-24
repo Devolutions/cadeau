@@ -4,8 +4,10 @@ use xmf_sys::{
     XmfVpxCodecType, XmfVpxDecoderError, XmfVpxEncoder, XmfVpxEncoderError, XmfVpxFrame, XmfVpxFrame_Destroy,
     XmfVpxFrame_GetBuffer, XmfVpxFrame_GetDuration, XmfVpxFrame_GetFlags, XmfVpxFrame_GetHeight,
     XmfVpxFrame_GetPartitionId, XmfVpxFrame_GetPts, XmfVpxFrame_GetSize, XmfVpxFrame_GetSpatialLayerEncoded,
-    XmfVpxFrame_GetWidth, XmfVpxImage, XmfVpxImage_Destroy, XmfVpxImage_GetHeight, XmfVpxImage_GetWidth, XmfVpxPacket,
-    XmfVpxPacketKind, XmfVpxPacket_Destroy, XmfVpxPacket_GetFrame, XmfVpxPacket_GetKind, XmfVpxPacket_IsEmpty,
+    XmfVpxFrame_GetWidth, XmfVpxImage, XmfVpxImage_Destroy, XmfVpxImage_GetColorRange, XmfVpxImage_GetColorSpace,
+    XmfVpxImage_GetFormat, XmfVpxImage_GetHeight, XmfVpxImage_GetPlane, XmfVpxImage_GetStride, XmfVpxImage_GetWidth,
+    XmfVpxPacket, XmfVpxPacketKind, XmfVpxPacket_Destroy, XmfVpxPacket_GetFrame, XmfVpxPacket_GetKind,
+    XmfVpxPacket_IsEmpty,
 };
 
 mod decoder;
@@ -18,6 +20,20 @@ pub use encoder::{PacketIterator, VpxEncoder, VpxEncoderBuilder, VpxEncoderPrese
 pub enum VpxCodec {
     VP8,
     VP9,
+}
+
+/// libvpx `VPX_IMG_FMT_I420`.
+pub const VPX_IMG_FMT_I420: i32 = 0x102;
+
+/// The three planes of an 8-bit I420 image, borrowed until the next decoder call.
+#[derive(Debug, Clone, Copy)]
+pub struct VpxI420Planes<'image> {
+    pub y: &'image [u8],
+    pub y_stride: usize,
+    pub u: &'image [u8],
+    pub u_stride: usize,
+    pub v: &'image [u8],
+    pub v_stride: usize,
 }
 
 pub struct VpxImage<'decoder> {
@@ -47,6 +63,69 @@ impl VpxImage<'_> {
     pub fn height(&self) -> u32 {
         // SAFETY: Pointer is valid as the lifetime is bound to the associated decoder.
         unsafe { XmfVpxImage_GetHeight(self.ptr) }
+    }
+
+    /// libvpx `vpx_img_fmt_t` of the decoded image.
+    pub fn format(&self) -> i32 {
+        // SAFETY: Pointer is valid as the lifetime is bound to the associated decoder.
+        unsafe { XmfVpxImage_GetFormat(self.ptr) }
+    }
+
+    /// libvpx `vpx_color_space_t` reported by the decoder. VP8 always reports unknown.
+    pub fn color_space(&self) -> i32 {
+        // SAFETY: Pointer is valid as the lifetime is bound to the associated decoder.
+        unsafe { XmfVpxImage_GetColorSpace(self.ptr) }
+    }
+
+    /// libvpx `vpx_color_range_t` reported by the decoder. VP8 always reports studio range.
+    pub fn color_range(&self) -> i32 {
+        // SAFETY: Pointer is valid as the lifetime is bound to the associated decoder.
+        unsafe { XmfVpxImage_GetColorRange(self.ptr) }
+    }
+
+    /// Borrows the Y, U and V planes, or returns `None` when the image is not 8-bit I420.
+    pub fn i420_planes(&self) -> Option<VpxI420Planes<'_>> {
+        if self.format() != VPX_IMG_FMT_I420 {
+            return None;
+        }
+
+        let width = usize::try_from(self.width()).ok()?;
+        let height = usize::try_from(self.height()).ok()?;
+        if width == 0 || height == 0 {
+            return None;
+        }
+
+        let chroma_width = width.div_ceil(2);
+        let chroma_height = height.div_ceil(2);
+        let (y, y_stride) = self.plane(0, width, height)?;
+        let (u, u_stride) = self.plane(1, chroma_width, chroma_height)?;
+        let (v, v_stride) = self.plane(2, chroma_width, chroma_height)?;
+
+        Some(VpxI420Planes {
+            y,
+            y_stride,
+            u,
+            u_stride,
+            v,
+            v_stride,
+        })
+    }
+
+    fn plane(&self, index: i32, columns: usize, rows: usize) -> Option<(&[u8], usize)> {
+        // SAFETY: Pointer is valid as the lifetime is bound to the associated decoder.
+        let data = unsafe { XmfVpxImage_GetPlane(self.ptr, index) };
+        // SAFETY: Pointer is valid as the lifetime is bound to the associated decoder.
+        let stride = unsafe { XmfVpxImage_GetStride(self.ptr, index) };
+        let stride = usize::try_from(stride).ok().filter(|&stride| stride >= columns)?;
+        if data.is_null() {
+            return None;
+        }
+
+        let length = (rows - 1).checked_mul(stride)?.checked_add(columns)?;
+
+        // SAFETY: libvpx allocates `rows` rows of `stride` bytes for an I420 plane of this
+        // size, and the borrow of `self` keeps the decoder from reusing the buffer.
+        Some((unsafe { core::slice::from_raw_parts(data, length) }, stride))
     }
 }
 
