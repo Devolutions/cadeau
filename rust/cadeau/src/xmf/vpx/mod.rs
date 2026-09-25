@@ -1,15 +1,24 @@
 use core::fmt;
+use core::mem::MaybeUninit;
+use std::ffi::c_int;
 
 use xmf_sys::{
     XmfVpxCodecType, XmfVpxDecoderError, XmfVpxEncoder, XmfVpxEncoderError, XmfVpxFrame, XmfVpxFrame_Destroy,
     XmfVpxFrame_GetBuffer, XmfVpxFrame_GetDuration, XmfVpxFrame_GetFlags, XmfVpxFrame_GetHeight,
     XmfVpxFrame_GetPartitionId, XmfVpxFrame_GetPts, XmfVpxFrame_GetSize, XmfVpxFrame_GetSpatialLayerEncoded,
-    XmfVpxFrame_GetWidth, XmfVpxImage, XmfVpxImage_Destroy, XmfVpxImage_GetHeight, XmfVpxImage_GetWidth, XmfVpxPacket,
-    XmfVpxPacketKind, XmfVpxPacket_Destroy, XmfVpxPacket_GetFrame, XmfVpxPacket_GetKind, XmfVpxPacket_IsEmpty,
+    XmfVpxFrame_GetWidth, XmfVpxImage, XmfVpxImage_Destroy, XmfVpxImage_GetColorRange, XmfVpxImage_GetColorSpace,
+    XmfVpxImage_GetFormat, XmfVpxImage_GetHeight, XmfVpxImage_GetPlane, XmfVpxImage_GetStride, XmfVpxImage_GetWidth,
+    XmfVpxPacket, XmfVpxPacketKind, XmfVpxPacket_Destroy, XmfVpxPacket_GetFrame, XmfVpxPacket_GetKind,
+    XmfVpxPacket_IsEmpty, VPX_CR_FULL_RANGE, VPX_CR_STUDIO_RANGE, VPX_CS_BT_2020, VPX_CS_BT_601, VPX_CS_BT_709,
+    VPX_CS_RESERVED, VPX_CS_SMPTE_170, VPX_CS_SMPTE_240, VPX_CS_SRGB, VPX_CS_UNKNOWN, VPX_IMG_FMT_I420, VPX_PLANE_U,
+    VPX_PLANE_V, VPX_PLANE_Y,
 };
 
 mod decoder;
 mod encoder;
+
+#[cfg(test)]
+mod tests;
 
 pub use decoder::{VpxDecoder, VpxDecoderBuilder};
 pub use encoder::{PacketIterator, VpxEncoder, VpxEncoderBuilder, VpxEncoderPreset};
@@ -18,6 +27,134 @@ pub use encoder::{PacketIterator, VpxEncoder, VpxEncoderBuilder, VpxEncoderPrese
 pub enum VpxCodec {
     VP8,
     VP9,
+}
+
+/// libvpx `vpx_img_fmt_t` of a decoded image.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
+pub struct VpxImageFormat(pub i32);
+
+impl VpxImageFormat {
+    /// 8-bit planar YUV 4:2:0.
+    pub const I420: Self = Self(VPX_IMG_FMT_I420);
+}
+
+/// libvpx `vpx_color_space_t` reported by the decoder.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
+pub struct VpxColorSpace(pub i32);
+
+impl VpxColorSpace {
+    pub const UNKNOWN: Self = Self(VPX_CS_UNKNOWN);
+    pub const BT_601: Self = Self(VPX_CS_BT_601);
+    pub const BT_709: Self = Self(VPX_CS_BT_709);
+    pub const SMPTE_170: Self = Self(VPX_CS_SMPTE_170);
+    pub const SMPTE_240: Self = Self(VPX_CS_SMPTE_240);
+    pub const BT_2020: Self = Self(VPX_CS_BT_2020);
+    pub const RESERVED: Self = Self(VPX_CS_RESERVED);
+    pub const SRGB: Self = Self(VPX_CS_SRGB);
+}
+
+/// libvpx `vpx_color_range_t` reported by the decoder.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
+pub struct VpxColorRange(pub i32);
+
+impl VpxColorRange {
+    /// Studio (limited) range: Y in 16..=235, U and V in 16..=240.
+    pub const STUDIO: Self = Self(VPX_CR_STUDIO_RANGE);
+    /// Full range: Y, U and V in 0..=255.
+    pub const FULL: Self = Self(VPX_CR_FULL_RANGE);
+}
+
+/// One plane of a decoded image, borrowed until the next decoder call.
+#[derive(Clone, Copy)]
+pub struct VpxPlane<'image> {
+    data: &'image [MaybeUninit<u8>],
+    columns: usize,
+    stride: usize,
+}
+
+impl<'image> VpxPlane<'image> {
+    /// Borrows each row's visible bytes without exposing padding that libvpx may leave uninitialized.
+    pub fn rows(&self) -> impl ExactSizeIterator<Item = &'image [u8]> {
+        let columns = self.columns;
+        self.data.chunks(self.stride).map(move |row| {
+            // SAFETY: Each chunk starts at a row whose first `columns` bytes are initialized pixels.
+            unsafe { core::slice::from_raw_parts(row.as_ptr().cast(), columns) }
+        })
+    }
+
+    /// Number of pixel bytes in each row.
+    pub fn width(&self) -> usize {
+        self.columns
+    }
+
+    /// Number of rows.
+    pub fn height(&self) -> usize {
+        self.data.len().div_ceil(self.stride)
+    }
+
+    /// Distance in bytes between the starts of two rows. At least [`Self::width`].
+    pub fn stride(&self) -> usize {
+        self.stride
+    }
+
+    /// Returns a pointer to the first pixel of the plane, for code that takes a base pointer and a stride, such as a
+    /// C or SIMD color converter.
+    ///
+    /// Row `r` starts at `as_ptr().add(r * stride())`, and its first [`width()`](Self::width) bytes are pixels.
+    /// Use [`Self::rows`] instead when a slice per row is enough: it needs no `unsafe`.
+    ///
+    /// # Safety
+    ///
+    /// The returned pointer carries neither the image's lifetime nor any promise that every byte is initialized, so
+    /// the caller must uphold all of the following:
+    ///
+    /// - Only read through it. The buffer belongs to the decoder.
+    /// - Only read the first [`width()`](Self::width) bytes of each of the [`height()`](Self::height) rows. The
+    ///   bytes between rows are padding that libvpx may leave uninitialized; reading them is undefined behavior.
+    /// - Stop using it before the image is dropped. Until then the decoder stays mutably borrowed, so it cannot
+    ///   decode again or be dropped; keep the image (or this plane) alive for as long as the pointer is in use.
+    ///
+    /// # Example
+    ///
+    /// ```rust,no_run
+    /// use cadeau::xmf::vpx::VpxPlane;
+    ///
+    /// fn luma_sum(plane: &VpxPlane<'_>) -> u64 {
+    ///     // SAFETY: Only pixel bytes are read below, while `plane` keeps the image borrowed.
+    ///     let base = unsafe { plane.as_ptr() };
+    ///     let mut sum = 0;
+    ///     for row in 0..plane.height() {
+    ///         // SAFETY: Row `row` starts `row * stride` bytes after `base`, inside the plane.
+    ///         let start = unsafe { base.add(row * plane.stride()) };
+    ///         // SAFETY: The row has `width` initialized pixels.
+    ///         let pixels = unsafe { core::slice::from_raw_parts(start, plane.width()) };
+    ///         sum += pixels.iter().map(|&pixel| u64::from(pixel)).sum::<u64>();
+    ///     }
+    ///     sum
+    /// }
+    /// ```
+    pub unsafe fn as_ptr(&self) -> *const u8 {
+        self.data.as_ptr().cast()
+    }
+}
+
+impl fmt::Debug for VpxPlane<'_> {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        // The pixels are not printed: a 1080p luma plane alone is two million bytes, some of them uninitialized.
+        f.debug_struct("VpxPlane")
+            .field("width", &self.width())
+            .field("height", &self.height())
+            .field("stride", &self.stride)
+            .finish_non_exhaustive()
+    }
+}
+
+/// The three planes of an 8-bit I420 image, borrowed until the next decoder call.
+#[derive(Debug, Clone, Copy)]
+pub struct VpxI420Planes<'image> {
+    pub y: VpxPlane<'image>,
+    pub u: VpxPlane<'image>,
+    pub v: VpxPlane<'image>,
 }
 
 pub struct VpxImage<'decoder> {
@@ -47,6 +184,76 @@ impl VpxImage<'_> {
     pub fn height(&self) -> u32 {
         // SAFETY: Pointer is valid as the lifetime is bound to the associated decoder.
         unsafe { XmfVpxImage_GetHeight(self.ptr) }
+    }
+
+    /// libvpx `vpx_img_fmt_t` of the decoded image.
+    pub fn format(&self) -> VpxImageFormat {
+        // SAFETY: Pointer is valid as the lifetime is bound to the associated decoder.
+        VpxImageFormat(unsafe { XmfVpxImage_GetFormat(self.ptr) })
+    }
+
+    /// Color space reported by the decoder. VP8 always reports [`VpxColorSpace::UNKNOWN`].
+    pub fn color_space(&self) -> VpxColorSpace {
+        // SAFETY: Pointer is valid as the lifetime is bound to the associated decoder.
+        VpxColorSpace(unsafe { XmfVpxImage_GetColorSpace(self.ptr) })
+    }
+
+    /// Color range reported by the decoder. VP8 always reports [`VpxColorRange::STUDIO`].
+    pub fn color_range(&self) -> VpxColorRange {
+        // SAFETY: Pointer is valid as the lifetime is bound to the associated decoder.
+        VpxColorRange(unsafe { XmfVpxImage_GetColorRange(self.ptr) })
+    }
+
+    /// Borrows the Y, U and V planes, or returns `None` when the image is not 8-bit I420.
+    pub fn i420_planes(&self) -> Option<VpxI420Planes<'_>> {
+        if self.format() != VpxImageFormat::I420 {
+            return None;
+        }
+
+        let width = usize::try_from(self.width()).ok()?;
+        let height = usize::try_from(self.height()).ok()?;
+        if width == 0 || height == 0 {
+            return None;
+        }
+
+        let chroma_width = width.div_ceil(2);
+        let chroma_height = height.div_ceil(2);
+
+        // SAFETY: The image is 8-bit I420, so libvpx allocated `height` luma rows of at least `width` bytes.
+        let y = unsafe { self.plane(VPX_PLANE_Y, width, height) }?;
+        // SAFETY: The image is 8-bit I420, so libvpx allocated `(height + 1) / 2` rows of at least
+        // `(width + 1) / 2` bytes for each chroma plane.
+        let u = unsafe { self.plane(VPX_PLANE_U, chroma_width, chroma_height) }?;
+        // SAFETY: Same as for the U plane.
+        let v = unsafe { self.plane(VPX_PLANE_V, chroma_width, chroma_height) }?;
+
+        Some(VpxI420Planes { y, u, v })
+    }
+
+    /// Borrows `rows` rows of `columns` bytes from a plane, or returns `None` when the plane is unavailable.
+    ///
+    /// # Safety
+    ///
+    /// Plane `index` must be one allocation holding `rows` rows at the reported stride, with at least `columns`
+    /// initialized pixel bytes per row. The decoder must not change the buffer while the image is borrowed.
+    unsafe fn plane(&self, index: c_int, columns: usize, rows: usize) -> Option<VpxPlane<'_>> {
+        // SAFETY: Pointer is valid as the lifetime is bound to the associated decoder.
+        let data = unsafe { XmfVpxImage_GetPlane(self.ptr, index) };
+        // SAFETY: Pointer is valid as the lifetime is bound to the associated decoder.
+        let stride = unsafe { XmfVpxImage_GetStride(self.ptr, index) };
+        let stride = usize::try_from(stride).ok().filter(|&stride| stride >= columns)?;
+        if data.is_null() {
+            return None;
+        }
+
+        let length = rows.checked_sub(1)?.checked_mul(stride)?.checked_add(columns)?;
+        isize::try_from(length).ok()?;
+
+        // SAFETY: The caller guarantees this allocation and borrow. MaybeUninit allows uninitialized row padding;
+        // only the initialized pixel bytes are exposed by `rows()`.
+        let data = unsafe { core::slice::from_raw_parts(data.cast::<MaybeUninit<u8>>(), length) };
+
+        Some(VpxPlane { data, columns, stride })
     }
 }
 

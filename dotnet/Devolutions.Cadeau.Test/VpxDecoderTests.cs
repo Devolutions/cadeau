@@ -1,0 +1,227 @@
+using System;
+using System.Linq;
+using System.Runtime.CompilerServices;
+using System.Threading;
+using System.Threading.Tasks;
+
+namespace Devolutions.Cadeau.Test
+{
+    // Checks for XmfVpxDecoder and XmfVpxImage. Run with `Devolutions.Cadeau.Test vpx`, with xmf next to the executable.
+    internal static class VpxDecoderTests
+    {
+        // A 321x241 VP8 key frame filled with one color: Y 81, U 90, V 240.
+        private static readonly byte[] RedFrame = Convert.FromBase64String(
+            "8BQAnQEqQQHxAABHCIWFiIWEiAICAnWqA/gD+gIGtqT3BoFkn2vbmyc4eyc4eyc4eyc4eyc4eyc4eyc4eyc4eyc4eyc4eyc4eyc4eyc4eyc4eyc4eyc4eyc4eyc4eyc4eyc4eyc4eyc4eyc4eyc4eyc4eyc4eyc4eyc4eyc4eyc4eyc4eyc4eyc4eyc4eyc4eyc4eyc4eyc4eyc4eyc4eyc4eyc4eyc4eyc4eyc4eyKA/v1u8//jmTcwxP+Obf/xYTwOKMj/8VEA");
+
+        public static void Run()
+        {
+            foreach (Action test in new Action[]
+            {
+                CopyOutlivesDecoder,
+                StaleImagesThrow,
+                ImagesThrowAfterDecoderDispose,
+                DecoderThrowsAfterHandleDispose,
+                DisposeWaitsForImageReads,
+                CopyRacesWithDisposal,
+                OrphanedImageSurvivesGc,
+                EachDecodedFrameIsReturnedOnce,
+                EmptyFramesAreRejected,
+            })
+            {
+                test();
+                Console.WriteLine($"PASS {test.Method.Name}");
+            }
+        }
+
+        private static void CopyOutlivesDecoder()
+        {
+            using XmfVpxDecoder decoder = new XmfVpxDecoder(new XmfVpxDecoderConfig { Threads = 1 });
+            using XmfVpxImage image = DecodeImage(decoder);
+            XmfVpxImageCopy copy = image.Copy();
+            AssertCopy(copy);
+            Assert(decoder.Decode(RedFrame), "Decode failed");
+            decoder.Dispose();
+            image.Dispose();
+            GC.Collect();
+            GC.WaitForPendingFinalizers();
+            AssertCopy(copy);
+        }
+
+        private static void StaleImagesThrow()
+        {
+            using XmfVpxDecoder decoder = new XmfVpxDecoder(new XmfVpxDecoderConfig { Threads = 1 });
+            using XmfVpxImage stale = DecodeImage(decoder);
+            using XmfVpxImage current = DecodeImage(decoder);
+            AssertThrows<InvalidOperationException>(() => stale.Copy());
+            AssertThrows<InvalidOperationException>(() => stale.GetPlane(XmfVpxPlane.Y));
+            AssertCopy(current.Copy());
+        }
+
+        private static void ImagesThrowAfterDecoderDispose()
+        {
+            XmfVpxDecoder decoder = new XmfVpxDecoder(new XmfVpxDecoderConfig { Threads = 1 });
+            using XmfVpxImage image = DecodeImage(decoder);
+            decoder.Dispose();
+            AssertThrows<InvalidOperationException>(() => image.Copy());
+            AssertThrows<InvalidOperationException>(() => image.GetPlane(XmfVpxPlane.Y));
+            AssertThrows<InvalidOperationException>(() => image.GetStride(XmfVpxPlane.Y));
+            AssertThrows<ObjectDisposedException>(() => decoder.Decode(RedFrame));
+        }
+
+        private static void DecoderThrowsAfterHandleDispose()
+        {
+            using XmfVpxDecoder decoder = new XmfVpxDecoder(new XmfVpxDecoderConfig { Threads = 1 });
+            using XmfVpxImage image = DecodeImage(decoder);
+            decoder.Handle.Dispose();
+
+            // The image keeps the native decoder alive, but the decoder must stop working right away, not after GC.
+            Assert(!decoder.Handle.IsClosed, "Decoder memory was released while an image still references it");
+            AssertThrows<ObjectDisposedException>(() => decoder.Decode(RedFrame));
+            AssertThrows<ObjectDisposedException>(() => decoder.GetNextFrame());
+            AssertThrows<ObjectDisposedException>(() => decoder.GetLastError());
+            AssertThrows<InvalidOperationException>(() => image.Copy());
+            AssertThrows<InvalidOperationException>(() => image.GetPlane(XmfVpxPlane.Y));
+        }
+
+        private static void DisposeWaitsForImageReads()
+        {
+            using XmfVpxDecoder decoder = new XmfVpxDecoder(new XmfVpxDecoderConfig { Threads = 1 });
+            using XmfVpxImage image = DecodeImage(decoder);
+            using ManualResetEventSlim started = new ManualResetEventSlim();
+            Task disposal;
+
+            // Holding SyncRoot stands in for an image read in progress on another thread.
+            lock (decoder.SyncRoot)
+            {
+                disposal = Task.Run(() =>
+                {
+                    started.Set();
+                    image.Dispose();
+                });
+                Assert(started.Wait(TimeSpan.FromSeconds(5)), "Disposal did not start");
+                Assert(!disposal.Wait(TimeSpan.FromMilliseconds(250)), "Dispose bypassed the image read lock");
+                AssertCopy(image.Copy());
+                decoder.Handle.Dispose();
+                Assert(!decoder.Handle.IsClosed, "Decoder memory was released during an image read");
+            }
+
+            Assert(disposal.Wait(TimeSpan.FromSeconds(5)), "Disposal did not finish");
+            Assert(decoder.Handle.IsClosed, "Decoder memory was not released with the last image");
+            AssertThrows<ObjectDisposedException>(() => image.Copy());
+        }
+
+        private static void CopyRacesWithDisposal()
+        {
+            for (int iteration = 0; iteration < 256; iteration++)
+            {
+                using XmfVpxDecoder decoder = new XmfVpxDecoder(new XmfVpxDecoderConfig { Threads = 1 });
+                using XmfVpxImage image = DecodeImage(decoder);
+                using ManualResetEventSlim start = new ManualResetEventSlim();
+                Task copy = Task.Run(() =>
+                {
+                    start.Wait();
+                    try
+                    {
+                        AssertCopy(image.Copy());
+                    }
+                    catch (ObjectDisposedException)
+                    {
+                    }
+                    catch (InvalidOperationException error) when (error.Message.StartsWith("The decoded image is no longer valid:", StringComparison.Ordinal))
+                    {
+                    }
+                });
+                Task disposal = Task.Run(() =>
+                {
+                    start.Wait();
+                    decoder.Handle.Dispose();
+                    image.Dispose();
+                });
+                start.Set();
+                Assert(Task.WaitAll(new[] { copy, disposal }, TimeSpan.FromSeconds(5)), "Copy/disposal race timed out");
+            }
+        }
+
+        private static void OrphanedImageSurvivesGc()
+        {
+            using XmfVpxImage image = CreateOrphanedImage();
+            GC.Collect();
+            GC.WaitForPendingFinalizers();
+            AssertCopy(image.Copy());
+        }
+
+        private static void EachDecodedFrameIsReturnedOnce()
+        {
+            using XmfVpxDecoder decoder = new XmfVpxDecoder(new XmfVpxDecoderConfig { Threads = 1 });
+            for (int iteration = 0; iteration < 2; iteration++)
+            {
+                using XmfVpxImage image = DecodeImage(decoder);
+                using XmfVpxImage repeated = decoder.GetNextFrame();
+                Assert(repeated == null, "GetNextFrame returned the same decoded frame twice");
+            }
+        }
+
+        private static void EmptyFramesAreRejected()
+        {
+            using XmfVpxDecoder decoder = new XmfVpxDecoder(new XmfVpxDecoderConfig { Threads = 1 });
+            using XmfVpxImage image = DecodeImage(decoder);
+            AssertThrows<ArgumentException>(() => decoder.Decode(Array.Empty<byte>()));
+            AssertThrows<ArgumentNullException>(() => decoder.Decode(IntPtr.Zero, 1));
+
+            // A rejected frame never reaches the decoder, so the last image stays usable.
+            AssertCopy(image.Copy());
+        }
+
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        private static XmfVpxImage CreateOrphanedImage()
+        {
+            XmfVpxDecoder decoder = new XmfVpxDecoder(new XmfVpxDecoderConfig { Threads = 1 });
+            return DecodeImage(decoder);
+        }
+
+        private static XmfVpxImage DecodeImage(XmfVpxDecoder decoder)
+        {
+            Assert(decoder.Decode(RedFrame), "Decode failed");
+            return decoder.GetNextFrame() ?? throw new InvalidOperationException("No decoded image");
+        }
+
+        private static void AssertCopy(XmfVpxImageCopy copy)
+        {
+            Assert(copy.Width == 321 && copy.Height == 241, "Wrong image dimensions");
+            Assert(copy.Format == XmfVpxImageFormat.I420, "Wrong image format");
+            Assert(copy.ColorSpace == XmfVpxColorSpace.Unknown && copy.ColorRange == XmfVpxColorRange.Studio, "Wrong color metadata");
+            foreach ((XmfVpxImagePlane plane, int width, int height, byte value) in new[]
+            {
+                (copy.Y, 321, 241, (byte)81),
+                (copy.U, 161, 121, (byte)90),
+                (copy.V, 161, 121, (byte)240),
+            })
+            {
+                Assert(plane.Width == width && plane.Height == height && plane.Stride == width, "Wrong plane dimensions");
+                Assert(plane.Data.Length == width * height && plane.Data.All(pixel => pixel == value), "Wrong plane pixels");
+            }
+        }
+
+        private static void AssertThrows<T>(Action action) where T : Exception
+        {
+            try
+            {
+                action();
+            }
+            catch (T)
+            {
+                return;
+            }
+
+            throw new InvalidOperationException($"Expected {typeof(T).Name}");
+        }
+
+        private static void Assert(bool condition, string message)
+        {
+            if (!condition)
+            {
+                throw new InvalidOperationException(message);
+            }
+        }
+    }
+}

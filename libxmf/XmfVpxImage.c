@@ -7,6 +7,11 @@ struct xmf_vpx_image
     vpx_image_t *img;
 };
 
+static int xmf_vpx_image_can_index_plane(const XmfVpxImage *image, int plane)
+{
+    return image && image->img && plane >= VPX_PLANE_Y && plane <= VPX_PLANE_ALPHA;
+}
+
 XmfVpxImage *XmfVpxImage_Create(vpx_image_t *data)
 {
     XmfVpxImage *image = (XmfVpxImage *)malloc(sizeof(XmfVpxImage));
@@ -46,4 +51,29 @@ unsigned int XmfVpxImage_GetWidth(const XmfVpxImage *image)
 unsigned int XmfVpxImage_GetHeight(const XmfVpxImage *image)
 {
     return image && image->img ? image->img->d_h : 0;
+}
+
+int XmfVpxImage_GetFormat(const XmfVpxImage *image)
+{
+    return image && image->img ? (int)image->img->fmt : VPX_IMG_FMT_NONE;
+}
+
+const uint8_t *XmfVpxImage_GetPlane(const XmfVpxImage *image, int plane)
+{
+    return xmf_vpx_image_can_index_plane(image, plane) ? image->img->planes[plane] : NULL;
+}
+
+int XmfVpxImage_GetStride(const XmfVpxImage *image, int plane)
+{
+    return xmf_vpx_image_can_index_plane(image, plane) ? image->img->stride[plane] : 0;
+}
+
+int XmfVpxImage_GetColorSpace(const XmfVpxImage *image)
+{
+    return image && image->img ? (int)image->img->cs : VPX_CS_UNKNOWN;
+}
+
+int XmfVpxImage_GetColorRange(const XmfVpxImage *image)
+{
+    return image && image->img ? (int)image->img->range : -1;
 }
