@@ -7,7 +7,7 @@ struct xmf_vpx_image
     vpx_image_t *img;
 };
 
-static int xmf_vpx_image_has_plane(const XmfVpxImage *image, int plane)
+static int xmf_vpx_image_can_index_plane(const XmfVpxImage *image, int plane)
 {
     return image && image->img && plane >= VPX_PLANE_Y && plane <= VPX_PLANE_ALPHA;
 }
@@ -60,12 +60,12 @@ int XmfVpxImage_GetFormat(const XmfVpxImage *image)
 
 const uint8_t *XmfVpxImage_GetPlane(const XmfVpxImage *image, int plane)
 {
-    return xmf_vpx_image_has_plane(image, plane) ? image->img->planes[plane] : NULL;
+    return xmf_vpx_image_can_index_plane(image, plane) ? image->img->planes[plane] : NULL;
 }
 
 int XmfVpxImage_GetStride(const XmfVpxImage *image, int plane)
 {
-    return xmf_vpx_image_has_plane(image, plane) ? image->img->stride[plane] : 0;
+    return xmf_vpx_image_can_index_plane(image, plane) ? image->img->stride[plane] : 0;
 }
 
 int XmfVpxImage_GetColorSpace(const XmfVpxImage *image)

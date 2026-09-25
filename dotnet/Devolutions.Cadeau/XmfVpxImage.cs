@@ -144,7 +144,7 @@ namespace Devolutions.Cadeau
                 int chromaWidth = (width + 1) / 2;
                 int chromaHeight = (height + 1) / 2;
 
-                return new XmfVpxImageCopy(
+                XmfVpxImageCopy copy = new XmfVpxImageCopy(
                     this.Width,
                     this.Height,
                     this.Format,
@@ -153,19 +153,27 @@ namespace Devolutions.Cadeau
                     this.CopyPlane(XmfVpxPlane.Y, width, height),
                     this.CopyPlane(XmfVpxPlane.U, chromaWidth, chromaHeight),
                     this.CopyPlane(XmfVpxPlane.V, chromaWidth, chromaHeight));
+
+                // The plane pointers outlive the P/Invoke calls that keep their SafeHandle alive.
+                GC.KeepAlive(this);
+                return copy;
             }
         }
 
         public void Dispose()
         {
-            if (this.disposed)
+            lock (this.owner.SyncRoot)
             {
-                return;
+                if (this.disposed)
+                {
+                    return;
+                }
+
+                this.disposed = true;
+
+                this.h.Dispose();
             }
 
-            this.disposed = true;
-
-            this.h?.Dispose();
             GC.SuppressFinalize(this);
         }
 

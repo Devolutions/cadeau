@@ -1,4 +1,5 @@
 use core::fmt;
+use core::mem::MaybeUninit;
 use std::ffi::c_int;
 
 use xmf_sys::{
@@ -15,6 +16,9 @@ use xmf_sys::{
 
 mod decoder;
 mod encoder;
+
+#[cfg(test)]
+mod tests;
 
 pub use decoder::{VpxDecoder, VpxDecoderBuilder};
 pub use encoder::{PacketIterator, VpxEncoder, VpxEncoderBuilder, VpxEncoderPreset};
@@ -63,10 +67,24 @@ impl VpxColorRange {
 /// One plane of a decoded image, borrowed until the next decoder call.
 #[derive(Debug, Clone, Copy)]
 pub struct VpxPlane<'image> {
-    /// Bytes from the start of the first row to the last visible byte of the last row.
-    pub data: &'image [u8],
-    /// Distance in bytes between the starts of two rows.
-    pub stride: usize,
+    data: &'image [MaybeUninit<u8>],
+    columns: usize,
+    stride: usize,
+}
+
+impl<'image> VpxPlane<'image> {
+    /// Borrows each row's visible bytes without exposing padding that libvpx may leave uninitialized.
+    pub fn rows(&self) -> impl ExactSizeIterator<Item = &'image [u8]> {
+        let columns = self.columns;
+        self.data.chunks(self.stride).map(move |row| {
+            // SAFETY: Each chunk starts at a row whose first `columns` bytes are initialized pixels.
+            unsafe { core::slice::from_raw_parts(row.as_ptr().cast(), columns) }
+        })
+    }
+
+    pub fn stride(&self) -> usize {
+        self.stride
+    }
 }
 
 /// The three planes of an 8-bit I420 image, borrowed until the next decoder call.
@@ -154,8 +172,8 @@ impl VpxImage<'_> {
     ///
     /// # Safety
     ///
-    /// The image's format and size must guarantee that plane `index` is a contiguous libvpx buffer holding `rows`
-    /// rows of at least `columns` bytes each, at the stride libvpx reports for that plane.
+    /// Plane `index` must be one allocation holding `rows` rows at the reported stride, with at least `columns`
+    /// initialized pixel bytes per row. The decoder must not change the buffer while the image is borrowed.
     unsafe fn plane(&self, index: c_int, columns: usize, rows: usize) -> Option<VpxPlane<'_>> {
         // SAFETY: Pointer is valid as the lifetime is bound to the associated decoder.
         let data = unsafe { XmfVpxImage_GetPlane(self.ptr, index) };
@@ -167,13 +185,13 @@ impl VpxImage<'_> {
         }
 
         let length = rows.checked_sub(1)?.checked_mul(stride)?.checked_add(columns)?;
+        isize::try_from(length).ok()?;
 
-        // SAFETY: The caller guarantees that the plane is a contiguous buffer of `rows` rows `stride` bytes apart, so
-        // the `length` bytes from `data` to the end of the last row's `columns` bytes are readable, and the borrow of
-        // `self` keeps the decoder from reusing the buffer.
-        let data = unsafe { core::slice::from_raw_parts(data, length) };
+        // SAFETY: The caller guarantees this allocation and borrow. MaybeUninit allows uninitialized row padding;
+        // only the initialized pixel bytes are exposed by `rows()`.
+        let data = unsafe { core::slice::from_raw_parts(data.cast::<MaybeUninit<u8>>(), length) };
 
-        Some(VpxPlane { data, stride })
+        Some(VpxPlane { data, columns, stride })
     }
 }
 
