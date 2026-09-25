@@ -93,4 +93,8 @@
     <Content Include="Devolutions.Cadeau.targets" PackagePath="build/Devolutions.Cadeau.targets" Pack="true" />
   </ItemGroup>
 
+  <ItemGroup>
+    <InternalsVisibleTo Include="Devolutions.Cadeau.Test" />
+  </ItemGroup>
+
 </Project>

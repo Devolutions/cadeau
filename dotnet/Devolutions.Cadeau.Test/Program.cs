@@ -571,6 +571,12 @@ namespace Devolutions.Cadeau.Test
         }
         static void Main(string[] args)
         {
+            if (args.Length > 0 && args[0] == "vpx")
+            {
+                VpxDecoderTests.Run();
+                return;
+            }
+
             //TestRecorder();
             //TestBipBuffer();
             //TestMkvStream();

@@ -1,23 +1,26 @@
 using System;
 using System.Linq;
-using System.Reflection;
 using System.Runtime.CompilerServices;
 using System.Threading;
 using System.Threading.Tasks;
 
-namespace Devolutions.Cadeau.Vpx.Test
+namespace Devolutions.Cadeau.Test
 {
-    internal static class Program
+    // Checks for XmfVpxDecoder and XmfVpxImage. Run with `Devolutions.Cadeau.Test vpx`, with xmf next to the executable.
+    internal static class VpxDecoderTests
     {
+        // A 321x241 VP8 key frame filled with one color: Y 81, U 90, V 240.
         private static readonly byte[] RedFrame = Convert.FromBase64String(
             "8BQAnQEqQQHxAABHCIWFiIWEiAICAnWqA/gD+gIGtqT3BoFkn2vbmyc4eyc4eyc4eyc4eyc4eyc4eyc4eyc4eyc4eyc4eyc4eyc4eyc4eyc4eyc4eyc4eyc4eyc4eyc4eyc4eyc4eyc4eyc4eyc4eyc4eyc4eyc4eyc4eyc4eyc4eyc4eyc4eyc4eyc4eyc4eyc4eyc4eyc4eyc4eyc4eyc4eyc4eyc4eyc4eyc4eyKA/v1u8//jmTcwxP+Obf/xYTwOKMj/8VEA");
 
-        private static void Main()
+        public static void Run()
         {
             foreach (Action test in new Action[]
             {
                 CopyOutlivesDecoder,
                 StaleImagesThrow,
+                ImagesThrowAfterDecoderDispose,
+                DecoderThrowsAfterHandleDispose,
                 DisposeWaitsForImageReads,
                 CopyRacesWithDisposal,
                 OrphanedImageSurvivesGc,
@@ -48,20 +51,45 @@ namespace Devolutions.Cadeau.Vpx.Test
             using XmfVpxImage stale = DecodeImage(decoder);
             using XmfVpxImage current = DecodeImage(decoder);
             AssertThrows<InvalidOperationException>(() => stale.Copy());
+            AssertThrows<InvalidOperationException>(() => stale.GetPlane(XmfVpxPlane.Y));
+            AssertCopy(current.Copy());
+        }
+
+        private static void ImagesThrowAfterDecoderDispose()
+        {
+            XmfVpxDecoder decoder = new XmfVpxDecoder(new XmfVpxDecoderConfig { Threads = 1 });
+            using XmfVpxImage image = DecodeImage(decoder);
+            decoder.Dispose();
+            AssertThrows<InvalidOperationException>(() => image.Copy());
+            AssertThrows<InvalidOperationException>(() => image.GetPlane(XmfVpxPlane.Y));
+            AssertThrows<InvalidOperationException>(() => image.GetStride(XmfVpxPlane.Y));
+            AssertThrows<ObjectDisposedException>(() => decoder.Decode(RedFrame));
+        }
+
+        private static void DecoderThrowsAfterHandleDispose()
+        {
+            using XmfVpxDecoder decoder = new XmfVpxDecoder(new XmfVpxDecoderConfig { Threads = 1 });
+            using XmfVpxImage image = DecodeImage(decoder);
             decoder.Handle.Dispose();
-            AssertThrows<InvalidOperationException>(() => current.Copy());
-            AssertThrows<InvalidOperationException>(() => current.GetPlane(XmfVpxPlane.Y));
-            AssertThrows<InvalidOperationException>(() => current.GetStride(XmfVpxPlane.Y));
+
+            // The image keeps the native decoder alive, but the decoder must stop working right away, not after GC.
+            Assert(!decoder.Handle.IsClosed, "Decoder memory was released while an image still references it");
+            AssertThrows<ObjectDisposedException>(() => decoder.Decode(RedFrame));
+            AssertThrows<ObjectDisposedException>(() => decoder.GetNextFrame());
+            AssertThrows<ObjectDisposedException>(() => decoder.GetLastError());
+            AssertThrows<InvalidOperationException>(() => image.Copy());
+            AssertThrows<InvalidOperationException>(() => image.GetPlane(XmfVpxPlane.Y));
         }
 
         private static void DisposeWaitsForImageReads()
         {
             using XmfVpxDecoder decoder = new XmfVpxDecoder(new XmfVpxDecoderConfig { Threads = 1 });
             using XmfVpxImage image = DecodeImage(decoder);
-            object syncRoot = typeof(XmfVpxDecoder).GetField("SyncRoot", BindingFlags.Instance | BindingFlags.NonPublic).GetValue(decoder);
             using ManualResetEventSlim started = new ManualResetEventSlim();
             Task disposal;
-            lock (syncRoot)
+
+            // Holding SyncRoot stands in for an image read in progress on another thread.
+            lock (decoder.SyncRoot)
             {
                 disposal = Task.Run(() =>
                 {
@@ -74,6 +102,7 @@ namespace Devolutions.Cadeau.Vpx.Test
                 decoder.Handle.Dispose();
                 Assert(!decoder.Handle.IsClosed, "Decoder memory was released during an image read");
             }
+
             Assert(disposal.Wait(TimeSpan.FromSeconds(5)), "Disposal did not finish");
             Assert(decoder.Handle.IsClosed, "Decoder memory was not released with the last image");
             AssertThrows<ObjectDisposedException>(() => image.Copy());
@@ -93,8 +122,12 @@ namespace Devolutions.Cadeau.Vpx.Test
                     {
                         AssertCopy(image.Copy());
                     }
-                    catch (ObjectDisposedException) { }
-                    catch (InvalidOperationException error) when (error.Message.StartsWith("The decoded image is no longer valid:", StringComparison.Ordinal)) { }
+                    catch (ObjectDisposedException)
+                    {
+                    }
+                    catch (InvalidOperationException error) when (error.Message.StartsWith("The decoded image is no longer valid:", StringComparison.Ordinal))
+                    {
+                    }
                 });
                 Task disposal = Task.Run(() =>
                 {
@@ -155,6 +188,7 @@ namespace Devolutions.Cadeau.Vpx.Test
             {
                 return;
             }
+
             throw new InvalidOperationException($"Expected {typeof(T).Name}");
         }
 
