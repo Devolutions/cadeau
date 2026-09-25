@@ -17,11 +17,49 @@ fn rows_skip_uninitialized_padding() {
     };
 
     assert_eq!(plane.stride(), 4);
+    assert_eq!((plane.width(), plane.height()), (3, 3));
     assert_eq!(plane.rows().len(), 3);
     let rows: Vec<_> = plane.rows().collect();
     assert_eq!(rows, [&[1, 2, 3][..], &[4, 5, 6][..], &[7, 8, 9][..]]);
     assert_eq!(rows[0].as_ptr(), data.as_ptr().cast());
     assert_eq!(rows[1].as_ptr(), data[4..].as_ptr().cast());
+}
+
+#[test]
+fn as_ptr_reaches_every_row_at_the_stride() {
+    let mut data = [MaybeUninit::uninit(); 11];
+    for (start, pixels) in [(0, [1, 2, 3]), (4, [4, 5, 6]), (8, [7, 8, 9])] {
+        for (offset, value) in pixels.into_iter().enumerate() {
+            data[start + offset].write(value);
+        }
+    }
+    let plane = VpxPlane {
+        data: &data,
+        columns: 3,
+        stride: 4,
+    };
+
+    // SAFETY: Only the initialized pixels of each row are read, while `data` is alive.
+    let base = unsafe { plane.as_ptr() };
+    for (index, row) in plane.rows().enumerate() {
+        // SAFETY: Row `index` starts `index * stride` bytes after `base`, inside the plane.
+        let start = unsafe { base.add(index * plane.stride()) };
+        // SAFETY: The row has `width` initialized pixels.
+        let pixels = unsafe { core::slice::from_raw_parts(start, plane.width()) };
+        assert_eq!(pixels, row);
+    }
+}
+
+#[test]
+fn debug_prints_geometry_not_pixels() {
+    let data = [MaybeUninit::new(7); 11];
+    let plane = VpxPlane {
+        data: &data,
+        columns: 3,
+        stride: 4,
+    };
+
+    assert_eq!(format!("{plane:?}"), "VpxPlane { width: 3, height: 3, stride: 4, .. }");
 }
 
 #[test]
@@ -73,7 +111,7 @@ fn decoded_odd_sized_vp8_rows_contain_only_pixels() {
     decoder.decode(&frame).expect("decode synthetic red frame");
     let image = decoder.next_frame().expect("decoded image");
     assert_eq!((image.width(), image.height()), (321, 241));
-    assert_eq!(image.format(), VpxImageFormat(xmf_sys::vpx::VPX_IMG_FMT_I420));
+    assert_eq!(image.format(), VpxImageFormat::I420);
     assert_eq!(image.color_space(), VpxColorSpace::UNKNOWN);
     assert_eq!(image.color_range(), VpxColorRange::STUDIO);
 
@@ -84,10 +122,21 @@ fn decoded_odd_sized_vp8_rows_contain_only_pixels() {
         (planes.u, 161, 121, 90),
         (planes.v, 161, 121, 240),
     ] {
+        assert_eq!((plane.width(), plane.height()), (width, height));
         assert_eq!(plane.rows().len(), height);
         for row in plane.rows() {
             assert_eq!(row.len(), width);
             assert!(row.iter().all(|&pixel| pixel == value));
+        }
+
+        // SAFETY: Only pixel bytes are read, while `image` keeps the decoder borrowed.
+        let base = unsafe { plane.as_ptr() };
+        for (index, row) in plane.rows().enumerate() {
+            // SAFETY: Row `index` starts `index * stride` bytes after `base`, inside the plane.
+            let start = unsafe { base.add(index * plane.stride()) };
+            // SAFETY: The row has `width` initialized pixels.
+            let pixels = unsafe { core::slice::from_raw_parts(start, plane.width()) };
+            assert_eq!(pixels, row);
         }
     }
 }

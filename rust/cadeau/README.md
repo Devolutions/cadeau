@@ -8,9 +8,11 @@ See [xmf-sys](https://crates.io/crates/xmf-sys) to learn more about this.
 ## Read decoded VPX pixels
 
 `VpxImage::i420_planes()` borrows the Y, U and V planes of an 8-bit I420 image without copying.
-Use each plane's `rows()` iterator to read its visible pixels, and `stride()` to inspect the native row spacing.
-The plane does not expose a single byte slice: libvpx may leave the padding between rows uninitialized.
-The row slices keep the image borrowed, so the decoder cannot decode again while they are in use.
+Use each plane's `rows()` iterator to read its visible pixels safely; the row slices keep the image borrowed, so the decoder cannot decode again while they are in use.
+The plane does not expose a single byte slice, because libvpx may leave the padding between rows uninitialized.
+
+Code that takes a base pointer and a stride, such as a C or SIMD color converter, can use the unsafe `as_ptr()` with `stride()`, `width()` and `height()`.
+Its safety section lists what the caller must uphold: read only the `width()` pixel bytes of each row, and stop using the pointer before the image is dropped.
 
 ## Example: generate a WebM file from a PNG image
 

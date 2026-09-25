@@ -4,7 +4,7 @@
 #![cfg_attr(docsrs, feature(doc_auto_cfg))]
 
 mod macros;
-pub mod vpx;
+mod vpx;
 
 use std::ffi::{c_char, c_int, c_void};
 

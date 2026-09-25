@@ -65,7 +65,7 @@ impl VpxColorRange {
 }
 
 /// One plane of a decoded image, borrowed until the next decoder call.
-#[derive(Debug, Clone, Copy)]
+#[derive(Clone, Copy)]
 pub struct VpxPlane<'image> {
     data: &'image [MaybeUninit<u8>],
     columns: usize,
@@ -82,8 +82,70 @@ impl<'image> VpxPlane<'image> {
         })
     }
 
+    /// Number of pixel bytes in each row.
+    pub fn width(&self) -> usize {
+        self.columns
+    }
+
+    /// Number of rows.
+    pub fn height(&self) -> usize {
+        self.data.len().div_ceil(self.stride)
+    }
+
+    /// Distance in bytes between the starts of two rows. At least [`Self::width`].
     pub fn stride(&self) -> usize {
         self.stride
+    }
+
+    /// Returns a pointer to the first pixel of the plane, for code that takes a base pointer and a stride, such as a
+    /// C or SIMD color converter.
+    ///
+    /// Row `r` starts at `as_ptr().add(r * stride())`, and its first [`width()`](Self::width) bytes are pixels.
+    /// Use [`Self::rows`] instead when a slice per row is enough: it needs no `unsafe`.
+    ///
+    /// # Safety
+    ///
+    /// The returned pointer carries neither the image's lifetime nor any promise that every byte is initialized, so
+    /// the caller must uphold all of the following:
+    ///
+    /// - Only read through it. The buffer belongs to the decoder.
+    /// - Only read the first [`width()`](Self::width) bytes of each of the [`height()`](Self::height) rows. The
+    ///   bytes between rows are padding that libvpx may leave uninitialized; reading them is undefined behavior.
+    /// - Stop using it before the image is dropped. Until then the decoder stays mutably borrowed, so it cannot
+    ///   decode again or be dropped; keep the image (or this plane) alive for as long as the pointer is in use.
+    ///
+    /// # Example
+    ///
+    /// ```rust,no_run
+    /// use cadeau::xmf::vpx::VpxPlane;
+    ///
+    /// fn luma_sum(plane: &VpxPlane<'_>) -> u64 {
+    ///     // SAFETY: Only pixel bytes are read below, while `plane` keeps the image borrowed.
+    ///     let base = unsafe { plane.as_ptr() };
+    ///     let mut sum = 0;
+    ///     for row in 0..plane.height() {
+    ///         // SAFETY: Row `row` starts `row * stride` bytes after `base`, inside the plane.
+    ///         let start = unsafe { base.add(row * plane.stride()) };
+    ///         // SAFETY: The row has `width` initialized pixels.
+    ///         let pixels = unsafe { core::slice::from_raw_parts(start, plane.width()) };
+    ///         sum += pixels.iter().map(|&pixel| u64::from(pixel)).sum::<u64>();
+    ///     }
+    ///     sum
+    /// }
+    /// ```
+    pub unsafe fn as_ptr(&self) -> *const u8 {
+        self.data.as_ptr().cast()
+    }
+}
+
+impl fmt::Debug for VpxPlane<'_> {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        // The pixels are not printed: a 1080p luma plane alone is two million bytes, some of them uninitialized.
+        f.debug_struct("VpxPlane")
+            .field("width", &self.width())
+            .field("height", &self.height())
+            .field("stride", &self.stride)
+            .finish_non_exhaustive()
     }
 }
 
