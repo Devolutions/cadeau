@@ -46,16 +46,17 @@ namespace Devolutions.Cadeau
     }
 
     /// <summary>
-    /// A decoded frame as returned by <see cref="XmfVpxDecoder.GetNextFrame"/>. Like the native API, it reads the
-    /// decoder's own buffers without copying, so it is usable only until the next <see cref="XmfVpxDecoder.Decode(IntPtr, uint)"/>
-    /// call or until the decoder is disposed; after that, <see cref="GetPlane"/>, <see cref="GetStride"/> and
-    /// <see cref="Copy"/> throw. Call <see cref="Copy"/> to keep the pixels longer.
+    /// A decoded frame as returned by <see cref="XmfVpxDecoder.GetNextFrame"/>. Like the native API it reads the
+    /// decoder's own buffers without copying, so it is usable only until the next
+    /// <see cref="XmfVpxDecoder.Decode(IntPtr, uint)"/> call or until the decoder is disposed; after that,
+    /// <see cref="GetPlane"/>, <see cref="GetStride"/> and <see cref="Copy"/> throw. Call <see cref="Copy"/> to keep
+    /// the pixels longer. The image keeps the decoder's native memory alive until the image itself is released, so a
+    /// stale image never reads freed memory.
     /// </summary>
     public sealed class XmfVpxImage : IDisposable
     {
         private readonly XmfVpxImageHandle h;
 
-        // Holding the decoder keeps it from being finalized while this view can still read its buffers.
         private readonly XmfVpxDecoder owner;
 
         private readonly int generation;
@@ -91,13 +92,17 @@ namespace Devolutions.Cadeau
 
         /// <summary>
         /// Returns the start of a plane in decoder memory, or <see cref="IntPtr.Zero"/> when the plane is unavailable.
-        /// The pointer must not be used after the next decode call or after the decoder is disposed.
+        /// The pointer is valid only until the next decode call on the decoder, and only while this image is alive:
+        /// keep a reference to the image (for example with <see cref="GC.KeepAlive"/>) while reading through it.
         /// </summary>
         public IntPtr GetPlane(XmfVpxPlane plane)
         {
-            this.CheckUsable();
+            lock (this.owner.SyncRoot)
+            {
+                this.CheckUsable();
 
-            return Ffi.GetPlane(this.h, (int)plane);
+                return Ffi.GetPlane(this.h, (int)plane);
+            }
         }
 
         /// <summary>
@@ -105,54 +110,49 @@ namespace Devolutions.Cadeau
         /// </summary>
         public int GetStride(XmfVpxPlane plane)
         {
-            this.CheckUsable();
+            lock (this.owner.SyncRoot)
+            {
+                this.CheckUsable();
 
-            return Ffi.GetStride(this.h, (int)plane);
+                return Ffi.GetStride(this.h, (int)plane);
+            }
         }
 
         /// <summary>
-        /// Copies the Y, U and V planes into managed memory. The copy stays valid after later decode calls and after
-        /// the decoder is disposed. Supports 8- and 16-bit I420, YV12, I422, I440 and I444.
+        /// Copies an 8-bit I420 image into managed memory. The copy stays valid after later decode calls and after the
+        /// decoder is disposed. Other formats throw <see cref="NotSupportedException"/>; read them with
+        /// <see cref="GetPlane"/> and <see cref="GetStride"/> instead.
         /// </summary>
         public XmfVpxImageCopy Copy()
         {
-            this.CheckUsable();
-
-            if (!TryGetLayout(this.Format, out int xShift, out int yShift, out int bytesPerSample))
+            lock (this.owner.SyncRoot)
             {
-                throw new NotSupportedException($"XMF returned an unsupported VPX image format {this.Format}");
-            }
+                this.CheckUsable();
 
-            if (this.Width == 0 || this.Height == 0 || this.Width > int.MaxValue / 4 || this.Height > int.MaxValue)
-            {
-                throw new InvalidOperationException($"XMF returned an invalid VPX image size {this.Width}x{this.Height}");
-            }
+                if (this.Format != XmfVpxImageFormat.I420)
+                {
+                    throw new NotSupportedException($"XmfVpxImage.Copy supports I420 images, not {this.Format}");
+                }
 
-            int lumaWidth = (int)this.Width;
-            int lumaHeight = (int)this.Height;
-            int chromaWidth = (lumaWidth + (1 << xShift) - 1) >> xShift;
-            int chromaHeight = (lumaHeight + (1 << yShift) - 1) >> yShift;
+                if (this.Width == 0 || this.Height == 0 || this.Width > int.MaxValue / 4 || this.Height > int.MaxValue)
+                {
+                    throw new InvalidOperationException($"XMF returned an invalid VPX image size {this.Width}x{this.Height}");
+                }
 
-            bool addedReference = false;
-            this.owner.Handle.DangerousAddRef(ref addedReference);
-            try
-            {
+                int width = (int)this.Width;
+                int height = (int)this.Height;
+                int chromaWidth = (width + 1) / 2;
+                int chromaHeight = (height + 1) / 2;
+
                 return new XmfVpxImageCopy(
                     this.Width,
                     this.Height,
                     this.Format,
                     this.ColorSpace,
                     this.ColorRange,
-                    this.CopyPlane(XmfVpxPlane.Y, lumaWidth, lumaHeight, bytesPerSample),
-                    this.CopyPlane(XmfVpxPlane.U, chromaWidth, chromaHeight, bytesPerSample),
-                    this.CopyPlane(XmfVpxPlane.V, chromaWidth, chromaHeight, bytesPerSample));
-            }
-            finally
-            {
-                if (addedReference)
-                {
-                    this.owner.Handle.DangerousRelease();
-                }
+                    this.CopyPlane(XmfVpxPlane.Y, width, height),
+                    this.CopyPlane(XmfVpxPlane.U, chromaWidth, chromaHeight),
+                    this.CopyPlane(XmfVpxPlane.V, chromaWidth, chromaHeight));
             }
         }
 
@@ -169,23 +169,22 @@ namespace Devolutions.Cadeau
             GC.SuppressFinalize(this);
         }
 
-        private XmfVpxImagePlane CopyPlane(XmfVpxPlane plane, int width, int height, int bytesPerSample)
+        private XmfVpxImagePlane CopyPlane(XmfVpxPlane plane, int width, int height)
         {
             IntPtr source = Ffi.GetPlane(this.h, (int)plane);
             int sourceStride = Ffi.GetStride(this.h, (int)plane);
-            int rowBytes = checked(width * bytesPerSample);
-            if (source == IntPtr.Zero || sourceStride < rowBytes)
+            if (source == IntPtr.Zero || sourceStride < width)
             {
                 throw new InvalidOperationException($"XMF returned an incomplete VPX image plane {plane}");
             }
 
-            byte[] data = new byte[checked(rowBytes * height)];
+            byte[] data = new byte[checked(width * height)];
             for (int row = 0; row < height; row++)
             {
-                Marshal.Copy(IntPtr.Add(source, checked(row * sourceStride)), data, row * rowBytes, rowBytes);
+                Marshal.Copy(IntPtr.Add(source, checked(row * sourceStride)), data, row * width, width);
             }
 
-            return new XmfVpxImagePlane(data, width, height, rowBytes);
+            return new XmfVpxImagePlane(data, width, height, width);
         }
 
         private void CheckUsable()
@@ -199,35 +198,6 @@ namespace Devolutions.Cadeau
             {
                 throw new InvalidOperationException(
                     "The decoded image is no longer valid: its decoder has decoded again or was disposed. Copy it first to keep the pixels.");
-            }
-        }
-
-        private static bool TryGetLayout(XmfVpxImageFormat format, out int xShift, out int yShift, out int bytesPerSample)
-        {
-            bytesPerSample = ((int)format & 0x800) != 0 ? 2 : 1;
-            switch ((XmfVpxImageFormat)((int)format & ~0x800))
-            {
-                case XmfVpxImageFormat.I420:
-                case XmfVpxImageFormat.Yv12:
-                    xShift = 1;
-                    yShift = 1;
-                    return true;
-                case XmfVpxImageFormat.I422:
-                    xShift = 1;
-                    yShift = 0;
-                    return true;
-                case XmfVpxImageFormat.I440:
-                    xShift = 0;
-                    yShift = 1;
-                    return true;
-                case XmfVpxImageFormat.I444:
-                    xShift = 0;
-                    yShift = 0;
-                    return true;
-                default:
-                    xShift = 0;
-                    yShift = 0;
-                    return false;
             }
         }
 
@@ -279,12 +249,12 @@ namespace Devolutions.Cadeau
         /// <summary>Number of rows.</summary>
         public int Height { get; }
 
-        /// <summary>Bytes per row: Width for 8-bit formats, Width * 2 for 16-bit formats.</summary>
+        /// <summary>Bytes per row.</summary>
         public int Stride { get; }
     }
 
     /// <summary>
-    /// A decoded frame copied into managed memory by <see cref="XmfVpxImage.Copy"/>. It does not depend on the decoder.
+    /// An I420 frame copied into managed memory by <see cref="XmfVpxImage.Copy"/>. It does not depend on the decoder.
     /// </summary>
     public sealed class XmfVpxImageCopy
     {
@@ -327,11 +297,26 @@ namespace Devolutions.Cadeau
 
     internal sealed class XmfVpxImageHandle : SafeHandleZeroOrMinusOneIsInvalid
     {
+        // The native image points into memory owned by the decoder, so this handle holds a reference on the decoder
+        // handle and XmfVpxDecoder_Destroy is deferred until the image is released.
+        private XmfVpxDecoderHandle decoder;
+
         private XmfVpxImageHandle() : base(ownsHandle: true) { }
+
+        internal void KeepDecoderAlive(XmfVpxDecoderHandle owner)
+        {
+            bool added = false;
+            owner.DangerousAddRef(ref added);
+            if (added)
+            {
+                this.decoder = owner;
+            }
+        }
 
         protected override bool ReleaseHandle()
         {
             Ffi.Destroy(handle);
+            this.decoder?.DangerousRelease();
             return true;
         }
 

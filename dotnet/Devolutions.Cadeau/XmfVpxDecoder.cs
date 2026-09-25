@@ -1,6 +1,7 @@
 using Microsoft.Win32.SafeHandles;
 using System;
 using System.Runtime.InteropServices;
+using System.Threading;
 
 namespace Devolutions.Cadeau
 {
@@ -46,7 +47,21 @@ namespace Devolutions.Cadeau
 
     public sealed class XmfVpxDecoderHandle : SafeHandleZeroOrMinusOneIsInvalid
     {
+        private int disposeRequested;
+
         private XmfVpxDecoderHandle() : base(ownsHandle: true) { }
+
+        internal bool IsDisposeRequested => Volatile.Read(ref this.disposeRequested) != 0;
+
+        protected override void Dispose(bool disposing)
+        {
+            if (disposing)
+            {
+                Volatile.Write(ref this.disposeRequested, 1);
+            }
+
+            base.Dispose(disposing);
+        }
 
         protected override bool ReleaseHandle()
         {
@@ -69,6 +84,9 @@ namespace Devolutions.Cadeau
     public class XmfVpxDecoder : IDisposable
     {
         private readonly XmfVpxDecoderHandle h;
+
+        // Serializes decoding with reads of the decoder's buffers through XmfVpxImage.
+        internal readonly object SyncRoot = new object();
 
         private int generation;
 
@@ -107,22 +125,28 @@ namespace Devolutions.Cadeau
                 return;
             }
 
-            this.disposed = true;
+            lock (this.SyncRoot)
+            {
+                this.disposed = true;
+            }
 
             this.h?.Dispose();
             GC.SuppressFinalize(this);
         }
 
         /// <summary>
-        /// Decodes one compressed frame. Returns false on failure; see <see cref="GetLastError"/>.
+        /// Decodes one compressed frame. Returns false on failure; see <see cref="GetLastError"/>. Images returned
+        /// earlier become unusable, because the decoder reuses their buffers.
         /// </summary>
         public bool Decode(IntPtr data, uint size)
         {
-            this.CheckDisposed();
+            lock (this.SyncRoot)
+            {
+                this.CheckDisposed();
 
-            // A new decode call reuses the buffers that earlier images read from.
-            this.generation++;
-            return Ffi.Decode(this.h, data, size) == 0;
+                this.generation++;
+                return Ffi.Decode(this.h, data, size) == 0;
+            }
         }
 
         public bool Decode(byte[] data)
@@ -150,12 +174,10 @@ namespace Devolutions.Cadeau
         /// </summary>
         public XmfVpxImage GetNextFrame()
         {
-            this.CheckDisposed();
-
-            bool addedReference = false;
-            this.h.DangerousAddRef(ref addedReference);
-            try
+            lock (this.SyncRoot)
             {
+                this.CheckDisposed();
+
                 XmfVpxImageHandle image = Ffi.GetNextFrame(this.h);
                 if (image == null || image.IsInvalid)
                 {
@@ -165,6 +187,7 @@ namespace Devolutions.Cadeau
 
                 try
                 {
+                    image.KeepDecoderAlive(this.h);
                     return new XmfVpxImage(image, this, this.generation);
                 }
                 catch
@@ -173,25 +196,23 @@ namespace Devolutions.Cadeau
                     throw;
                 }
             }
-            finally
-            {
-                if (addedReference)
-                {
-                    this.h.DangerousRelease();
-                }
-            }
         }
 
+        // Callers hold SyncRoot. Disposing Handle directly also invalidates images: they keep its native memory alive,
+        // so the handle is only released, and IsClosed only set, once they are gone.
         internal bool IsCurrentGeneration(int imageGeneration)
         {
-            return !this.disposed && imageGeneration == this.generation;
+            return !this.disposed && !this.h.IsDisposeRequested && imageGeneration == this.generation;
         }
 
         public XmfVpxDecoderError GetLastError()
         {
-            this.CheckDisposed();
+            lock (this.SyncRoot)
+            {
+                this.CheckDisposed();
 
-            return Ffi.GetLastError(this.h);
+                return Ffi.GetLastError(this.h);
+            }
         }
 
         private void CheckDisposed()
