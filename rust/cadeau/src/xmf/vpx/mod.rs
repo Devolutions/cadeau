@@ -1,4 +1,5 @@
 use core::fmt;
+use std::ffi::c_int;
 
 use xmf_sys::{
     XmfVpxCodecType, XmfVpxDecoderError, XmfVpxEncoder, XmfVpxEncoderError, XmfVpxFrame, XmfVpxFrame_Destroy,
@@ -7,7 +8,9 @@ use xmf_sys::{
     XmfVpxFrame_GetWidth, XmfVpxImage, XmfVpxImage_Destroy, XmfVpxImage_GetColorRange, XmfVpxImage_GetColorSpace,
     XmfVpxImage_GetFormat, XmfVpxImage_GetHeight, XmfVpxImage_GetPlane, XmfVpxImage_GetStride, XmfVpxImage_GetWidth,
     XmfVpxPacket, XmfVpxPacketKind, XmfVpxPacket_Destroy, XmfVpxPacket_GetFrame, XmfVpxPacket_GetKind,
-    XmfVpxPacket_IsEmpty,
+    XmfVpxPacket_IsEmpty, VPX_CR_FULL_RANGE, VPX_CR_STUDIO_RANGE, VPX_CS_BT_2020, VPX_CS_BT_601, VPX_CS_BT_709,
+    VPX_CS_RESERVED, VPX_CS_SMPTE_170, VPX_CS_SMPTE_240, VPX_CS_SRGB, VPX_CS_UNKNOWN, VPX_IMG_FMT_I420, VPX_PLANE_U,
+    VPX_PLANE_V, VPX_PLANE_Y,
 };
 
 mod decoder;
@@ -22,18 +25,56 @@ pub enum VpxCodec {
     VP9,
 }
 
-/// libvpx `VPX_IMG_FMT_I420`.
-pub const VPX_IMG_FMT_I420: i32 = 0x102;
+/// libvpx `vpx_img_fmt_t` of a decoded image.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
+pub struct VpxImageFormat(pub i32);
+
+impl VpxImageFormat {
+    /// 8-bit planar YUV 4:2:0.
+    pub const I420: Self = Self(VPX_IMG_FMT_I420);
+}
+
+/// libvpx `vpx_color_space_t` reported by the decoder.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
+pub struct VpxColorSpace(pub i32);
+
+impl VpxColorSpace {
+    pub const UNKNOWN: Self = Self(VPX_CS_UNKNOWN);
+    pub const BT_601: Self = Self(VPX_CS_BT_601);
+    pub const BT_709: Self = Self(VPX_CS_BT_709);
+    pub const SMPTE_170: Self = Self(VPX_CS_SMPTE_170);
+    pub const SMPTE_240: Self = Self(VPX_CS_SMPTE_240);
+    pub const BT_2020: Self = Self(VPX_CS_BT_2020);
+    pub const RESERVED: Self = Self(VPX_CS_RESERVED);
+    pub const SRGB: Self = Self(VPX_CS_SRGB);
+}
+
+/// libvpx `vpx_color_range_t` reported by the decoder.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
+pub struct VpxColorRange(pub i32);
+
+impl VpxColorRange {
+    /// Studio (limited) range: Y in 16..=235, U and V in 16..=240.
+    pub const STUDIO: Self = Self(VPX_CR_STUDIO_RANGE);
+    /// Full range: Y, U and V in 0..=255.
+    pub const FULL: Self = Self(VPX_CR_FULL_RANGE);
+}
+
+/// One plane of a decoded image, borrowed until the next decoder call.
+#[derive(Debug, Clone, Copy)]
+pub struct VpxPlane<'image> {
+    /// Bytes from the start of the first row to the last visible byte of the last row.
+    pub data: &'image [u8],
+    /// Distance in bytes between the starts of two rows.
+    pub stride: usize,
+}
 
 /// The three planes of an 8-bit I420 image, borrowed until the next decoder call.
 #[derive(Debug, Clone, Copy)]
 pub struct VpxI420Planes<'image> {
-    pub y: &'image [u8],
-    pub y_stride: usize,
-    pub u: &'image [u8],
-    pub u_stride: usize,
-    pub v: &'image [u8],
-    pub v_stride: usize,
+    pub y: VpxPlane<'image>,
+    pub u: VpxPlane<'image>,
+    pub v: VpxPlane<'image>,
 }
 
 pub struct VpxImage<'decoder> {
@@ -66,26 +107,26 @@ impl VpxImage<'_> {
     }
 
     /// libvpx `vpx_img_fmt_t` of the decoded image.
-    pub fn format(&self) -> i32 {
+    pub fn format(&self) -> VpxImageFormat {
         // SAFETY: Pointer is valid as the lifetime is bound to the associated decoder.
-        unsafe { XmfVpxImage_GetFormat(self.ptr) }
+        VpxImageFormat(unsafe { XmfVpxImage_GetFormat(self.ptr) })
     }
 
-    /// libvpx `vpx_color_space_t` reported by the decoder. VP8 always reports unknown.
-    pub fn color_space(&self) -> i32 {
+    /// Color space reported by the decoder. VP8 always reports [`VpxColorSpace::UNKNOWN`].
+    pub fn color_space(&self) -> VpxColorSpace {
         // SAFETY: Pointer is valid as the lifetime is bound to the associated decoder.
-        unsafe { XmfVpxImage_GetColorSpace(self.ptr) }
+        VpxColorSpace(unsafe { XmfVpxImage_GetColorSpace(self.ptr) })
     }
 
-    /// libvpx `vpx_color_range_t` reported by the decoder. VP8 always reports studio range.
-    pub fn color_range(&self) -> i32 {
+    /// Color range reported by the decoder. VP8 always reports [`VpxColorRange::STUDIO`].
+    pub fn color_range(&self) -> VpxColorRange {
         // SAFETY: Pointer is valid as the lifetime is bound to the associated decoder.
-        unsafe { XmfVpxImage_GetColorRange(self.ptr) }
+        VpxColorRange(unsafe { XmfVpxImage_GetColorRange(self.ptr) })
     }
 
     /// Borrows the Y, U and V planes, or returns `None` when the image is not 8-bit I420.
     pub fn i420_planes(&self) -> Option<VpxI420Planes<'_>> {
-        if self.format() != VPX_IMG_FMT_I420 {
+        if self.format() != VpxImageFormat::I420 {
             return None;
         }
 
@@ -97,21 +138,25 @@ impl VpxImage<'_> {
 
         let chroma_width = width.div_ceil(2);
         let chroma_height = height.div_ceil(2);
-        let (y, y_stride) = self.plane(0, width, height)?;
-        let (u, u_stride) = self.plane(1, chroma_width, chroma_height)?;
-        let (v, v_stride) = self.plane(2, chroma_width, chroma_height)?;
 
-        Some(VpxI420Planes {
-            y,
-            y_stride,
-            u,
-            u_stride,
-            v,
-            v_stride,
-        })
+        // SAFETY: The image is 8-bit I420, so libvpx allocated `height` luma rows of at least `width` bytes.
+        let y = unsafe { self.plane(VPX_PLANE_Y, width, height) }?;
+        // SAFETY: The image is 8-bit I420, so libvpx allocated `(height + 1) / 2` rows of at least
+        // `(width + 1) / 2` bytes for each chroma plane.
+        let u = unsafe { self.plane(VPX_PLANE_U, chroma_width, chroma_height) }?;
+        // SAFETY: Same as for the U plane.
+        let v = unsafe { self.plane(VPX_PLANE_V, chroma_width, chroma_height) }?;
+
+        Some(VpxI420Planes { y, u, v })
     }
 
-    fn plane(&self, index: i32, columns: usize, rows: usize) -> Option<(&[u8], usize)> {
+    /// Borrows `rows` rows of `columns` bytes from a plane, or returns `None` when the plane is unavailable.
+    ///
+    /// # Safety
+    ///
+    /// The image's format and size must guarantee that plane `index` is a contiguous libvpx buffer holding `rows`
+    /// rows of at least `columns` bytes each, at the stride libvpx reports for that plane.
+    unsafe fn plane(&self, index: c_int, columns: usize, rows: usize) -> Option<VpxPlane<'_>> {
         // SAFETY: Pointer is valid as the lifetime is bound to the associated decoder.
         let data = unsafe { XmfVpxImage_GetPlane(self.ptr, index) };
         // SAFETY: Pointer is valid as the lifetime is bound to the associated decoder.
@@ -121,11 +166,14 @@ impl VpxImage<'_> {
             return None;
         }
 
-        let length = (rows - 1).checked_mul(stride)?.checked_add(columns)?;
+        let length = rows.checked_sub(1)?.checked_mul(stride)?.checked_add(columns)?;
 
-        // SAFETY: libvpx allocates `rows` rows of `stride` bytes for an I420 plane of this
-        // size, and the borrow of `self` keeps the decoder from reusing the buffer.
-        Some((unsafe { core::slice::from_raw_parts(data, length) }, stride))
+        // SAFETY: The caller guarantees that the plane is a contiguous buffer of `rows` rows `stride` bytes apart, so
+        // the `length` bytes from `data` to the end of the last row's `columns` bytes are readable, and the borrow of
+        // `self` keeps the decoder from reusing the buffer.
+        let data = unsafe { core::slice::from_raw_parts(data, length) };
+
+        Some(VpxPlane { data, stride })
     }
 }
 

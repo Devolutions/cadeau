@@ -1,8 +1,30 @@
 use core::fmt;
-use std::ffi::{c_uint, c_void};
+use std::ffi::{c_int, c_uint, c_void};
 use std::fmt::Debug;
 
 pub const VPX_EFLAG_FORCE_KF: u32 = 0x00000001;
+
+/// libvpx `vpx_img_fmt_t` value for 8-bit planar YUV 4:2:0.
+pub const VPX_IMG_FMT_I420: c_int = 0x102;
+
+// libvpx plane indices.
+pub const VPX_PLANE_Y: c_int = 0;
+pub const VPX_PLANE_U: c_int = 1;
+pub const VPX_PLANE_V: c_int = 2;
+
+// libvpx `vpx_color_space_t` values.
+pub const VPX_CS_UNKNOWN: c_int = 0;
+pub const VPX_CS_BT_601: c_int = 1;
+pub const VPX_CS_BT_709: c_int = 2;
+pub const VPX_CS_SMPTE_170: c_int = 3;
+pub const VPX_CS_SMPTE_240: c_int = 4;
+pub const VPX_CS_BT_2020: c_int = 5;
+pub const VPX_CS_RESERVED: c_int = 6;
+pub const VPX_CS_SRGB: c_int = 7;
+
+// libvpx `vpx_color_range_t` values.
+pub const VPX_CR_STUDIO_RANGE: c_int = 0;
+pub const VPX_CR_FULL_RANGE: c_int = 1;
 
 pub type XmfVpxEncoder = c_void;
 pub type XmfVpxDecoder = c_void;
