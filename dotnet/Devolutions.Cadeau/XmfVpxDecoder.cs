@@ -215,9 +215,11 @@ namespace Devolutions.Cadeau
             }
         }
 
+        // Handle can be disposed directly, bypassing Dispose; images may still keep its native memory alive, but the
+        // decoder must stop working as soon as either one is disposed.
         private void CheckDisposed()
         {
-            if (this.disposed)
+            if (this.disposed || this.h.IsDisposeRequested)
             {
                 throw new ObjectDisposedException(nameof(XmfVpxDecoder));
             }
