@@ -134,7 +134,7 @@ namespace Devolutions.Cadeau.Test
             string mediaFile = Path.Combine(mediaDir, "window_dragging.rgb");
             Console.WriteLine("media dir: {0}", mediaDir);
             string outputFile = mediaFile.Replace(".rgb", ".webm");
-            recorder.SetBipBuffer(mkvStream.bb.Handle);
+            recorder.SetBipBuffer(mkvStream.bb);
             recorder.SetFrameSize(frameWidth, frameHeight);
             recorder.SetFrameRate(frameRate);
 
@@ -307,7 +307,7 @@ namespace Devolutions.Cadeau.Test
 
             XmfMkvStream mkvStream = new XmfMkvStream();
             XmfRecorder recorder = new XmfRecorder();
-            recorder.SetBipBuffer(mkvStream.bb.Handle);
+            recorder.SetBipBuffer(mkvStream.bb);
             recorder.SetFrameSize(frameWidth, frameHeight);
             recorder.SetFrameRate(frameRate);
             recorder.SetCurrentTime(baseTime);
@@ -418,7 +418,7 @@ namespace Devolutions.Cadeau.Test
 
             if (streamer.IsRawData)
             {
-                recorder.SetBipBuffer(mkvStream.bb.Handle);
+                recorder.SetBipBuffer(mkvStream.bb);
                 recorder.SetFrameSize(frameWidth, frameHeight);
                 recorder.SetFrameRate(frameRate);
                 recorder.SetCurrentTime(baseTime);
@@ -507,7 +507,7 @@ namespace Devolutions.Cadeau.Test
             XmfMkvStream mkvStream = new XmfMkvStream();
             XmfRecorder recorder = new XmfRecorder();
 
-            recorder.SetBipBuffer(mkvStream.bb.Handle);
+            recorder.SetBipBuffer(mkvStream.bb);
             recorder.SetFrameSize(frameWidth, frameHeight);
             recorder.SetFrameRate(frameRate);
             recorder.SetCurrentTime(baseTime);
