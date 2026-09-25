@@ -135,11 +135,22 @@ namespace Devolutions.Cadeau
         }
 
         /// <summary>
-        /// Decodes one compressed frame. Returns false on failure; see <see cref="GetLastError"/>. Images returned
-        /// earlier become unusable, because the decoder reuses their buffers.
+        /// Decodes one compressed frame. Returns false when libvpx rejects it; see <see cref="GetLastError"/>. Images
+        /// returned earlier become unusable, because the decoder reuses their buffers.
         /// </summary>
+        /// <exception cref="ArgumentException">The frame is null or empty, which native code rejects without setting an error.</exception>
         public bool Decode(IntPtr data, uint size)
         {
+            if (data == IntPtr.Zero)
+            {
+                throw new ArgumentNullException(nameof(data));
+            }
+
+            if (size == 0)
+            {
+                throw new ArgumentException("An empty frame cannot be decoded", nameof(size));
+            }
+
             lock (this.SyncRoot)
             {
                 this.CheckDisposed();
@@ -156,6 +167,11 @@ namespace Devolutions.Cadeau
                 throw new ArgumentNullException(nameof(data));
             }
 
+            if (data.Length == 0)
+            {
+                throw new ArgumentException("An empty frame cannot be decoded", nameof(data));
+            }
+
             GCHandle pinned = GCHandle.Alloc(data, GCHandleType.Pinned);
             try
             {
@@ -168,7 +184,8 @@ namespace Devolutions.Cadeau
         }
 
         /// <summary>
-        /// Returns the next decoded frame without copying it, or null when none is left. The image reads this
+        /// Returns the next decoded frame without copying it, or null when none is left. libvpx yields at most one
+        /// frame per <see cref="Decode(IntPtr, uint)"/>, so a second call returns null. The image reads this
         /// decoder's buffers and is usable only until the next <see cref="Decode(IntPtr, uint)"/> call or until the
         /// decoder is disposed; call <see cref="XmfVpxImage.Copy"/> to keep the pixels longer.
         /// </summary>

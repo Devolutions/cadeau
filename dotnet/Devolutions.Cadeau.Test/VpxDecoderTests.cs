@@ -24,6 +24,8 @@ namespace Devolutions.Cadeau.Test
                 DisposeWaitsForImageReads,
                 CopyRacesWithDisposal,
                 OrphanedImageSurvivesGc,
+                EachDecodedFrameIsReturnedOnce,
+                EmptyFramesAreRejected,
             })
             {
                 test();
@@ -145,6 +147,28 @@ namespace Devolutions.Cadeau.Test
             using XmfVpxImage image = CreateOrphanedImage();
             GC.Collect();
             GC.WaitForPendingFinalizers();
+            AssertCopy(image.Copy());
+        }
+
+        private static void EachDecodedFrameIsReturnedOnce()
+        {
+            using XmfVpxDecoder decoder = new XmfVpxDecoder(new XmfVpxDecoderConfig { Threads = 1 });
+            for (int iteration = 0; iteration < 2; iteration++)
+            {
+                using XmfVpxImage image = DecodeImage(decoder);
+                using XmfVpxImage repeated = decoder.GetNextFrame();
+                Assert(repeated == null, "GetNextFrame returned the same decoded frame twice");
+            }
+        }
+
+        private static void EmptyFramesAreRejected()
+        {
+            using XmfVpxDecoder decoder = new XmfVpxDecoder(new XmfVpxDecoderConfig { Threads = 1 });
+            using XmfVpxImage image = DecodeImage(decoder);
+            AssertThrows<ArgumentException>(() => decoder.Decode(Array.Empty<byte>()));
+            AssertThrows<ArgumentNullException>(() => decoder.Decode(IntPtr.Zero, 1));
+
+            // A rejected frame never reaches the decoder, so the last image stays usable.
             AssertCopy(image.Copy());
         }
 
