@@ -1,7 +1,8 @@
 use xmf_sys::{
-    XmfVpxEncoder, XmfVpxEncoderConfig, XmfVpxEncoder_Create, XmfVpxEncoder_Destroy, XmfVpxEncoder_EncodeFrame,
-    XmfVpxEncoder_Flush, XmfVpxEncoder_FreeEncodedFrame, XmfVpxEncoder_GetEncodedFrame, XmfVpxEncoder_GetLastCreateError,
-    XmfVpxEncoder_GetLastError, XmfVpxEncoder_GetPacket, XmfVpxEncoderErrorCode,
+    XmfVpxEncoder, XmfVpxEncoderConfig, XmfVpxEncoderErrorCode, XmfVpxEncoderQuantizerRange, XmfVpxEncoder_Create,
+    XmfVpxEncoder_CreateEx, XmfVpxEncoder_Destroy, XmfVpxEncoder_EncodeFrame, XmfVpxEncoder_Flush,
+    XmfVpxEncoder_FreeEncodedFrame, XmfVpxEncoder_GetEncodedFrame, XmfVpxEncoder_GetLastCreateError,
+    XmfVpxEncoder_GetLastError, XmfVpxEncoder_GetPacket, XMF_VPX_UNSET,
 };
 
 use crate::xmf::vpx::{VpxCodec, VpxError, VpxImage, VpxPacket};
@@ -22,6 +23,8 @@ pub struct VpxEncoderBuilder {
     timebase_den: i32,
     threads: u32,
     preset: VpxEncoderPreset,
+    min_quantizer: Option<u8>,
+    max_quantizer: Option<u8>,
 }
 
 pub struct VpxEncoder {
@@ -169,6 +172,8 @@ impl VpxEncoderBuilder {
             timebase_den: 0,
             threads: 0,
             preset: VpxEncoderPreset::Default,
+            min_quantizer: None,
+            max_quantizer: None,
         }
     }
 
@@ -220,6 +225,27 @@ impl VpxEncoderBuilder {
         self
     }
 
+    /// Sets the lowest (best quality) quantizer the encoder may use, in `0..=63`.
+    ///
+    /// Unset keeps the libvpx default. [`Self::build`] fails if it exceeds the max quantizer.
+    /// Setting it requires an XMF build that exports `XmfVpxEncoder_CreateEx`.
+    #[must_use]
+    pub fn min_quantizer(mut self, min_quantizer: u8) -> Self {
+        self.min_quantizer = Some(min_quantizer);
+        self
+    }
+
+    /// Sets the highest (worst quality) quantizer the encoder may use, in `0..=63`.
+    ///
+    /// Unset keeps the libvpx default of 63. A lower cap keeps frames sharp when the bitrate budget is too small
+    /// for them, such as sparse frames in a re-encoded recording, at the cost of a larger output.
+    /// Setting it requires an XMF build that exports `XmfVpxEncoder_CreateEx`.
+    #[must_use]
+    pub fn max_quantizer(mut self, max_quantizer: u8) -> Self {
+        self.max_quantizer = Some(max_quantizer);
+        self
+    }
+
     pub fn build(self) -> Result<VpxEncoder, VpxError> {
         let preset = match self.preset {
             VpxEncoderPreset::Default => xmf_sys::XmfVpxEncoderPreset::Default,
@@ -238,13 +264,24 @@ impl VpxEncoderBuilder {
             preset,
         };
 
-        // SAFETY: FFI call with no outstanding precondition.
-        let ptr = unsafe { XmfVpxEncoder_Create(config) };
+        let ptr = if self.min_quantizer.is_none() && self.max_quantizer.is_none() {
+            // SAFETY: FFI call with no outstanding precondition.
+            unsafe { XmfVpxEncoder_Create(config) }
+        } else {
+            let quantizer_range = XmfVpxEncoderQuantizerRange {
+                min_quantizer: self.min_quantizer.map_or(XMF_VPX_UNSET, i32::from),
+                max_quantizer: self.max_quantizer.map_or(XMF_VPX_UNSET, i32::from),
+                ..XmfVpxEncoderQuantizerRange::default()
+            };
+            // SAFETY: `quantizer_range` is a valid, initialized struct that outlives the call.
+            unsafe { XmfVpxEncoder_CreateEx(config, &quantizer_range) }
+        };
 
         if ptr.is_null() {
+            // SAFETY: FFI call with no outstanding precondition.
             let error = unsafe { XmfVpxEncoder_GetLastCreateError() };
             if matches!(error.code, XmfVpxEncoderErrorCode::NoError) {
-                return Err(VpxError::Internal("XmfVpxEncoder_Create returned null"));
+                return Err(VpxError::Internal("XmfVpxEncoder_Create(Ex) returned null"));
             }
             return Err(error.into());
         }

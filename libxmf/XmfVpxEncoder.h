@@ -57,6 +57,30 @@ typedef struct
     XmfVpxEncoderPreset preset;
 } XmfVpxEncoderConfig;
 
+/** Marks an XmfVpxEncoderQuantizerRange field as "keep the libvpx default". */
+#define XMF_VPX_UNSET ((int32_t)0x80000000)
+
+/**
+ * Optional quantizer range for XmfVpxEncoder_CreateEx.
+ *
+ * Set struct_size to sizeof(XmfVpxEncoderQuantizerRange) and every field you do not override to XMF_VPX_UNSET.
+ * 0 is a valid quantizer, so a zero-initialized struct is not the same as XmfVpxEncoder_Create.
+ * With every field unset, the encoder is configured exactly like XmfVpxEncoder_Create.
+ */
+typedef struct
+{
+    /** sizeof(XmfVpxEncoderQuantizerRange), so fields can be appended later. */
+    uint32_t struct_size;
+    /** vpx_codec_enc_cfg_t::rc_min_quantizer (0..63). Must not exceed the effective max quantizer. */
+    int32_t min_quantizer;
+    /**
+     * vpx_codec_enc_cfg_t::rc_max_quantizer (0..63, libvpx default 63).
+     *
+     * Lower values keep frames sharp when the bitrate budget is tight (e.g. sparse frames), at the cost of size.
+     */
+    int32_t max_quantizer;
+} XmfVpxEncoderQuantizerRange;
+
 typedef enum
 {
     NO_ERROR,
@@ -89,6 +113,16 @@ extern "C"
      * @return Pointer to the encoder instance, or NULL on failure.
      */
     XMF_EXPORT XmfVpxEncoder *XmfVpxEncoder_Create(XmfVpxEncoderConfig config);
+
+    /**
+     * Same as XmfVpxEncoder_Create, with an optional quantizer range.
+     *
+     * @param config          Encoder configuration.
+     * @param quantizer_range Optional quantizer range, or NULL for XmfVpxEncoder_Create's behavior.
+     * @return Pointer to the encoder instance, or NULL on failure.
+     *         An invalid quantizer range fails with INVALID_PARAM (see XmfVpxEncoder_GetLastCreateError).
+     */
+    XMF_EXPORT XmfVpxEncoder *XmfVpxEncoder_CreateEx(XmfVpxEncoderConfig config, const XmfVpxEncoderQuantizerRange *quantizer_range);
 
     /**
      * Encodes a frame and returns the compressed data.

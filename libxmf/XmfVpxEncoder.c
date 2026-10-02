@@ -173,7 +173,30 @@ static int xmf_vpx_calc_tile_columns_log2(int threads, uint32_t width)
 
 XmfVpxEncoder *XmfVpxEncoder_Create(XmfVpxEncoderConfig config)
 {
+	return XmfVpxEncoder_CreateEx(config, NULL);
+}
+
+static int xmf_vpx_quantizer_is_valid(int32_t value)
+{
+	return value == XMF_VPX_UNSET || (value >= 0 && value <= 63);
+}
+
+static int xmf_vpx_quantizer_range_is_valid(const XmfVpxEncoderQuantizerRange *quantizer_range)
+{
+	return quantizer_range->struct_size >= sizeof(XmfVpxEncoderQuantizerRange) &&
+		xmf_vpx_quantizer_is_valid(quantizer_range->min_quantizer) &&
+		xmf_vpx_quantizer_is_valid(quantizer_range->max_quantizer);
+}
+
+XmfVpxEncoder *XmfVpxEncoder_CreateEx(XmfVpxEncoderConfig config, const XmfVpxEncoderQuantizerRange *quantizer_range)
+{
 	xmf_vpx_set_last_create_error(NO_ERROR, VPX_CODEC_OK);
+
+	if (quantizer_range && !xmf_vpx_quantizer_range_is_valid(quantizer_range))
+	{
+		xmf_vpx_set_last_create_error(INVALID_PARAM, VPX_CODEC_OK);
+		return NULL;
+	}
 
 	XmfVpxEncoder *encoder = (XmfVpxEncoder *)malloc(sizeof(XmfVpxEncoder));
 	if (!encoder)
@@ -320,6 +343,27 @@ XmfVpxEncoder *XmfVpxEncoder_Create(XmfVpxEncoderConfig config)
 	// Doc: vpx_codec_enc_cfg_t::rc_dropframe_thresh
 	// https://chromium.googlesource.com/webm/libvpx/+/refs/heads/main/vpx/vpx_encoder.h#468
 	encoder->cfg.rc_dropframe_thresh = (unsigned int)dropframe_thresh_value;
+
+	if (quantizer_range)
+	{
+		// Doc: vpx_codec_enc_cfg_t::rc_min_quantizer / rc_max_quantizer
+		// https://chromium.googlesource.com/webm/libvpx/+/refs/heads/main/vpx/vpx_encoder.h#483
+		if (quantizer_range->min_quantizer != XMF_VPX_UNSET)
+		{
+			encoder->cfg.rc_min_quantizer = (unsigned int)quantizer_range->min_quantizer;
+		}
+		if (quantizer_range->max_quantizer != XMF_VPX_UNSET)
+		{
+			encoder->cfg.rc_max_quantizer = (unsigned int)quantizer_range->max_quantizer;
+		}
+		// Checked here rather than up front, because an unset bound keeps the codec's own default.
+		if (encoder->cfg.rc_min_quantizer > encoder->cfg.rc_max_quantizer)
+		{
+			free(encoder);
+			xmf_vpx_set_last_create_error(INVALID_PARAM, VPX_CODEC_OK);
+			return NULL;
+		}
+	}
 
 	// Initialize codec
 	res = vpx_codec_enc_init(&encoder->codec, iface, &encoder->cfg, 0);

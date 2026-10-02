@@ -69,6 +69,7 @@ pub mod raw {
 
             // VPX Encoder
             fn XmfVpxEncoder_Create(config: XmfVpxEncoderConfig) -> *mut XmfVpxEncoder,
+            fn XmfVpxEncoder_CreateEx(config: XmfVpxEncoderConfig, quantizer_range: *const XmfVpxEncoderQuantizerRange) -> *mut XmfVpxEncoder,
             fn XmfVpxEncoder_EncodeFrame(ctx: *mut XmfVpxEncoder, image: *const XmfVpxImage, pts: i64, duration: usize, flags: u32) -> c_int,
             fn XmfVpxEncoder_GetEncodedFrame(ctx: *mut XmfVpxEncoder, output: *mut *mut u8, output_size: *mut usize) -> c_int,
             fn XmfVpxEncoder_Flush(ctx: *mut XmfVpxEncoder) -> c_int,
