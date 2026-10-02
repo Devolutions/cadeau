@@ -134,6 +134,28 @@ pub enum XmfVpxEncoderPreset {
     BestPerformance = 2,
 }
 
+/// Marks an [`XmfVpxEncoderQuantizerRange`] field as "keep the libvpx default".
+pub const XMF_VPX_UNSET: i32 = i32::MIN;
+
+#[repr(C)]
+#[derive(Debug, Clone, Copy)]
+pub struct XmfVpxEncoderQuantizerRange {
+    pub struct_size: u32,
+    pub min_quantizer: i32,
+    pub max_quantizer: i32,
+}
+
+impl Default for XmfVpxEncoderQuantizerRange {
+    #[allow(unused_qualifications)] // size_of is in the prelude only since Rust 1.80, MSRV is 1.74.
+    fn default() -> Self {
+        Self {
+            struct_size: u32::try_from(core::mem::size_of::<Self>()).expect("small struct"),
+            min_quantizer: XMF_VPX_UNSET,
+            max_quantizer: XMF_VPX_UNSET,
+        }
+    }
+}
+
 #[repr(C)]
 #[derive(Debug, Clone, Copy)]
 pub enum XmfVpxEncoderErrorCode {
