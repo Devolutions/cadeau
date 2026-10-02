@@ -7,6 +7,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.5.4](https://github.com/Devolutions/cadeau/compare/cadeau-v0.5.3...cadeau-v0.5.4) - 2026-10-02
+
+### Added
+
+- *(xmf)* add optional VPX encoder quantizer range ([#87](https://github.com/Devolutions/cadeau/pull/87))
+
 ## [0.5.3](https://github.com/Devolutions/cadeau/compare/cadeau-v0.5.2...cadeau-v0.5.3) - 2026-09-25
 
 ### Added
