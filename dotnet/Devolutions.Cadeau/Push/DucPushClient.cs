@@ -26,12 +26,6 @@ namespace Devolutions.Cadeau
         // STORAGE_FULL_CLOSE_CODE constant.
         private const ushort StorageFullCloseCode = 4010;
 
-        // Private WebSocket close code (4000-4999 range) sent by this client to tell the gateway
-        // the recording is over. The gateway then ends the recording at once instead of keeping
-        // it open for a reconnect (any other close, such as 1000, keeps it open for the token's
-        // reconnection window). Must match the gateway's RECORDING_ENDED_CLOSE_CODE constant.
-        private const ushort RecordingEndedCloseCode = 4011;
-
         private ClientWebSocket? ws;
 
         private Task? receiveLoop;
@@ -152,7 +146,7 @@ namespace Devolutions.Cadeau
         /// </exception>
         public Task EndRecordingAsync(CancellationToken cancellationToken = default)
         {
-            return this.CloseAsync((WebSocketCloseStatus)RecordingEndedCloseCode, cancellationToken);
+            return this.CloseAsync((WebSocketCloseStatus)GatewayPushCloseCodes.RecordingEnded, cancellationToken);
         }
 
         private async Task CloseAsync(WebSocketCloseStatus closeStatus, CancellationToken cancellationToken)

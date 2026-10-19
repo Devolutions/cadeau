@@ -69,5 +69,10 @@ namespace Devolutions.Cadeau
         {
             return this.ws.CloseAsync(WebSocketCloseStatus.NormalClosure, string.Empty, cancellationToken);
         }
+
+        internal Task EndRecording(CancellationToken cancellationToken)
+        {
+            return this.ws.CloseAsync((WebSocketCloseStatus)GatewayPushCloseCodes.RecordingEnded, string.Empty, cancellationToken);
+        }
     }
 }
