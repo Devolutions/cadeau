@@ -26,6 +26,12 @@ namespace Devolutions.Cadeau
         // STORAGE_FULL_CLOSE_CODE constant.
         private const ushort StorageFullCloseCode = 4010;
 
+        // Private WebSocket close code (4000-4999 range) sent by this client to tell the gateway
+        // the recording is over. The gateway then ends the recording at once instead of keeping
+        // it open for a reconnect (any other close, such as 1000, keeps it open for the token's
+        // reconnection window). Must match the gateway's RECORDING_ENDED_CLOSE_CODE constant.
+        private const ushort RecordingEndedCloseCode = 4011;
+
         private ClientWebSocket? ws;
 
         private Task? receiveLoop;
@@ -127,7 +133,29 @@ namespace Devolutions.Cadeau
         /// <paramref name="cancellationToken"/> was cancelled before the close handshake completed.
         /// The receive loop is still stopped before this propagates.
         /// </exception>
-        public async Task CloseAsync(CancellationToken cancellationToken = default)
+        /// <remarks>
+        /// The gateway treats a normal closure as a possible reconnect (for example after a resize)
+        /// and keeps the recording open. Use <see cref="EndRecordingAsync"/> when the recording is over.
+        /// </remarks>
+        public Task CloseAsync(CancellationToken cancellationToken = default)
+        {
+            return this.CloseAsync(WebSocketCloseStatus.NormalClosure, cancellationToken);
+        }
+
+        /// <summary>
+        /// Sends a close frame with close code <c>4011</c> so the gateway ends the recording at once,
+        /// then waits for the receive loop to terminate.
+        /// </summary>
+        /// <exception cref="OperationCanceledException">
+        /// <paramref name="cancellationToken"/> was cancelled before the close handshake completed.
+        /// The receive loop is still stopped before this propagates.
+        /// </exception>
+        public Task EndRecordingAsync(CancellationToken cancellationToken = default)
+        {
+            return this.CloseAsync((WebSocketCloseStatus)RecordingEndedCloseCode, cancellationToken);
+        }
+
+        private async Task CloseAsync(WebSocketCloseStatus closeStatus, CancellationToken cancellationToken)
         {
             ClientWebSocket? socket = this.ws;
             if (socket == null)
@@ -141,7 +169,7 @@ namespace Devolutions.Cadeau
                 {
                     try
                     {
-                        await socket.CloseAsync(WebSocketCloseStatus.NormalClosure, statusDescription: string.Empty, cancellationToken)
+                        await socket.CloseAsync(closeStatus, statusDescription: string.Empty, cancellationToken)
                             .ConfigureAwait(false);
                     }
                     catch (OperationCanceledException)
