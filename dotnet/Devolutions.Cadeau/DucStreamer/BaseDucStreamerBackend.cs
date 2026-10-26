@@ -23,6 +23,9 @@ namespace Devolutions.Cadeau
 
         public virtual Task Disconnect(CancellationToken token) => null;
 
+        // Only the WebSocket protocol can say the recording is over; older protocols just disconnect.
+        public virtual Task EndRecording(CancellationToken token) => this.Disconnect(token);
+
         public virtual bool SendKeepAlive() => true;
 
         public void Dispose()

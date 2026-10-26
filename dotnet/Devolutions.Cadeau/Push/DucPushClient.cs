@@ -127,7 +127,29 @@ namespace Devolutions.Cadeau
         /// <paramref name="cancellationToken"/> was cancelled before the close handshake completed.
         /// The receive loop is still stopped before this propagates.
         /// </exception>
-        public async Task CloseAsync(CancellationToken cancellationToken = default)
+        /// <remarks>
+        /// The gateway treats a normal closure as a possible reconnect (for example after a resize)
+        /// and keeps the recording open. Use <see cref="EndRecordingAsync"/> when the recording is over.
+        /// </remarks>
+        public Task CloseAsync(CancellationToken cancellationToken = default)
+        {
+            return this.CloseAsync(WebSocketCloseStatus.NormalClosure, cancellationToken);
+        }
+
+        /// <summary>
+        /// Sends a close frame with close code <c>4011</c> so the gateway ends the recording at once,
+        /// then waits for the receive loop to terminate.
+        /// </summary>
+        /// <exception cref="OperationCanceledException">
+        /// <paramref name="cancellationToken"/> was cancelled before the close handshake completed.
+        /// The receive loop is still stopped before this propagates.
+        /// </exception>
+        public Task EndRecordingAsync(CancellationToken cancellationToken = default)
+        {
+            return this.CloseAsync((WebSocketCloseStatus)GatewayPushCloseCodes.RecordingEnded, cancellationToken);
+        }
+
+        private async Task CloseAsync(WebSocketCloseStatus closeStatus, CancellationToken cancellationToken)
         {
             ClientWebSocket? socket = this.ws;
             if (socket == null)
@@ -141,7 +163,7 @@ namespace Devolutions.Cadeau
                 {
                     try
                     {
-                        await socket.CloseAsync(WebSocketCloseStatus.NormalClosure, statusDescription: string.Empty, cancellationToken)
+                        await socket.CloseAsync(closeStatus, statusDescription: string.Empty, cancellationToken)
                             .ConfigureAwait(false);
                     }
                     catch (OperationCanceledException)

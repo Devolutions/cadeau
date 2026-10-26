@@ -143,6 +143,31 @@ namespace Devolutions.Cadeau
             }
         }
 
+        /// <summary>
+        /// Closes the stream and tells the gateway the recording is over, so it ends the recording at once.
+        /// </summary>
+        /// <remarks>
+        /// <see cref="Disconnect"/> leaves the recording open for a reconnect, for example after a resize.
+        /// Over a WebSocket (V3) this sends close code <c>4011</c>; older protocols just disconnect.
+        /// </remarks>
+        public Task EndRecording(CancellationToken token)
+        {
+            try
+            {
+                if (!this.Streamer?.Connected ?? false)
+                {
+                    return null;
+                }
+
+                return this.Streamer?.EndRecording(token);
+            }
+            finally
+            {
+                this.Streamer?.Dispose();
+                this.Streamer = null;
+            }
+        }
+
         public bool SendKeepAlive() => this.Streamer?.SendKeepAlive() ?? true;
 
         public bool SendPayload(DateTime timestamp, IntPtr payload, int length) => this.Streamer?.SendPayload(timestamp, payload, length) ?? false;

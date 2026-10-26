@@ -65,6 +65,16 @@ namespace Devolutions.Cadeau
             return base.Disconnect(token);
         }
 
+        public override Task EndRecording(CancellationToken token)
+        {
+            if (this.Stream is XmfWsStream wsStream)
+            {
+                return wsStream.EndRecording(token);
+            }
+
+            return base.EndRecording(token);
+        }
+
         public override bool SendPayload(DateTime timestamp, IntPtr payload, int length)
         {
             if (payload == IntPtr.Zero || length <= 0)
